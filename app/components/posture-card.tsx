@@ -9,6 +9,7 @@ function categoryLabel(id: string): string {
   if (id === "branch") return "Branch protection"
   if (id === "docs") return "Documentation"
   if (id === "deps") return "Dependencies"
+  if (id === "governance") return "Governance"
   return id
 }
 
