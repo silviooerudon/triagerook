@@ -4,11 +4,16 @@ import { useEffect, useState, use } from "react"
 import Link from "next/link"
 import type { ScanResult } from "@/lib/scan"
 import type { DependencyFinding } from "@/lib/types"
+import type { PrioritizedFinding, RiskBreakdown } from "@/lib/risk"
+import type { PostureResult } from "@/lib/posture"
+import type { IAMResult } from "@/lib/iam"
+import type { SupplyChainResult } from "@/lib/supply-chain"
 import {
   AllClear,
   CodeFindingsSection,
   DependenciesSection,
   IaCFindingsSection,
+  PrioritizedList,
   SecretsSection,
   SensitiveFilesSection,
   SummaryCard,
@@ -16,6 +21,12 @@ import {
   totalCount,
   type AllFindings,
 } from "@/app/components/scan-findings"
+import { RiskGauge } from "@/app/components/risk-gauge"
+import { RiskBreakdownChart } from "@/app/components/risk-breakdown"
+import { ViewToggleButton } from "@/app/components/view-toggle"
+import { PostureCard } from "@/app/components/posture-card"
+import { IamCard } from "@/app/components/iam-card"
+import { SupplyChainCard } from "@/app/components/supply-chain-card"
 
 type ScanResultFull = ScanResult & {
   dependencies?: DependencyFinding[]
@@ -32,6 +43,12 @@ type SavedScan = {
   files_scanned: number
   secrets_count: number
   deps_count: number
+  riskScore: number | null
+  riskBreakdown: RiskBreakdown | null
+  prioritized: PrioritizedFinding[] | null
+  posture: PostureResult | null
+  iam: IAMResult | null
+  supplyChain: SupplyChainResult | null
 }
 
 type PageProps = {
@@ -97,6 +114,8 @@ export default function ScanViewPage({ params }: PageProps) {
 }
 
 function SavedScanView({ scan }: { scan: SavedScan }) {
+  const [view, setView] = useState<"prioritized" | "by-detector">("prioritized")
+
   const dateStr = new Date(scan.scanned_at).toLocaleString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -119,6 +138,48 @@ function SavedScanView({ scan }: { scan: SavedScan }) {
 
   const counts = countBySeverity(all)
   const total = totalCount(all)
+  const hasRisk =
+    typeof scan.riskScore === "number" &&
+    !!scan.riskBreakdown &&
+    !!scan.prioritized
+
+  const summaryRow = (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <SummaryCard
+        label="Files scanned"
+        value={scan.files_scanned.toString()}
+        tone="neutral"
+      />
+      <SummaryCard
+        label="Critical"
+        value={counts.critical.toString()}
+        tone={counts.critical > 0 ? "red" : "neutral"}
+      />
+      <SummaryCard
+        label="High"
+        value={counts.high.toString()}
+        tone={counts.high > 0 ? "orange" : "neutral"}
+      />
+      <SummaryCard
+        label="Medium + Low"
+        value={(counts.medium + counts.low).toString()}
+        tone={counts.medium + counts.low > 0 ? "yellow" : "neutral"}
+      />
+    </div>
+  )
+
+  const legacySections = (
+    <>
+      {total === 0 && <AllClear />}
+      <SecretsSection findings={all.secrets} sourceLabel="tree" />
+      <SensitiveFilesSection findings={all.sensitiveFiles} />
+      <CodeFindingsSection findings={all.codeFindings} />
+      <DependenciesSection findings={all.npmDependencies} label="npm" />
+      <DependenciesSection findings={all.pythonDependencies} label="Python" />
+      <IaCFindingsSection findings={all.iacFindings} />
+      <SecretsSection findings={all.historySecrets} sourceLabel="history" />
+    </>
+  )
 
   return (
     <div className="space-y-6">
@@ -134,38 +195,56 @@ function SavedScanView({ scan }: { scan: SavedScan }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <SummaryCard
-          label="Files scanned"
-          value={scan.files_scanned.toString()}
-          tone="neutral"
-        />
-        <SummaryCard
-          label="Critical"
-          value={counts.critical.toString()}
-          tone={counts.critical > 0 ? "red" : "neutral"}
-        />
-        <SummaryCard
-          label="High"
-          value={counts.high.toString()}
-          tone={counts.high > 0 ? "orange" : "neutral"}
-        />
-        <SummaryCard
-          label="Medium + Low"
-          value={(counts.medium + counts.low).toString()}
-          tone={counts.medium + counts.low > 0 ? "yellow" : "neutral"}
-        />
-      </div>
+      {summaryRow}
 
-      {total === 0 && <AllClear />}
+      {hasRisk && (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center md:items-stretch">
+          <div className="shrink-0 flex items-center justify-center">
+            <RiskGauge score={scan.riskScore!} />
+          </div>
+          <div className="flex-1 w-full flex flex-col justify-center">
+            <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-3">
+              Where the score comes from
+            </h2>
+            <RiskBreakdownChart breakdown={scan.riskBreakdown!} />
+            <p className="text-xs text-gray-500 mt-4">
+              {scan.prioritized!.length} finding
+              {scan.prioritized!.length === 1 ? "" : "s"} ranked by risk.
+            </p>
+          </div>
+        </div>
+      )}
 
-      <SecretsSection findings={all.secrets} sourceLabel="tree" />
-      <SensitiveFilesSection findings={all.sensitiveFiles} />
-      <CodeFindingsSection findings={all.codeFindings} />
-      <DependenciesSection findings={all.npmDependencies} label="npm" />
-      <DependenciesSection findings={all.pythonDependencies} label="Python" />
-      <IaCFindingsSection findings={all.iacFindings} />
-      <SecretsSection findings={all.historySecrets} sourceLabel="history" />
+      {scan.posture && <PostureCard posture={scan.posture} />}
+      {scan.iam && <IamCard iam={scan.iam} />}
+      {scan.supplyChain && <SupplyChainCard supplyChain={scan.supplyChain} />}
+
+      {hasRisk ? (
+        <>
+          <div className="flex items-center gap-2">
+            <ViewToggleButton
+              active={view === "prioritized"}
+              onClick={() => setView("prioritized")}
+            >
+              Sorted by risk
+            </ViewToggleButton>
+            <ViewToggleButton
+              active={view === "by-detector"}
+              onClick={() => setView("by-detector")}
+            >
+              Group by detector
+            </ViewToggleButton>
+          </div>
+
+          {view === "prioritized" ? (
+            <PrioritizedList findings={scan.prioritized!} />
+          ) : (
+            legacySections
+          )}
+        </>
+      ) : (
+        legacySections
+      )}
     </div>
   )
 }
