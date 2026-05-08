@@ -1,0 +1,33 @@
+# RepoGuard suppressions
+# Format: pathGlob [rule=glob] [reason="text"] [expires=YYYY-MM-DD]
+# Comments start with #
+#
+# Each suppression scopes a (path, ruleType) pair. Suppressions are
+# documented self-references where the detector matches its own
+# pattern library. Real findings in the same files are NOT suppressed
+# unless they belong to the explicitly scoped rule type.
+
+# README.md describes detector capabilities. The "Private Key" wording
+# in the regex pattern catalog triggers the secret detector against
+# documentation describing what it detects.
+README.md [rule=secret/*] [reason="Docs describe detector pattern catalog"]
+
+# lib/secret-patterns.ts is the secret detector's regex pattern library.
+# By design it contains literal text that looks like the secrets it detects.
+lib/secret-patterns.ts [rule=secret/*] [reason="Detector self-reference: regex pattern library"]
+
+# lib/code-vulns.ts is the SAST detector's rule definitions. Each rule has
+# a description string that names the vuln pattern (eval, new Function,
+# Math.random in security context), which the detector then matches
+# against its own description.
+lib/code-vulns.ts [rule=code/*] [reason="Detector self-reference: SAST rule descriptions"]
+
+# scripts/patch-iam-d3-1-heredoc.py contains JavaScript embedded in a
+# Python heredoc. The JS-style `dataDocRe.exec()` and `heredocRe.exec()`
+# calls match the Python eval/exec rule erroneously.
+scripts/patch-iam-d3-1-heredoc.py [rule=code/*] [reason="JS-in-Python-heredoc false match for Python exec()"]
+
+# scripts/test-suppressions.ts is the test fixture for this very suppression
+# system. It contains intentional vuln patterns to verify suppression
+# logic works end-to-end.
+scripts/test-suppressions.ts [rule=code/*] [reason="Test fixture for suppression system"]
