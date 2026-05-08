@@ -130,7 +130,7 @@ export default function PublicScanPage({ params, searchParams }: PageProps) {
             <div className="inline-block w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4" />
             <p className="text-gray-300">Scanning repository…</p>
             <p className="text-gray-500 text-sm mt-2">
-              Seven detectors running in parallel — usually under a minute.
+              Nine detectors running in parallel — usually under a minute.
             </p>
           </div>
         )}
