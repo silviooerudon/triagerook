@@ -26,6 +26,7 @@ import { RiskBreakdownChart } from "@/app/components/risk-breakdown"
 import { ViewToggleButton } from "@/app/components/view-toggle"
 import { PostureCard } from "@/app/components/posture-card"
 import { IamCard } from "@/app/components/iam-card"
+import { SupplyChainCard } from "@/app/components/supply-chain-card"
 
 type ScanResultFull = ScanResult & {
   dependencies?: DependencyFinding[]
@@ -314,6 +315,7 @@ function ScanResultView({ result }: { result: ScanResultFull }) {
 
       {result.posture && <PostureCard posture={result.posture} />}
       {result.iam && <IamCard iam={result.iam} />}
+      {result.supplyChain && <SupplyChainCard supplyChain={result.supplyChain} />}
 
       {meta}
 

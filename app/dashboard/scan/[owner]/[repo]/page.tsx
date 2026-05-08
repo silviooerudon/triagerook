@@ -24,6 +24,7 @@ import { ExpiredSuppressionsBanner } from "@/app/components/expired-suppressions
 import { SuppressedFindingsSection } from "@/app/components/suppressed-findings-section"
 import { PostureCard } from "@/app/components/posture-card"
 import { IamCard } from "@/app/components/iam-card"
+import { SupplyChainCard } from "@/app/components/supply-chain-card"
 import type { SuppressedFinding } from "@/lib/suppressions"
 import type { PostureResult } from "@/lib/posture"
 import type { IAMResult } from "@/lib/iam"
@@ -231,6 +232,7 @@ function ScanResultView({ result }: { result: ScanResultFull }) {
 
       {result.posture && <PostureCard posture={result.posture} />}
       {result.iam && <IamCard iam={result.iam} />}
+      {result.supplyChain && <SupplyChainCard supplyChain={result.supplyChain} />}
 
       {meta}
 
