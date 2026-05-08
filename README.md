@@ -2,7 +2,7 @@
 
 > Lightweight GitHub security scanner for solo devs and small teams. Live at **[repoguard-chi.vercel.app](https://repoguard-chi.vercel.app)**.
 
-Scans your GitHub repos across seven detectors in parallel — secrets, sensitive files, code-level vulnerabilities, npm and PyPI dependencies, supply-chain misconfigurations, and git history — with no CLI, no config, and no pipelines to wire up. Sign in with GitHub or paste a public URL, then get a prioritized list of findings in under a minute.
+Scans your GitHub repos across nine detectors in parallel — secrets, sensitive files, code-level vulnerabilities, npm and PyPI dependencies, supply-chain misconfigurations, and git history — with no CLI, no config, and no pipelines to wire up. Sign in with GitHub or paste a public URL, then get a prioritized list of findings in under a minute.
 
 ## Why I built this
 

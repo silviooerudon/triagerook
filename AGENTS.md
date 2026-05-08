@@ -71,7 +71,7 @@ These are **decided**. Do not re-litigate without explicit request from Silvio.
 
 ### Detection strategy
 
-- 7 detectors run in parallel (see `README.md` for the full list)
+- 9 detectors run in parallel (see `README.md` for the full list)
 - Bias toward **high-confidence regex** for secrets — false positives erode trust faster than false negatives
 - Entropy fallback for `.env`/config files where regex can't help
 - SAST rules are **conservative** and tied to CWE identifiers — actionable findings only
