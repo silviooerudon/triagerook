@@ -1,6 +1,20 @@
 import { minimatch } from "minimatch";
 import type { AnyFinding } from "@/lib/risk";
 
+export interface FindingLike {
+  kind?: string;
+  data?: {
+    patternId?: string | null;
+    source?: string | null;
+    ruleId?: string | null;
+    cwe?: string | number | null;
+    category?: string | null;
+    package?: string | null;
+    ghsa?: string | null;
+    filePath?: string | null;
+    kind?: string | null;
+  };
+}
 export type Suppression = {
   pathGlob: string;
   ruleGlob?: string;
@@ -96,7 +110,7 @@ export function parseSuppressions(content: string): Suppression[] {
   return out;
 }
 
-export function findRuleIdForFinding(finding: any): string {
+export function findRuleIdForFinding(finding: FindingLike): string {
   const kind = finding?.kind;
   const data = finding?.data ?? {};
 
@@ -121,7 +135,7 @@ export function findRuleIdForFinding(finding: any): string {
   }
 }
 
-export function getFindingPath(finding: any): string {
+export function getFindingPath(finding: FindingLike): string {
   const kind = finding?.kind;
   const data = finding?.data ?? {};
   if (kind === "dependency") return data.source ?? "package.json";
@@ -131,7 +145,7 @@ export function getFindingPath(finding: any): string {
   return "";
 }
 
-export function findAlternateRuleIds(finding: any): string[] {
+export function findAlternateRuleIds(finding: FindingLike): string[] {
   const primary = findRuleIdForFinding(finding);
   const kind = finding?.kind;
   const data = finding?.data ?? {};
