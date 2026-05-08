@@ -5,6 +5,7 @@
 //
 // E2: typosquatting findings
 // E3: postinstall npm content findings
+// E4: postinstall python content findings
 
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
@@ -102,12 +103,20 @@ const EXPECTED_TYPO: ExpectedTypoFinding[] = [
   },
 ];
 
-const EXPECTED_PI: ExpectedPiFinding[] = [
+const EXPECTED_PI_NPM: ExpectedPiFinding[] = [
   { hook: "postinstall", pattern: "pipe-to-shell", severity: "HIGH" },
   { hook: "prepare", pattern: "decode-and-exec", severity: "HIGH" },
   { hook: "install", pattern: "env-exfil", severity: "HIGH" },
   { hook: "prepublish", pattern: "network-in-hook", severity: "MEDIUM" },
   { hook: "prerestart", pattern: "command-chain", severity: "LOW" },
+];
+
+const EXPECTED_PI_PY: ExpectedPiFinding[] = [
+  { hook: "install", pattern: "pipe-to-shell", severity: "HIGH" },
+  { hook: "develop", pattern: "decode-and-exec", severity: "HIGH" },
+  { hook: "build_py", pattern: "env-exfil", severity: "HIGH" },
+  { hook: "sdist", pattern: "network-in-hook", severity: "MEDIUM" },
+  { hook: "egg_info", pattern: "command-chain", severity: "LOW" },
 ];
 
 const FORBIDDEN_TYPO_PACKAGES = [
@@ -119,11 +128,14 @@ const FORBIDDEN_TYPO_PACKAGES = [
   "django",
 ];
 
-// Hooks that should NOT generate any postinstall finding (benign content
-// or not part of the install lifecycle). preinstall is in the hook list
-// but its content is "node -e console.log" which matches no pattern.
-// build and test are not lifecycle hooks at all.
-const FORBIDDEN_PI_HOOKS = ["preinstall", "build", "test"];
+// npm hooks that should NOT generate any postinstall finding (benign content
+// or not part of the install lifecycle).
+const FORBIDDEN_PI_NPM_HOOKS = ["preinstall", "build", "test"];
+
+// python hooks that should NOT generate any postinstall finding.
+// pyproject = the pyproject.toml file (only deps, no malicious content).
+// test = the BenignTest class in setup.py (just a print, no pattern).
+const FORBIDDEN_PI_PY_HOOKS = ["pyproject", "test"];
 
 async function loadFiles(root: string): Promise<Map<string, string>> {
   const files = new Map<string, string>();
@@ -163,12 +175,24 @@ function typoMatches(
   );
 }
 
-function piMatches(
+function piNpmMatches(
   f: SupplyChainFinding,
   exp: ExpectedPiFinding,
 ): boolean {
   return (
-    f.categoryId === "postinstall" &&
+    f.id.startsWith("pi-npm-") &&
+    f.severity === exp.severity &&
+    f.pattern === exp.pattern &&
+    f.evidence.startsWith(`hook=${exp.hook}:`)
+  );
+}
+
+function piPyMatches(
+  f: SupplyChainFinding,
+  exp: ExpectedPiFinding,
+): boolean {
+  return (
+    f.id.startsWith("pi-py-") &&
     f.severity === exp.severity &&
     f.pattern === exp.pattern &&
     f.evidence.startsWith(`hook=${exp.hook}:`)
@@ -216,18 +240,29 @@ async function main(): Promise<void> {
     }
   }
 
-  // 2. Postinstall asserts.
-  for (const exp of EXPECTED_PI) {
-    const found = result.findings.find((f) => piMatches(f, exp));
+  // 2. Postinstall npm asserts.
+  for (const exp of EXPECTED_PI_NPM) {
+    const found = result.findings.find((f) => piNpmMatches(f, exp));
     if (!found) {
       console.error(
-        `MISSING pi: hook=${exp.hook} pattern=${exp.pattern} severity=${exp.severity}`,
+        `MISSING pi-npm: hook=${exp.hook} pattern=${exp.pattern} severity=${exp.severity}`,
       );
       allOk = false;
     }
   }
 
-  // 3. Forbidden typosquat packages must NOT generate findings.
+  // 3. Postinstall python asserts.
+  for (const exp of EXPECTED_PI_PY) {
+    const found = result.findings.find((f) => piPyMatches(f, exp));
+    if (!found) {
+      console.error(
+        `MISSING pi-py: hook=${exp.hook} pattern=${exp.pattern} severity=${exp.severity}`,
+      );
+      allOk = false;
+    }
+  }
+
+  // 4. Forbidden typosquat packages must NOT generate findings.
   for (const pkg of FORBIDDEN_TYPO_PACKAGES) {
     const wrong = result.findings.find(
       (f) => f.categoryId === "typosquatting" && f.package === pkg,
@@ -241,39 +276,57 @@ async function main(): Promise<void> {
     }
   }
 
-  // 4. Forbidden hooks must NOT generate postinstall findings.
-  for (const hook of FORBIDDEN_PI_HOOKS) {
+  // 5. Forbidden npm hooks must NOT generate postinstall findings.
+  for (const hook of FORBIDDEN_PI_NPM_HOOKS) {
     const wrong = result.findings.find(
       (f) =>
-        f.categoryId === "postinstall" &&
+        f.id.startsWith("pi-npm-") &&
         f.evidence.startsWith(`hook=${hook}:`),
     );
     if (wrong) {
       console.error(
-        `FALSE POSITIVE pi: hook=${hook} should not fire ` +
+        `FALSE POSITIVE pi-npm: hook=${hook} should not fire ` +
           `(got ${wrong.severity} ${wrong.pattern})`,
       );
       allOk = false;
     }
   }
 
-  // 5. Sanity coverage.
+  // 6. Forbidden python hooks must NOT generate postinstall findings.
+  for (const hook of FORBIDDEN_PI_PY_HOOKS) {
+    const wrong = result.findings.find(
+      (f) =>
+        f.id.startsWith("pi-py-") &&
+        f.evidence.startsWith(`hook=${hook}:`),
+    );
+    if (wrong) {
+      console.error(
+        `FALSE POSITIVE pi-py: hook=${hook} should not fire ` +
+          `(got ${wrong.severity} ${wrong.pattern})`,
+      );
+      allOk = false;
+    }
+  }
+
+  // 7. Sanity coverage.
   if (result.scanned.depsAnalyzed === 0) {
     console.error("FAIL: depsAnalyzed=0 - typo parsers not extracting deps");
+    allOk = false;
+  }
+  if (result.scanned.setupPyCount === 0) {
+    console.error("FAIL: setupPyCount=0 - python fixture not loaded");
     allOk = false;
   }
 
   if (!allOk) {
     console.error("");
-    console.error("E3 FAIL");
+    console.error("E4 FAIL");
     process.exit(1);
   }
 
   console.log(
-    `E3 PASS - ${EXPECTED_TYPO.length} typo + ${EXPECTED_PI.length} ` +
-      `postinstall findings present, ` +
-      `${FORBIDDEN_TYPO_PACKAGES.length} legit deps not flagged, ` +
-      `${FORBIDDEN_PI_HOOKS.length} benign hooks not flagged, ` +
+    `E4 PASS - ${EXPECTED_TYPO.length} typo + ${EXPECTED_PI_NPM.length} npm pi + ${EXPECTED_PI_PY.length} py pi findings present, ` +
+      `${FORBIDDEN_TYPO_PACKAGES.length} legit deps + ${FORBIDDEN_PI_NPM_HOOKS.length} benign npm hooks + ${FORBIDDEN_PI_PY_HOOKS.length} benign py hooks not flagged, ` +
       `${result.scanned.depsAnalyzed} deps analyzed`,
   );
 }
