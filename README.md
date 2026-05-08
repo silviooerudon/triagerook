@@ -1,5 +1,7 @@
 # RepoGuard
 
+![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg) ![Status: Beta](https://img.shields.io/badge/status-beta-orange.svg) ![Next.js 16](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs) ![TypeScript 5](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript) ![Live](https://img.shields.io/website?url=https%3A%2F%2Frepoguard-chi.vercel.app&label=live%20demo)
+
 > Lightweight GitHub security scanner for solo devs and small teams. Live at **[repoguard-chi.vercel.app](https://repoguard-chi.vercel.app)**.
 
 Scans your GitHub repos across nine detectors in parallel — secrets, sensitive files, code-level vulnerabilities, npm and PyPI dependencies, supply-chain misconfigurations, and git history — with no CLI, no config, and no pipelines to wire up. Sign in with GitHub or paste a public URL, then get a prioritized list of findings in under a minute.
@@ -55,7 +57,16 @@ Conservative pattern rules over your JavaScript/TypeScript and Python code, each
 
 - **Dockerfile** — container running as root, missing `USER` directive, `:latest` base tags, `ADD http(s)://`, secrets baked into `ENV`, `RUN curl | sh`, `chmod 777`, unpinned `apt install`
 - **GitHub Actions** — `pull_request_target` checking out PR head with secrets exposed (the s1ngularity / GhostAction vector), third-party actions not pinned to a full SHA, `run:` steps interpolating `${{ github.event.* }}` fields (script injection), workflow-level `permissions: write-all`
-- **npm lifecycle scripts** — `preinstall`/`install`/`postinstall` running `curl | sh`, `base64 -d`, `eval`, `node -e`, `python -c`, or destructive `rm -rf`
+- **Lifecycle hook abuse (npm + PyPI)** -- `package.json` scripts (`preinstall`/`install`/`postinstall`/`prepare`) and Python `setup.py`/`pyproject.toml` build hooks running `curl | sh`, `base64` decode-and-execute, environment-variable exfiltration combined with network calls, or destructive `rm -rf` chains. Catches install-time supply-chain vectors used in recent npm and PyPI compromises.
+- **Typosquatting in dependency manifests** -- flags packages whose names are edit-distance-1 (`lodahs`, `expres`, `reqests`), edit-distance-2 prefix (`lodashes`), or case-fold variants (`Chalk`) of popular npm and PyPI registry names.
+
+### 8. Repository posture score
+
+Beyond looking for specific findings, RepoGuard grades how the repo is set up: governance docs (`SECURITY.md`, `LICENSE`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`), branch protection rules on the default branch, vulnerability-alert configuration, dependency-update automation, and other operational hygiene signals. The result is a single A+ to F grade with a per-signal breakdown showing exactly what to fix to raise it. Signals the OAuth token cannot inspect (e.g. branch protection without admin permission) are reported as `unknown` rather than as failures, so the grade stays honest.
+
+### 9. IAM risk scanner
+
+The angle a 10+ year IAM/IGA specialist actually cares about: identity and access risk at org and repo level. RepoGuard surfaces org-level MFA enforcement (when `read:org` scope is granted), outside-collaborator permission levels, repo-level secret scoping, and authorship patterns that signal stale ownership. When a signal requires permissions the token does not have, RepoGuard skips it and labels it as such rather than guessing. This is the slice of enterprise IAM tooling that solo devs and small teams have historically had no access to.
 
 ## Privacy
 
