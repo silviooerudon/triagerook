@@ -23,12 +23,6 @@ function severityColor(sev: IAMSeverity | null): string {
   return "#374151"
 }
 
-function severityRank(sev: IAMSeverity): number {
-  if (sev === "critical") return 4
-  if (sev === "high") return 3
-  if (sev === "medium") return 2
-  return 1
-}
 
 function FindingItem({ finding }: { finding: IAMFinding }) {
   const [open, setOpen] = useState(false)

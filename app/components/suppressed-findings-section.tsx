@@ -1,4 +1,4 @@
-﻿import type { SuppressedFinding } from "@/lib/suppressions"
+import type { SuppressedFinding } from "@/lib/suppressions"
 import { SuppressedFindingItem } from "./suppressed-finding-item"
 
 type Props = { items: SuppressedFinding[] }
@@ -20,7 +20,7 @@ export function SuppressedFindingsSection({ items }: Props) {
       </summary>
       <p className="text-xs text-gray-500 mt-3 mb-4">
         Findings hidden by your <code className="font-mono">.repoguardignore</code>{" "}
-        rules. Listed here for transparency - they don't affect the risk score.
+        rules. Listed here for transparency - they don&apos;t affect the risk score.
       </p>
       <div className="space-y-3">
         {items.map((item, i) => (
