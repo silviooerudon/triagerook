@@ -44,3 +44,6 @@ next-env.d.ts
 .claude/
 
 HANDOFF.md
+
+# GPG key backups (never commit private keys)
+gpg-backup-*/
