@@ -9,6 +9,19 @@ type FileRule = {
   matches: (path: string, basename: string) => boolean
 }
 
+// Schema migration files are routinely committed (Prisma, Rails, Flyway,
+// Supabase, Django, etc) and would create universal false positives if matched
+// by the database-dump rule. They are *intentional* schema/version artifacts,
+// not data dumps. We skip the rule based on path or basename heuristics.
+const MIGRATION_PATH_RE =
+  /(^|\/)(prisma\/migrations|supabase\/migrations|db\/migrate|database\/migrations|migrations?|migrate)\//i
+const MIGRATION_BASENAME_RE =
+  /^(v\d+(\.\d+)*[._-]|\d+[._-][a-z]|\d{4}-\d{2}-\d{2}[._-]|\d{14}_)/i
+
+function looksLikeMigration(path: string, basename: string): boolean {
+  return MIGRATION_PATH_RE.test(path) || MIGRATION_BASENAME_RE.test(basename)
+}
+
 const FILE_RULES: FileRule[] = [
   {
     kind: "private-key",
@@ -164,10 +177,16 @@ const FILE_RULES: FileRule[] = [
       "Database dump file (SQL dump, .dump, compressed SQL). May contain PII, hashed passwords, and business data.",
     remediation:
       "Remove from repo history (BFG/git-filter-repo) and sanitize any exposed data.",
-    matches: (_p, b) =>
-      /\.(sql|dump)$/i.test(b) ||
-      /\.sql\.(gz|bz2|xz|zip)$/i.test(b) ||
-      /(^|[._-])db[-_]?dump\.(sql|db|sqlite)?$/i.test(b),
+    matches: (path, b) => {
+      // Skip schema migration files (Prisma/Rails/Flyway/Supabase/Django).
+      // These are intentional version artifacts, not data dumps.
+      if (looksLikeMigration(path, b)) return false
+      return (
+        /\.(sql|dump)$/i.test(b) ||
+        /\.sql\.(gz|bz2|xz|zip)$/i.test(b) ||
+        /(^|[._-])db[-_]?dump\.(sql|db|sqlite)?$/i.test(b)
+      )
+    },
   },
   {
     kind: "backup",
