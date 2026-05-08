@@ -105,13 +105,12 @@ export default function PublicScanPage({ params, searchParams }: PageProps) {
           >
             ← Back to home
           </Link>
-          <Link
+          <a
             href="/signin"
-            prefetch={false}
             className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition text-white text-sm font-medium"
           >
             Sign in with GitHub
-          </Link>
+          </a>
         </div>
 
         <h1 className="text-3xl font-bold mb-2">
@@ -166,13 +165,12 @@ export default function PublicScanPage({ params, searchParams }: PageProps) {
               )}
             </p>
             <div className="mt-4">
-              <Link
+              <a
                 href="/signin"
-                prefetch={false}
                 className="inline-block px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition text-white text-sm font-medium"
               >
                 Sign in for unlimited scans
-              </Link>
+              </a>
             </div>
           </div>
         )}
@@ -207,13 +205,12 @@ function SignInCTA() {
         Sign in with GitHub to save scan history, scan more repos, and revisit
         findings later.
       </p>
-      <Link
+      <a
         href="/signin"
-        prefetch={false}
         className="inline-block px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 transition text-white font-medium"
       >
         Sign in with GitHub
-      </Link>
+      </a>
     </div>
   )
 }
