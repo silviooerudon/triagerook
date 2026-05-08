@@ -107,6 +107,7 @@ export default function PublicScanPage({ params, searchParams }: PageProps) {
           </Link>
           <Link
             href="/signin"
+            prefetch={false}
             className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition text-white text-sm font-medium"
           >
             Sign in with GitHub
@@ -167,6 +168,7 @@ export default function PublicScanPage({ params, searchParams }: PageProps) {
             <div className="mt-4">
               <Link
                 href="/signin"
+                prefetch={false}
                 className="inline-block px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition text-white text-sm font-medium"
               >
                 Sign in for unlimited scans
@@ -207,6 +209,7 @@ function SignInCTA() {
       </p>
       <Link
         href="/signin"
+        prefetch={false}
         className="inline-block px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 transition text-white font-medium"
       >
         Sign in with GitHub
@@ -342,4 +345,3 @@ function ScanResultView({ result }: { result: ScanResultFull }) {
     </div>
   )
 }
-
