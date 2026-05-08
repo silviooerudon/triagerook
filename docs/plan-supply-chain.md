@@ -145,16 +145,18 @@ Cap implicito: 4 HIGH ja zera o score.
 
 ## Migration 005
 
-Arquivo: docs/migrations/005_supply_chain.sql
+Arquivo: docs/migrations/005_add_supply_chain.sql
 
 ```sql
 ALTER TABLE scans
-  ADD COLUMN supply_chain_score INTEGER,
-  ADD COLUMN supply_chain_level TEXT,
-  ADD COLUMN supply_chain_findings JSONB;
+ADD COLUMN IF NOT EXISTS supply_chain_score INTEGER,
+ADD COLUMN IF NOT EXISTS supply_chain_level TEXT,
+ADD COLUMN IF NOT EXISTS supply_chain_breakdown JSONB,
+ADD COLUMN IF NOT EXISTS supply_chain_findings JSONB;
 ```
 
-Aplicada via Supabase SQL editor antes do push do codigo da E5.
+Aplicada via Supabase SQL editor antes do push do codigo da E5 (licao 11).
+Padrao alinhado com 004_add_iam.sql (IF NOT EXISTS, 4 colunas).
 
 ## UI
 
@@ -189,47 +191,62 @@ Smoke roda offline contra essa fixture. Asserts esperados:
 
 ## Sessions breakdown
 
-### E1 (proxima sessao) - Foundation
+### E1 - Foundation [DONE]
 
 - briefing commitado (este arquivo)
 - lib/supply-chain.ts boilerplate com todos os types exportados, sem detectores reais
-- lib/data/popular-npm.json (top 5k via download-counts npm registry api - gerado uma vez no chat)
-- lib/data/popular-pypi.json (top 1k via pypistats - gerado uma vez no chat)
+- lib/data/popular-npm.json (top 100 npm seed)
+- lib/data/popular-pypi.json (top 80 PyPI seed)
 - scripts/refresh-popular-packages.ts (placeholder com fonte documentada)
-- scripts/smoke-supply-chain.ts skeleton (espera 0 findings, pra validar plumbing)
-- fixture supply-chain-fixture/ com package.json minimal (1 caso de typosquat)
+- scripts/smoke-supply-chain.ts skeleton
+- fixture supply-chain-fixture/ com package.json minimal
 - npm run build verde
 
-### E2 - Typosquatting completo
+### E2 - Typosquatting completo [DONE]
 
 - lib/supply-chain-typo.ts com Damerau-Levenshtein
-- expansao de fixture (3+ typosquat cases incluindo case-fold e distance=2)
+- expansao de fixture (8 typosquat cases incluindo case-fold e distance=2)
 - smoke local com asserts especificos por finding
 
-### E3 - Postinstall npm
+### E3 - Postinstall npm [DONE]
 
-- lib/supply-chain-pi-npm.ts com patterns HIGH/MEDIUM/LOW
-- expansao de fixture (3+ pi npm cases)
-- smoke asserts
+- lib/supply-chain-pi-npm.ts com 5 patterns (3 HIGH, 1 MEDIUM, 1 LOW)
+- expansao de fixture (5 pi npm cases + 3 benign hooks)
+- smoke asserts: 8 typo + 5 pi findings + benign hooks not flagged
 
-### E4 - Postinstall Python
+### E4 - Postinstall Python [DONE]
 
-- lib/supply-chain-pi-py.ts com regex parser pra setup.py
-- expansao de fixture (3+ pi python cases)
-- smoke asserts
+- lib/supply-chain-pi-py.ts espelhando pi-npm (5 patterns simetricos)
+- regex parser line-by-line de setup.py por classe pai herdada (sem AST)
+- pyproject.toml escaneado como single hook (raw content)
+- expansao de fixture: setup.py com 5 hooks evil + 1 benign
+- smoke asserts: 8 typo + 5 npm pi + 5 py pi findings + benign hooks not flagged
 
-### E5 - API integration + Migration 005
+### E5 - API integration + Migration 005 [DONE NESTA SESSAO]
 
-- hooks de supply chain em /api/scan/[owner]/[repo] e /api/scan-public/[owner]/[repo]
-- migration 005 aplicada manualmente no Supabase
-- persistencia + leitura roundtrip validada
+- assessSupplyChain(owner, repo, accessToken, branch?) em lib/supply-chain.ts:
+  fetch paralelo de package.json, requirements.txt, pyproject.toml, setup.py
+  via GitHub Contents API (Accept: vnd.github.raw), null-safe pra 404/403/erro
+- migration 005_add_supply_chain.sql: 4 colunas IF NOT EXISTS no padrao IAM (004)
+  - supply_chain_score INTEGER
+  - supply_chain_level TEXT
+  - supply_chain_breakdown JSONB (= categories)
+  - supply_chain_findings JSONB
+- /api/scan/[owner]/[repo]/route.ts: assessSupplyChain ao Promise.all,
+  persistencia das 4 colunas, supplyChain no JSON response
+- /api/scan-public/[owner]/[repo]/route.ts: idem sem persistencia
+- ScanResultFull atualizado nas 2 paginas com supplyChain?: SupplyChainResult
+- Migration aplicada manualmente no Supabase ANTES do push do codigo (licao 11)
+- Smoke test pos-deploy: curl /api/scan-public/octocat/Hello-World valida
+  campo supplyChain.score=100 (repo sem manifest = excellent)
 
 ### E6 - UI Card
 
-- supply-chain-card.tsx + supply-chain-gauge.tsx
+- supply-chain-card.tsx + supply-chain-gauge.tsx (padrao IamCard)
 - integracao nas 2 paginas de scan
-- ASCII puro, sem emojis, sem mojibake
-- ScanResultFull atualizado nas 2 paginas
+- ASCII puro nos arquivos novos (componentes), sem emojis novos
+- visual: gauge 0-100, level badge, lista de findings agrupada por categoria,
+  expansivel via useState
 
 ## Riscos e nao-objetivos
 
@@ -256,12 +273,16 @@ Riscos:
 - Atualizacao automatizada das listas popular-*.json (CI cron)
 - Cobertura de mais lifecycle hooks (yarn berry plugins, pnpm hooks)
 
-## Definition of done E1
+## Definition of done E5
 
-- [ ] Briefing commitado em docs/plan-supply-chain.md
-- [ ] lib/supply-chain.ts compila sem erros, exporta types
-- [ ] lib/data/popular-npm.json e popular-pypi.json presentes e validos JSON
-- [ ] scripts/smoke-supply-chain.ts roda e exit 0 contra fixture vazia
-- [ ] supply-chain-fixture/ existe com package.json minimal
+- [x] Briefing E5 atualizado (este arquivo)
+- [ ] Migration 005 aplicada no Supabase prod (manual via SQL editor)
+- [ ] lib/supply-chain.ts adiciona assessSupplyChain entrypoint
+- [ ] /api/scan/[owner]/[repo]/route.ts wired (Promise.all + persistence + response)
+- [ ] /api/scan-public/[owner]/[repo]/route.ts wired (Promise.all + response)
+- [ ] ScanResultFull atualizado em page-dashboard-scan.tsx e page-scan-public.tsx
 - [ ] npm run build verde
-- [ ] Commit unico: "feat(supply-chain): foundation lib + types + popular package lists (E1)"
+- [ ] Commit unico: "feat(supply-chain): API integration + migration 005 (E5)"
+- [ ] Push verde, Vercel deploy verde
+- [ ] Smoke pos-deploy: curl /api/scan-public/octocat/Hello-World retorna campo
+  supplyChain com score=100 e categories array

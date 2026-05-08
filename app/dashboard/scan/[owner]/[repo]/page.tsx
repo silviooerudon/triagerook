@@ -27,6 +27,7 @@ import { IamCard } from "@/app/components/iam-card"
 import type { SuppressedFinding } from "@/lib/suppressions"
 import type { PostureResult } from "@/lib/posture"
 import type { IAMResult } from "@/lib/iam"
+import type { SupplyChainResult } from "@/lib/supply-chain"
 
 type ScanResultFull = ScanResult & {
   dependencies?: DependencyFinding[]
@@ -38,6 +39,7 @@ type ScanResultFull = ScanResult & {
   expiredSuppressionsCount?: number
   posture?: PostureResult
   iam?: IAMResult
+  supplyChain?: SupplyChainResult
 }
 
 type PageProps = {

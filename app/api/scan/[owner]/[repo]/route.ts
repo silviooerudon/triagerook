@@ -9,6 +9,7 @@ import { scanDependencies } from "@/lib/deps"
 import { scanPythonDependencies } from "@/lib/python-deps"
 import { assessPosture } from "@/lib/posture"
 import { assessIAM } from "@/lib/iam"
+import { assessSupplyChain } from "@/lib/supply-chain"
 import { supabase } from "@/lib/supabase"
 import { flattenScan, scoreRepo } from "@/lib/risk"
 import { parseSuppressions, applySuppressions } from "@/lib/suppressions"
@@ -52,12 +53,20 @@ export async function POST(
   }
 
   try {
-    const [secretsResult, npmResult, pythonDeps, postureResult, iamResult] = await Promise.all([
+    const [
+      secretsResult,
+      npmResult,
+      pythonDeps,
+      postureResult,
+      iamResult,
+      supplyChainResult,
+    ] = await Promise.all([
       scanRepo(accessToken, owner, repo, explicitBranch),
       scanDependencies(owner, repo, accessToken),
       scanPythonDependencies(owner, repo, accessToken),
       assessPosture(owner, repo, accessToken),
       assessIAM(owner, repo, accessToken),
+      assessSupplyChain(owner, repo, accessToken, explicitBranch),
     ])
 
     const fullResult = {
@@ -110,6 +119,10 @@ export async function POST(
       iam_level: iamResult.level,
       iam_breakdown: iamResult.breakdown,
       iam_findings: iamResult.findings,
+      supply_chain_score: supplyChainResult.score,
+      supply_chain_level: supplyChainResult.level,
+      supply_chain_breakdown: supplyChainResult.categories,
+      supply_chain_findings: supplyChainResult.findings,
     })
 
     if (dbError) {
@@ -125,6 +138,7 @@ export async function POST(
       expiredSuppressionsCount: suppressionResult.expiredSuppressionsCount,
       posture: postureResult,
       iam: iamResult,
+      supplyChain: supplyChainResult,
     })
   } catch (error) {
     if (error instanceof GitHubRateLimitError) {

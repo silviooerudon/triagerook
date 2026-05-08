@@ -8,6 +8,7 @@ import { scanDependencies } from "@/lib/deps"
 import { scanPythonDependencies } from "@/lib/python-deps"
 import { assessPosture } from "@/lib/posture"
 import { assessIAM } from "@/lib/iam"
+import { assessSupplyChain } from "@/lib/supply-chain"
 import { flattenScan, scoreRepo } from "@/lib/risk"
 import { parseSuppressions, applySuppressions } from "@/lib/suppressions"
 import { NextResponse } from "next/server"
@@ -36,12 +37,20 @@ export async function POST(
   }
 
   try {
-    const [secretsResult, npmResult, pythonDeps, postureResult, iamResult] = await Promise.all([
+    const [
+      secretsResult,
+      npmResult,
+      pythonDeps,
+      postureResult,
+      iamResult,
+      supplyChainResult,
+    ] = await Promise.all([
       scanRepo(null, owner, repo, explicitBranch),
       scanDependencies(owner, repo, null),
       scanPythonDependencies(owner, repo, null),
       assessPosture(owner, repo, null),
       assessIAM(owner, repo, null),
+      assessSupplyChain(owner, repo, null, explicitBranch),
     ])
 
     const fullResult = {
@@ -81,6 +90,7 @@ export async function POST(
       expiredSuppressionsCount: suppressionResult.expiredSuppressionsCount,
       posture: postureResult,
       iam: iamResult,
+      supplyChain: supplyChainResult,
     })
   } catch (error) {
     if (error instanceof GitHubRateLimitError) {

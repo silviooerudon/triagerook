@@ -7,6 +7,7 @@ import type { DependencyFinding } from "@/lib/types"
 import type { PrioritizedFinding, RiskBreakdown } from "@/lib/risk"
 import type { PostureResult } from "@/lib/posture"
 import type { IAMResult } from "@/lib/iam"
+import type { SupplyChainResult } from "@/lib/supply-chain"
 import {
   AllClear,
   CodeFindingsSection,
@@ -34,6 +35,7 @@ type ScanResultFull = ScanResult & {
   prioritized?: PrioritizedFinding[]
   posture?: PostureResult
   iam?: IAMResult
+  supplyChain?: SupplyChainResult
 }
 
 type PageProps = {

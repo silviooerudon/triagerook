@@ -1,5 +1,7 @@
 // RepoGuard - Supply Chain Scanner
 // Foundation lib (E1) + typosquatting (E2) + postinstall npm (E3) + postinstall python (E4) wired.
+// E5 adds the assessSupplyChain entrypoint that fetches files from GitHub
+// Contents API and orchestrates scanSupplyChain - mirrors assessPosture/assessIAM.
 // Detectors:
 //   - lib/supply-chain-typo.ts    (E2: typosquatting) [WIRED]
 //   - lib/supply-chain-pi-npm.ts  (E3: postinstall content npm) [WIRED]
@@ -144,6 +146,67 @@ export async function scanSupplyChain(
       depsAnalyzed,
     },
   };
+}
+
+// ---------- E5: GitHub Contents API integration ----------
+
+// Files we care about for supply chain analysis. Repos without any of these
+// produce an empty findings list and a score of 100 (excellent).
+const SCAN_TARGETS = [
+  "package.json",
+  "requirements.txt",
+  "pyproject.toml",
+  "setup.py",
+];
+
+// Best-effort single-file fetch from GitHub Contents API. Returns null on any
+// non-2xx response (404, rate-limited, network error). The caller treats null
+// as "file does not exist" - the worst case is a missed finding, never a crash.
+async function fetchContent(
+  accessToken: string | null,
+  owner: string,
+  repo: string,
+  path: string,
+  branch: string | undefined,
+): Promise<string | null> {
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github.raw",
+    "User-Agent": "RepoGuard-SupplyChain",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  const refQuery = branch ? `?ref=${encodeURIComponent(branch)}` : "";
+  const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path}${refQuery}`;
+
+  try {
+    const res = await fetch(url, { headers });
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  }
+}
+
+// Public entrypoint mirroring assessPosture / assessIAM signature. Used by
+// /api/scan/[owner]/[repo] and /api/scan-public/[owner]/[repo].
+export async function assessSupplyChain(
+  owner: string,
+  repo: string,
+  accessToken: string | null,
+  branch?: string,
+): Promise<SupplyChainResult> {
+  const entries = await Promise.all(
+    SCAN_TARGETS.map(async (path) => {
+      const content = await fetchContent(accessToken, owner, repo, path, branch);
+      return content !== null ? ([path, content] as [string, string]) : null;
+    }),
+  );
+  const files = new Map<string, string>(
+    entries.filter((e): e is [string, string] => e !== null),
+  );
+  return scanSupplyChain({ files });
 }
 
 export const __testHelpers = {
