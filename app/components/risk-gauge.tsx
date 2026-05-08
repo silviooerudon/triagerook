@@ -1,24 +1,31 @@
 type RiskGaugeProps = {
+  // `score` is the consolidated penalty from scoreRepo (0..100, capped).
+  // High penalty = high risk. We display the inverse (healthScore = 100 - penalty)
+  // so the gauge reads the same way as Posture/IAM/SupplyChain: 100 = clean.
+  // We deliberately do NOT change the underlying contract (DB column, API field)
+  // to avoid breaking existing rows or consumers.
   score: number
   size?: number
 }
 
-function colorForScore(score: number): string {
-  if (score <= 20) return "#22c55e"
-  if (score <= 50) return "#eab308"
-  if (score <= 80) return "#f97316"
+function colorForHealth(health: number): string {
+  if (health >= 90) return "#22c55e"
+  if (health >= 70) return "#3b82f6"
+  if (health >= 50) return "#eab308"
   return "#ef4444"
 }
 
-function labelForScore(score: number): string {
-  if (score <= 20) return "Clean"
-  if (score <= 50) return "Attention"
-  if (score <= 80) return "High risk"
+function labelForHealth(health: number): string {
+  if (health >= 90) return "Excellent"
+  if (health >= 70) return "Good"
+  if (health >= 50) return "Needs attention"
   return "Critical"
 }
 
 export function RiskGauge({ score, size = 160 }: RiskGaugeProps) {
-  const clamped = Math.max(0, Math.min(100, Math.round(score)))
+  const penalty = Math.max(0, Math.min(100, Math.round(score)))
+  const health = 100 - penalty
+
   const stroke = Math.max(8, Math.round(size * 0.08))
   const radius = (size - stroke) / 2
   const cx = size / 2
@@ -27,13 +34,13 @@ export function RiskGauge({ score, size = 160 }: RiskGaugeProps) {
   const sweepDeg = 270
   const circumference = 2 * Math.PI * radius
   const arcLength = circumference * (sweepDeg / 360)
-  const progress = arcLength * (clamped / 100)
+  const progress = arcLength * (health / 100)
   const gap = circumference - arcLength
 
   const rotation = 135
 
-  const color = colorForScore(clamped)
-  const label = labelForScore(clamped)
+  const color = colorForHealth(health)
+  const label = labelForHealth(health)
 
   return (
     <div className="flex flex-col items-center justify-center">
@@ -71,7 +78,7 @@ export function RiskGauge({ score, size = 160 }: RiskGaugeProps) {
             className="font-bold text-white leading-none"
             style={{ fontSize: Math.round(size * 0.32) }}
           >
-            {clamped}
+            {health}
           </span>
           <span
             className="text-gray-500 mt-1"
