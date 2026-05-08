@@ -12,7 +12,7 @@ RepoGuard is my attempt at the smallest useful security tool: scan a repo in one
 
 ## What RepoGuard actually detects
 
-RepoGuard runs seven independent detectors over your repo and aggregates the results into a single prioritized report.
+RepoGuard runs nine independent detectors over your repo and aggregates the results into a single prioritized report.
 
 ### 1. Secrets in source code (60+ patterns)
 
