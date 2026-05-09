@@ -104,3 +104,15 @@ export type DependencyFinding = {
   source?: "package.json" | "package-lock.json" | "requirements.txt" | "pyproject.toml" | "Pipfile"
   isTransitive?: boolean
 }
+
+export type RulesetBypassFinding = {
+  ruleId: string
+  ruleName: string
+  severity: Severity
+  rulesetName: string
+  ruleType: string
+  branch: string
+  actorCount: number
+  actorTypes: string[]
+  description: string
+}
