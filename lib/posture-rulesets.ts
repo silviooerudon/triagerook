@@ -1,4 +1,5 @@
 import { GitHubRateLimitError, parseGitHubRateLimit } from "./scan"
+import type { RulesetBypassFinding } from "./types"
 
 // Reads GitHub repository rulesets to surface branch protection signals the
 // classic /repos/.../branches/.../protection endpoint misses. Repos that
@@ -34,15 +35,6 @@ type RulesetDetails = {
   bypassActorTypes: string[]
 }
 
-export type RulesetBypassInfo = {
-  rulesetId: number
-  rulesetName: string
-  ruleType: string
-  branch: string
-  actorCount: number
-  actorTypes: string[]
-}
-
 export type RulesetSignals = {
   prRequired: boolean
   statusChecksRequired: boolean
@@ -52,7 +44,7 @@ export type RulesetSignals = {
   // null  = bypass_actors not visible on any active ruleset (insufficient
   //         access; integrating code should treat as unknown)
   noBypassActors: boolean | null
-  bypassInfos: RulesetBypassInfo[]
+  bypassFindings: RulesetBypassFinding[]
 }
 
 function buildHeaders(token: string | null): HeadersInit {
@@ -169,7 +161,7 @@ export async function assessRulesetSignals(
   let sawAnyActive = false
   let sawVisibleBypass = false
   let anyVisibleBypassNonEmpty = false
-  const bypassInfos: RulesetBypassInfo[] = []
+  const bypassFindings: RulesetBypassFinding[] = []
 
   for (const rule of rules) {
     const details = await fetchCached(rule)
@@ -197,13 +189,18 @@ export async function assessRulesetSignals(
       sawVisibleBypass = true
       if (details.bypassActorsCount > 0) {
         anyVisibleBypassNonEmpty = true
-        bypassInfos.push({
-          rulesetId: details.id,
+        const types = details.bypassActorTypes
+        const typesText = types.length > 0 ? types.join(", ") : "unspecified"
+        bypassFindings.push({
+          ruleId: "ruleset-bypass-actors",
+          ruleName: "Branch protection rule allows bypass",
+          severity: "low",
           rulesetName: details.name,
           ruleType: rule.type,
           branch,
           actorCount: details.bypassActorsCount,
-          actorTypes: details.bypassActorTypes,
+          actorTypes: types,
+          description: `Rule '${rule.type}' in ruleset '${details.name}' (branch '${branch}') can be bypassed by ${details.bypassActorsCount} actor(s): ${typesText}.`,
         })
       }
     }
@@ -220,6 +217,6 @@ export async function assessRulesetSignals(
     statusChecksRequired,
     signedCommitsRequired,
     noBypassActors,
-    bypassInfos,
+    bypassFindings,
   }
 }

@@ -1,9 +1,9 @@
 import { GitHubRateLimitError, parseGitHubRateLimit } from "./scan"
 import {
   assessRulesetSignals,
-  type RulesetBypassInfo,
   type RulesetSignals,
 } from "./posture-rulesets"
+import type { RulesetBypassFinding } from "./types"
 
 export type PostureGrade = "A" | "B" | "C" | "D" | "F"
 
@@ -42,7 +42,7 @@ export type PostureResult = {
   breakdown: PostureCategoryBreakdown[]
   quickWins: QuickWin[]
   degraded: boolean
-  bypassInfos: RulesetBypassInfo[]
+  bypassFindings: RulesetBypassFinding[]
 }
 
 // --- Re-balanced weights (total = 100) ----------------------------------------
@@ -625,7 +625,7 @@ export function computeScore(raw: RawSignals): PostureResult {
     breakdown,
     quickWins,
     degraded: raw.degraded,
-    bypassInfos: raw.rulesetSignals?.bypassInfos ?? [],
+    bypassFindings: raw.rulesetSignals?.bypassFindings ?? [],
   }
 }
 
