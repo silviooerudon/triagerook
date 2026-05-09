@@ -43,7 +43,6 @@ next-env.d.ts
 # Claude Code local config
 .claude/
 
-HANDOFF.md
 
 # GPG key backups (never commit private keys)
 gpg-backup-*/
