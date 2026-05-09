@@ -1,4 +1,9 @@
 import { GitHubRateLimitError, parseGitHubRateLimit } from "./scan"
+import {
+  assessRulesetSignals,
+  type RulesetBypassInfo,
+  type RulesetSignals,
+} from "./posture-rulesets"
 
 export type PostureGrade = "A" | "B" | "C" | "D" | "F"
 
@@ -37,6 +42,7 @@ export type PostureResult = {
   breakdown: PostureCategoryBreakdown[]
   quickWins: QuickWin[]
   degraded: boolean
+  bypassInfos: RulesetBypassInfo[]
 }
 
 // --- Re-balanced weights (total = 100) ----------------------------------------
@@ -87,6 +93,7 @@ type RawSignals = {
   gitignoreContent: string | null
   signedCommitsRatio: number | null // 0..1 or null if undeterminable
   mfaState: MfaState
+  rulesetSignals: RulesetSignals | null
   degraded: boolean
 }
 
@@ -337,21 +344,48 @@ export function computeScore(raw: RawSignals): PostureResult {
   // Branch sub-signals: only meaningful when branchProtected=true. When
   // protected but details are unknown (no admin), mark as `unknown`. When
   // not protected, signals are simply unsatisfied (0 earned, not unknown).
-  const detailsUnknown =
-    raw.branchProtected && raw.branchProtectionDetails === null
-  const prRequired = raw.branchProtectionDetails?.prRequired ?? false
-  const statusChecksRequired =
+  // Union per signal: classic OR ruleset (briefing decision 1).
+  // Ruleset signals are readable without admin scope, so they often resolve
+  // sub-signals that the classic /protection endpoint refuses to disclose.
+  const rs = raw.rulesetSignals
+  const classicPrRequired = raw.branchProtectionDetails?.prRequired ?? false
+  const classicStatusChecksRequired =
     raw.branchProtectionDetails?.statusChecksRequired ?? false
-  const enforceAdmins = raw.branchProtectionDetails?.enforceAdmins ?? false
+  const classicEnforceAdmins =
+    raw.branchProtectionDetails?.enforceAdmins ?? false
+
+  const prRequired = classicPrRequired || (rs?.prRequired ?? false)
+  const statusChecksRequired =
+    classicStatusChecksRequired || (rs?.statusChecksRequired ?? false)
+  // Admin enforcement: classic has explicit enforce_admins; ruleset proxy is
+  // "no bypass actors at all". Decision 2 (bypass-as-finding) targets OTHER
+  // signals - this one IS the meta-signal about bypass, so empty-bypass is
+  // the natural mapping. Visibility unknown => ruleset cannot satisfy this
+  // signal alone (falls back to classic).
+  const rulesetEnforceAdmins = rs?.noBypassActors === true
+  const enforceAdmins = classicEnforceAdmins || rulesetEnforceAdmins
+
+  // Sub-signals are unknown only when BOTH classic details and ruleset signals
+  // are unavailable - if either source resolved them, we have an answer
+  // (negative results from a readable source still count as "known").
+  const detailsUnknown =
+    raw.branchProtected &&
+    raw.branchProtectionDetails === null &&
+    rs === null
+
+  // Branch protection is satisfied if either source flagged it. GitHub's
+  // /branches endpoint usually sets protected=true for ruleset-covered branches,
+  // but if rules/branches returned active rules we are authoritative regardless.
+  const branchProtected = raw.branchProtected || rs !== null
 
   const branchSignals: PostureSignal[] = [
     {
       id: "branch-protection",
       category: "branch",
       label: "Branch protection enabled on main",
-      pointsEarned: raw.branchProtected ? W.branchProtection : 0,
+      pointsEarned: branchProtected ? W.branchProtection : 0,
       pointsMax: W.branchProtection,
-      satisfied: raw.branchProtected,
+      satisfied: branchProtected,
     },
     {
       id: "branch-pr-required",
@@ -457,7 +491,15 @@ export function computeScore(raw: RawSignals): PostureResult {
   let signedEarned = 0
   let signedSatisfied = false
   let signedUnknown = false
-  if (raw.signedCommitsRatio === null) {
+  // Decision 1 (union): ruleset enforcement is a config-level path to this
+  // signal - the rule guarantees future commits are signed regardless of the
+  // historical ratio. The behaviour-based path (signedCommitsRatio) remains
+  // the fallback when no ruleset enforces required_signatures.
+  const rulesetEnforcesSigned = rs?.signedCommitsRequired === true
+  if (rulesetEnforcesSigned) {
+    signedEarned = W.signedCommits
+    signedSatisfied = true
+  } else if (raw.signedCommitsRatio === null) {
     signedUnknown = true
   } else if (raw.signedCommitsRatio >= 0.8) {
     signedEarned = W.signedCommits
@@ -555,7 +597,7 @@ export function computeScore(raw: RawSignals): PostureResult {
     ...depSignals,
     ...govSignals,
   ]
-  const branchProtectionUnsatisfied = !raw.branchProtected
+  const branchProtectionUnsatisfied = !branchProtected
   const branchSubSignalIds = new Set([
     "branch-pr-required",
     "branch-status-checks",
@@ -583,6 +625,7 @@ export function computeScore(raw: RawSignals): PostureResult {
     breakdown,
     quickWins,
     degraded: raw.degraded,
+    bypassInfos: raw.rulesetSignals?.bypassInfos ?? [],
   }
 }
 
@@ -613,6 +656,7 @@ export async function assessPosture(
     gitignore,
     signedRatio,
     mfaState,
+    rulesetSignals,
   ] = await Promise.all([
     softFail(fetchBranch(owner, repo, "main", accessToken), null, degradedFlag),
     softFail(
@@ -637,6 +681,7 @@ export async function assessPosture(
     softFail(fetchRepoFile(owner, repo, ".gitignore", accessToken), null, degradedFlag),
     softFail(fetchSignedCommitsRatio(owner, repo, accessToken), null, degradedFlag),
     softFail(fetchMfaState(owner, repo, accessToken), "unknown" as MfaState, degradedFlag),
+    softFail(assessRulesetSignals(owner, repo, "main", accessToken), null, degradedFlag),
   ])
 
   const raw: RawSignals = {
@@ -651,6 +696,7 @@ export async function assessPosture(
     gitignoreContent: gitignore,
     signedCommitsRatio: signedRatio,
     mfaState: mfaState,
+    rulesetSignals: rulesetSignals,
     degraded: degradedFlag.value,
   }
 
