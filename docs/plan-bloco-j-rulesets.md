@@ -119,3 +119,25 @@ npm run build antes de cada commit. Cada commit signed (GPG). PR final com Creat
 - UI changes: finding informativo aparece automatico no Posture, sem alteracao de tela
 - Cache cross-scan: tudo fresh por scan
 - Fix das classic protections que tambem tem buracos (separadamente em sessao futura se aparecer)
+
+
+## Resultado real (post-merge baseline)
+
+Smoke run em `silviooerudon/repoguard` com fix aplicado (HEAD da branch fix/posture-rulesets, pre-merge):
+
+| Metric | Antes (b634d33) | Esperado | Real |
+|---|---|---|---|
+| Risk Score | 90 / Excellent | 90-95 | (mede no scan completo, pos-merge) |
+| Posture | C / 70 | A- a A / 85-92 | A / 95 |
+| Branch protection | 15/30 | 27-30/30 | 30/30 |
+| - branch-protection | unknown | satisfied | satisfied (via Ruleset) |
+| - branch-pr-required | 0/5 | 5/5 | 5/5 |
+| - branch-status-checks | 0/5 | 5/5 | 5/5 |
+| - branch-enforce-admins | 0/5 | 5/5 | 5/5 (no bypass actors) |
+| Signed commits | 0/10 | 10/10 | 10/10 (Ruleset enforces required_signatures) |
+| Bypass findings | n/a | 0 | 0 |
+| Gap | mfa-org unknown | unchanged | 5pts unknown - separate fix |
+
+A vs A- resolveu para A: todos os signals branch + signed maxed via Ruleset path; unica perda eh mfa-org unknown que ja existia pre-Bloco-J e nao depende de Rulesets (requer read:org scope).
+
+Conclusao: Bloco J fix sozinho subiu Posture de C(70) -> A(95). Score total +25 pts. Caso de uso ideal pro Show HN ("the scanner catches what the scanner ships").
