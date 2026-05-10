@@ -81,7 +81,7 @@ export function RiskGauge({ score, size = 160 }: RiskGaugeProps) {
             {health}
           </span>
           <span
-            className="text-gray-500 mt-1"
+            className="text-slate-500 mt-1"
             style={{ fontSize: Math.round(size * 0.1) }}
           >
             / 100

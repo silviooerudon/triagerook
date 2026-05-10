@@ -2,6 +2,7 @@ import { auth, signOut } from "@/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { fetchUserRepos, type GitHubRepo } from "@/lib/github"
+import { AlertTriangleIcon, StarIcon } from "@/app/components/icons"
 
 export default async function Dashboard() {
   const session = await auth()
@@ -28,7 +29,7 @@ export default async function Dashboard() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 text-white px-6 py-12">
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white px-6 py-12">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-12">
@@ -41,16 +42,16 @@ export default async function Dashboard() {
               <img
                 src={session.user.image}
                 alt={session.user.name ?? "User"}
-                className="w-10 h-10 rounded-full border border-gray-700"
+                className="w-10 h-10 rounded-full border border-slate-700"
               />
             )}
-            <span className="text-sm text-gray-400 hidden sm:inline">
+            <span className="text-sm text-slate-400 hidden sm:inline">
               {session.user?.name}
             </span>
 
             <Link
               href="/dashboard/history"
-              className="px-4 py-2 rounded-lg border border-gray-700 hover:border-gray-500 transition text-sm font-medium"
+              className="px-4 py-2 rounded-lg border border-slate-700 hover:border-slate-500 transition text-sm font-medium"
             >
               History
             </Link>
@@ -63,7 +64,7 @@ export default async function Dashboard() {
             >
               <button
                 type="submit"
-                className="px-4 py-2 rounded-lg border border-gray-700 hover:border-gray-500 transition text-sm font-medium"
+                className="px-4 py-2 rounded-lg border border-slate-700 hover:border-slate-500 transition text-sm font-medium"
               >
                 Sign out
               </button>
@@ -74,12 +75,12 @@ export default async function Dashboard() {
         {/* Section title */}
         <div className="mb-8">
           <h2 className="text-2xl font-semibold mb-2">Your repositories</h2>
-          <p className="text-gray-400 text-sm">
+          <p className="text-slate-400 text-sm">
             {fetchError
               ? "Could not load repositories."
               : `${repos.length} ${repos.length === 1 ? "repository" : "repositories"} found. Select one to scan for security issues.`}
           </p>
-          <p className="text-gray-500 text-xs mt-2">
+          <p className="text-slate-500 text-xs mt-2">
             Showing public repositories only. Private repo support coming soon.
           </p>
         </div>
@@ -87,14 +88,17 @@ export default async function Dashboard() {
         {/* Error state */}
         {fetchError && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6">
-            <p className="text-red-400 text-sm">⚠️ {fetchError}</p>
+            <p className="text-red-400 text-sm flex items-center gap-2">
+              <AlertTriangleIcon size={14} aria-hidden="true" />
+              {fetchError}
+            </p>
           </div>
         )}
 
         {/* Empty state */}
         {!fetchError && repos.length === 0 && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-12 text-center">
-            <p className="text-gray-400">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center">
+            <p className="text-slate-400">
               You don&apos;t have any repositories yet. Create one on GitHub to get started.
             </p>
           </div>
@@ -106,7 +110,7 @@ export default async function Dashboard() {
             {repos.map((repo) => (
               <div
                 key={repo.id}
-                className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-gray-700 transition"
+                className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -115,19 +119,22 @@ export default async function Dashboard() {
                     </h3>
 
                     {repo.description && (
-                      <p className="text-gray-400 text-sm mb-3 line-clamp-2">
+                      <p className="text-slate-400 text-sm mb-3 line-clamp-2">
                         {repo.description}
                       </p>
                     )}
 
-                    <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
+                    <div className="flex items-center gap-4 text-xs text-slate-500 flex-wrap">
                       {repo.language && (
                         <span className="flex items-center gap-1">
                           <span className="w-2 h-2 rounded-full bg-blue-500" />
                           {repo.language}
                         </span>
                       )}
-                      <span>⭐ {repo.stargazers_count}</span>
+                      <span className="inline-flex items-center gap-1">
+                        <StarIcon size={12} aria-hidden="true" />
+                        {repo.stargazers_count}
+                      </span>
                       <span>
                         Updated{" "}
                         {new Date(repo.updated_at).toLocaleDateString("en-US", {

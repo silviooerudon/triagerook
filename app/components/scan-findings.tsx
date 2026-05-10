@@ -8,6 +8,7 @@ import type {
 } from "@/lib/types"
 import type { PrioritizedFinding } from "@/lib/risk"
 import { FindingCard } from "./finding-card"
+import { CheckCircleIcon } from "./icons"
 
 type SeverityBadge = { label: string; badge: string }
 
@@ -30,7 +31,7 @@ const SEVERITY_BADGES: Record<Severity | "moderate", SeverityBadge> = {
   },
   low: {
     label: "Low",
-    badge: "bg-gray-500/10 border-gray-500/30 text-gray-400",
+    badge: "bg-slate-500/10 border-slate-500/30 text-slate-400",
   },
 }
 
@@ -54,7 +55,7 @@ export function BadgePill({
 }) {
   const cls =
     tone === "warn"
-      ? "bg-gray-500/10 border-gray-500/30 text-gray-400"
+      ? "bg-slate-500/10 border-slate-500/30 text-slate-400"
       : "bg-blue-500/10 border-blue-500/20 text-blue-300"
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full border ${cls}`} title={title}>
@@ -113,9 +114,9 @@ function SectionHeader({
   return (
     <div className="flex items-center justify-between gap-3 flex-wrap">
       <h2 className="text-xl font-semibold">
-        {title} <span className="text-gray-500 font-normal">({count})</span>
+        {title} <span className="text-slate-500 font-normal">({count})</span>
       </h2>
-      {hint && <p className="text-xs text-gray-500">{hint}</p>}
+      {hint && <p className="text-xs text-slate-500">{hint}</p>}
     </div>
   )
 }
@@ -156,7 +157,7 @@ function SecretCard({ finding }: { finding: SecretFinding }) {
   const isHistory = finding.source === "history"
   return (
     <article
-      className={`bg-gray-900 border border-gray-800 rounded-xl p-5 ${
+      className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${
         isTest ? "opacity-60" : ""
       }`}
     >
@@ -179,13 +180,13 @@ function SecretCard({ finding }: { finding: SecretFinding }) {
           />
         )}
       </header>
-      <p className="text-sm text-gray-400 mb-3">{finding.description}</p>
-      <pre className="font-mono text-xs bg-black/40 border border-gray-800 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
+      <p className="text-sm text-slate-400 mb-3">{finding.description}</p>
+      <pre className="font-mono text-xs bg-black/40 border border-slate-800 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
         <code>
-          <span className="text-gray-500 block mb-1">
+          <span className="text-slate-500 block mb-1">
             {finding.filePath}:{finding.lineNumber}
           </span>
-          <span className="text-gray-300">{finding.lineContent}</span>
+          <span className="text-slate-300">{finding.lineContent}</span>
         </code>
       </pre>
     </article>
@@ -208,18 +209,18 @@ export function SensitiveFilesSection({
       {findings.map((f, i) => (
         <article
           key={i}
-          className="bg-gray-900 border border-gray-800 rounded-xl p-5"
+          className="bg-slate-900 border border-slate-800 rounded-xl p-5"
         >
           <header className="flex items-center gap-2 flex-wrap mb-1">
             <h3 className="font-semibold">{f.name}</h3>
             <SeverityPill severity={f.severity} />
           </header>
-          <p className="text-sm text-gray-400 mb-3">{f.description}</p>
-          <pre className="font-mono text-xs bg-black/40 border border-gray-800 rounded-lg p-3 overflow-x-auto">
-            <code className="text-gray-300">{f.filePath}</code>
+          <p className="text-sm text-slate-400 mb-3">{f.description}</p>
+          <pre className="font-mono text-xs bg-black/40 border border-slate-800 rounded-lg p-3 overflow-x-auto">
+            <code className="text-slate-300">{f.filePath}</code>
           </pre>
-          <p className="text-xs text-gray-500 mt-3">
-            <span className="text-gray-400">Remediation:</span> {f.remediation}
+          <p className="text-xs text-slate-500 mt-3">
+            <span className="text-slate-400">Remediation:</span> {f.remediation}
           </p>
         </article>
       ))}
@@ -244,7 +245,7 @@ export function CodeFindingsSection({ findings }: { findings: CodeFinding[] }) {
       {sorted.map((f, i) => (
         <article
           key={i}
-          className={`bg-gray-900 border border-gray-800 rounded-xl p-5 ${
+          className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${
             f.likelyTestFixture ? "opacity-60" : ""
           }`}
         >
@@ -260,13 +261,13 @@ export function CodeFindingsSection({ findings }: { findings: CodeFinding[] }) {
               />
             )}
           </header>
-          <p className="text-sm text-gray-400 mb-3">{f.description}</p>
-          <pre className="font-mono text-xs bg-black/40 border border-gray-800 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
+          <p className="text-sm text-slate-400 mb-3">{f.description}</p>
+          <pre className="font-mono text-xs bg-black/40 border border-slate-800 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
             <code>
-              <span className="text-gray-500 block mb-1">
+              <span className="text-slate-500 block mb-1">
                 {f.filePath}:{f.lineNumber}
               </span>
-              <span className="text-gray-300">{f.lineContent}</span>
+              <span className="text-slate-300">{f.lineContent}</span>
             </code>
           </pre>
         </article>
@@ -302,29 +303,29 @@ export function IaCFindingsSection({ findings }: { findings: IaCFinding[] }) {
       {findings.map((f, i) => (
         <article
           key={i}
-          className="bg-gray-900 border border-gray-800 rounded-xl p-5"
+          className="bg-slate-900 border border-slate-800 rounded-xl p-5"
         >
           <header className="flex items-center gap-2 flex-wrap mb-1">
             <h3 className="font-semibold">{f.ruleName}</h3>
             <SeverityPill severity={f.severity} />
             <BadgePill label={iacCategoryLabel(f.category)} />
           </header>
-          <p className="text-sm text-gray-400 mb-3">{f.description}</p>
+          <p className="text-sm text-slate-400 mb-3">{f.description}</p>
           {(f.lineContent || f.lineNumber) && (
-            <pre className="font-mono text-xs bg-black/40 border border-gray-800 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
+            <pre className="font-mono text-xs bg-black/40 border border-slate-800 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
               <code>
-                <span className="text-gray-500 block mb-1">
+                <span className="text-slate-500 block mb-1">
                   {f.filePath}
                   {f.lineNumber ? `:${f.lineNumber}` : ""}
                 </span>
                 {f.lineContent && (
-                  <span className="text-gray-300">{f.lineContent}</span>
+                  <span className="text-slate-300">{f.lineContent}</span>
                 )}
               </code>
             </pre>
           )}
-          <p className="text-xs text-gray-500 mt-3">
-            <span className="text-gray-400">Remediation:</span> {f.remediation}
+          <p className="text-xs text-slate-500 mt-3">
+            <span className="text-slate-400">Remediation:</span> {f.remediation}
           </p>
         </article>
       ))}
@@ -349,7 +350,7 @@ export function DependenciesSection({
       {findings.map((f, i) => (
         <article
           key={i}
-          className="bg-gray-900 border border-gray-800 rounded-xl p-5"
+          className="bg-slate-900 border border-slate-800 rounded-xl p-5"
         >
           <header className="flex items-center gap-2 flex-wrap mb-1">
             <h3 className="font-semibold font-mono">
@@ -364,23 +365,23 @@ export function DependenciesSection({
             )}
             {f.source && <BadgePill label={f.source} tone="warn" />}
           </header>
-          <p className="text-sm text-gray-400 mb-3">{f.title}</p>
-          <div className="text-xs space-y-1 bg-black/40 border border-gray-800 rounded-lg p-3">
+          <p className="text-sm text-slate-400 mb-3">{f.title}</p>
+          <div className="text-xs space-y-1 bg-black/40 border border-slate-800 rounded-lg p-3">
             {f.ghsa && (
-              <div className="text-gray-400">
-                <span className="text-gray-500">Advisory:</span>{" "}
+              <div className="text-slate-400">
+                <span className="text-slate-500">Advisory:</span>{" "}
                 <span className="font-mono">{f.ghsa}</span>
               </div>
             )}
-            <div className="text-gray-400">
-              <span className="text-gray-500">Vulnerable versions:</span>{" "}
+            <div className="text-slate-400">
+              <span className="text-slate-500">Vulnerable versions:</span>{" "}
               <span className="font-mono text-red-400">
                 {f.vulnerable_versions}
               </span>
             </div>
             {f.cvss_score !== null && (
-              <div className="text-gray-400">
-                <span className="text-gray-500">CVSS score:</span>{" "}
+              <div className="text-slate-400">
+                <span className="text-slate-500">CVSS score:</span>{" "}
                 <span className="font-mono">{f.cvss_score}</span>
               </div>
             )}
@@ -417,11 +418,15 @@ export function PrioritizedList({
 export function AllClear() {
   return (
     <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-8 text-center">
-      <p className="text-5xl mb-3">✅</p>
+      <CheckCircleIcon
+        size={40}
+        className="mx-auto mb-3 text-green-400"
+        aria-hidden="true"
+      />
       <h2 className="text-xl font-semibold text-green-400 mb-2">
         No issues found
       </h2>
-      <p className="text-gray-400 text-sm max-w-md mx-auto">
+      <p className="text-slate-400 text-sm max-w-md mx-auto">
         We scanned for exposed secrets, sensitive files, vulnerable
         dependencies, code-level issues and misconfigurations. Everything
         looks clean.
@@ -440,11 +445,11 @@ export function SummaryCard({
   tone: "neutral" | "red" | "orange" | "yellow" | "gray"
 }) {
   const colors: Record<typeof tone, string> = {
-    neutral: "bg-gray-900 border-gray-800 text-gray-300",
+    neutral: "bg-slate-900 border-slate-800 text-slate-300",
     red: "bg-red-500/10 border-red-500/20 text-red-400",
     orange: "bg-orange-500/10 border-orange-500/20 text-orange-400",
     yellow: "bg-yellow-500/10 border-yellow-500/20 text-yellow-400",
-    gray: "bg-gray-500/10 border-gray-500/30 text-gray-400",
+    gray: "bg-slate-500/10 border-slate-500/30 text-slate-400",
   }
   return (
     <div className={`rounded-xl border p-4 ${colors[tone]}`}>

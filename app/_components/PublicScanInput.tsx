@@ -14,7 +14,9 @@ export default function PublicScanInput() {
     setError(null)
     const parsed = parseGitHubUrl(input)
     if (!parsed) {
-      setError("Please enter a valid GitHub repo URL (e.g. https://github.com/owner/repo)")
+      setError(
+        "Please enter a valid GitHub repo URL (e.g. https://github.com/owner/repo)",
+      )
       return
     }
     setLoading(true)
@@ -28,31 +30,49 @@ export default function PublicScanInput() {
   }
 
   return (
-    <div className="max-w-xl mx-auto mb-6">
-      <div className="flex flex-col sm:flex-row gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="https://github.com/owner/repo"
-          className="flex-1 px-4 py-3 rounded-lg bg-slate-900 border border-slate-800 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500 transition"
-          disabled={loading}
-        />
+    <div className="max-w-2xl">
+      <div className="flex flex-col sm:flex-row gap-2 group">
+        <div className="flex-1 flex items-stretch border border-slate-700 focus-within:border-amber-400 transition bg-slate-950">
+          <span
+            aria-hidden
+            className="px-3 flex items-center font-mono text-amber-400 text-sm select-none border-r border-slate-800"
+          >
+            ▶
+          </span>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="https://github.com/owner/repo"
+            className="flex-1 px-3 py-3 bg-transparent font-mono text-sm text-slate-100 placeholder-slate-600 focus:outline-none"
+            disabled={loading}
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+          />
+        </div>
         <button
           type="button"
           onClick={handleScan}
           disabled={loading || !input.trim()}
-          className="px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed transition text-white font-medium"
+          className="px-5 py-3 font-mono text-sm bg-amber-400 text-slate-950 hover:bg-amber-300 disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed transition font-semibold inline-flex items-center justify-center gap-2"
         >
-          {loading ? "Loading…" : "Scan public repo"}
+          {loading ? (
+            <>
+              <span className="inline-block w-2 h-2 bg-slate-950 animate-pulse" />
+              scanning…
+            </>
+          ) : (
+            <>scan →</>
+          )}
         </button>
       </div>
       {error && (
-        <p className="text-red-400 text-xs mt-2 text-left">{error}</p>
+        <p className="text-red-400 text-xs font-mono mt-2">// {error}</p>
       )}
-      <p className="text-xs text-slate-500 mt-3">
-        No login required for public repos. 60 scans per hour shared limit.
+      <p className="text-xs font-mono text-slate-500 mt-3">
+        // no login required · 60 scans/hour shared limit · public repos only
       </p>
     </div>
   )

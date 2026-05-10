@@ -31,7 +31,7 @@ function ExpiresLabel({ expires, expired }: { expires?: string; expired: boolean
   if (!expires) return null
   const rel = formatRelative(expires)
   return (
-    <span className={expired ? "text-red-400" : "text-gray-400"}>
+    <span className={expired ? "text-red-400" : "text-slate-400"}>
       Expires: <span className="font-mono">{expires}</span>
       {rel && ` (${rel})`}
     </span>
@@ -42,17 +42,17 @@ export function SuppressedFindingItem({ item }: Props) {
   const { suppression, expired } = item
   const cardFinding = { ...item.finding, score: 0 } as PrioritizedFinding
   return (
-    <div className="bg-gray-900/40 border border-gray-800 rounded-xl p-4 space-y-3 opacity-90">
-      <header className="text-xs text-gray-400 space-y-1">
+    <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-4 space-y-3 opacity-90">
+      <header className="text-xs text-slate-400 space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-gray-500">Suppressed by:</span>
-          <code className="font-mono text-gray-300 bg-black/40 px-2 py-0.5 rounded">
+          <span className="text-slate-500">Suppressed by:</span>
+          <code className="font-mono text-slate-300 bg-black/40 px-2 py-0.5 rounded">
             {suppression.pathGlob}
           </code>
           {suppression.ruleGlob && (
             <>
-              <span className="text-gray-500">rule:</span>
-              <code className="font-mono text-gray-300 bg-black/40 px-2 py-0.5 rounded">
+              <span className="text-slate-500">rule:</span>
+              <code className="font-mono text-slate-300 bg-black/40 px-2 py-0.5 rounded">
                 {suppression.ruleGlob}
               </code>
             </>
@@ -66,12 +66,12 @@ export function SuppressedFindingItem({ item }: Props) {
         <div className="flex items-center gap-3 flex-wrap text-xs">
           {suppression.reason && (
             <span>
-              <span className="text-gray-500">Reason:</span>{" "}
-              <span className="text-gray-300">{suppression.reason}</span>
+              <span className="text-slate-500">Reason:</span>{" "}
+              <span className="text-slate-300">{suppression.reason}</span>
             </span>
           )}
           <ExpiresLabel expires={suppression.expires} expired={expired} />
-          <span className="text-gray-500">
+          <span className="text-slate-500">
             Line {suppression.sourceLine} of .repoguardignore
           </span>
         </div>

@@ -3,314 +3,553 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import PublicScanInput from "./_components/PublicScanInput";
 
+const DETECTORS: Array<{
+  id: string;
+  name: string;
+  desc: string;
+  refs: string;
+}> = [
+  {
+    id: "01",
+    name: "secret-scanner",
+    desc: "16 high-confidence patterns: AWS, GCP, OpenAI, Stripe, Slack, JWT, SSH keys, and more.",
+    refs: "regex + entropy",
+  },
+  {
+    id: "02",
+    name: "git-history",
+    desc: "Replays the last 30 commits looking for secrets that were deleted but never rotated.",
+    refs: "30 commits",
+  },
+  {
+    id: "03",
+    name: "sensitive-files",
+    desc: "Flags filenames that imply secrets even when the content is empty (.env, id_rsa, …).",
+    refs: "filename only",
+  },
+  {
+    id: "04",
+    name: "deps-npm",
+    desc: "Cross-references package-lock.json against the npm advisories bulk API.",
+    refs: "npm audit",
+  },
+  {
+    id: "05",
+    name: "deps-python",
+    desc: "Resolves requirements.txt and pyproject.toml against the OSV.dev batch API.",
+    refs: "OSV.dev",
+  },
+  {
+    id: "06",
+    name: "supply-chain",
+    desc: "Checks for typosquatting, postinstall hooks, and other npm install-time risks.",
+    refs: "heuristic",
+  },
+  {
+    id: "07",
+    name: "iac-rules",
+    desc: "Conservative rules for Dockerfile, GitHub Actions, and Terraform misconfigs.",
+    refs: "CWE-tagged",
+  },
+  {
+    id: "08",
+    name: "code-sast",
+    desc: "Targeted SAST for injection, SSRF, weak crypto. Conservative, CWE-tagged.",
+    refs: "CWE-tagged",
+  },
+  {
+    id: "09",
+    name: "iam-posture",
+    desc: "GitHub OIDC trust policy, admin equivalents, and privilege-escalation paths.",
+    refs: "GitHub IAM",
+  },
+];
+
+const FAQ: Array<{ q: string; a: string }> = [
+  {
+    q: "Do you store my source code?",
+    a: "No. We fetch files from the GitHub API only during a scan and discard them immediately after. We persist findings (path, line, masked preview) — never the code itself.",
+  },
+  {
+    q: "What permissions does RepoGuard need?",
+    a: "Read-only access to repository contents and metadata. We never request write access, and we cannot modify your code.",
+  },
+  {
+    q: "Can I scan private repositories?",
+    a: "Not yet. RepoGuard currently requests the public_repo OAuth scope only, so it can't read private code. Private-repo support is on the roadmap.",
+  },
+  {
+    q: "How is this different from GitHub secret scanning?",
+    a: "GitHub's built-in scanning is free but limited to partner patterns. RepoGuard adds curated patterns, severity grouping, IaC and SAST rules, and a focused UI for solo devs and small teams.",
+  },
+  {
+    q: "Is RepoGuard free?",
+    a: "Yes, fully free during the current beta. I'm still figuring out what people value enough to pay for — feedback is very welcome.",
+  },
+  {
+    q: "Where does my data live?",
+    a: "All scan metadata is stored in Supabase, EU region. The app runs on Vercel. Both providers are SOC 2 compliant. See /security for details.",
+  },
+];
+
+const STAT_BAR: Array<{ value: string; label: string }> = [
+  { value: "9", label: "detectors" },
+  { value: "16", label: "secret patterns" },
+  { value: "<60s", label: "scan time" },
+  { value: "EU", label: "data region" },
+  { value: "MIT", label: "license" },
+  { value: "$0", label: "during beta" },
+];
+
+const EXAMPLE_REPOS = [
+  "vercel/next.js",
+  "openai/openai-cookbook",
+  "sindresorhus/awesome",
+];
+
 export default async function Home() {
   const session = await auth();
   if (session) redirect("/dashboard");
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
-      {/* NAV */}
-      <nav className="border-b border-slate-800/60 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-sm">
-              R
-            </div>
-            <span className="font-semibold tracking-tight">RepoGuard</span>
-          </div>
-          <div className="flex items-center gap-6 text-sm">
-            <a href="#features" className="text-slate-400 hover:text-slate-100 transition">Features</a>
-            <a href="#faq" className="text-slate-400 hover:text-slate-100 transition">FAQ</a>
-            <Link
-              href="/signin"
-              className="px-4 py-2 rounded-lg bg-slate-100 text-slate-950 font-medium hover:bg-white transition"
-            >
-              Sign in
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <main className="relative min-h-screen bg-slate-950 text-slate-100 overflow-hidden">
+      {/* background grid */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 [background-image:radial-gradient(rgba(148,163,184,0.08)_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_75%)]"
+      />
+      {/* amber accent glow, top-right */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-40 -right-40 w-[28rem] h-[28rem] rounded-full bg-amber-400/[0.05] blur-3xl"
+      />
 
-      {/* HERO */}
-      <section className="max-w-6xl mx-auto px-6 pt-24 pb-32 text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-800 bg-slate-900/50 text-xs text-slate-400 mb-8">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Free during beta
-        </div>
-
-        <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6 leading-[1.1]">
-          Scan your GitHub repos
-          <br />
-          <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            for exposed secrets.
-          </span>
-        </h1>
-
-        <p className="text-lg text-slate-400 max-w-xl mx-auto mb-10">
-          16 curated patterns. Zero config. Results in under 60 seconds.
-        </p>
-
-        <PublicScanInput />
-
-        <div className="flex items-center justify-center gap-3 text-xs text-slate-500 mb-8">
-          <span className="h-px w-12 bg-slate-800" />
-          <span>or</span>
-          <span className="h-px w-12 bg-slate-800" />
-        </div>
-
-        <div className="flex items-center justify-center gap-4">
-          <Link
-            href="/signin"
-            className="px-6 py-3 rounded-lg bg-slate-100 text-slate-950 font-medium hover:bg-white transition"
-          >
-            Sign in with GitHub
-          </Link>
-          <a
-            href="#features"
-            className="px-6 py-3 rounded-lg border border-slate-800 text-slate-300 hover:bg-slate-900 transition"
-          >
-            See what we detect
-          </a>
-        </div>
-
-        <p className="text-xs text-slate-500 mt-8">
-          Read-only access. We never store your code.
-        </p>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section className="border-t border-slate-800/60 bg-slate-900/30">
-        <div className="max-w-6xl mx-auto px-6 py-24">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-              How it works
-            </h2>
-            <p className="text-slate-400">
-              Three steps. No setup, no CLI, no config files.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                step: "01",
-                title: "Connect GitHub",
-                desc: "Sign in with OAuth. Read-only access to the repos you choose.",
-              },
-              {
-                step: "02",
-                title: "Run a scan",
-                desc: "Pick a repo. We fetch the file tree and match 16 secret patterns in parallel.",
-              },
-              {
-                step: "03",
-                title: "Review findings",
-                desc: "Results grouped by severity. File path, line number, masked preview.",
-              },
-            ].map((item) => (
-              <div
-                key={item.step}
-                className="p-6 rounded-xl border border-slate-800 bg-slate-950/50"
-              >
-                <div className="text-sm font-mono text-slate-500 mb-3">
-                  {item.step}
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">
-                  {item.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section id="features" className="border-t border-slate-800/60">
-        <div className="max-w-6xl mx-auto px-6 py-24">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-              What we detect
-            </h2>
-            <p className="text-slate-400">
-              16 curated patterns across the secrets developers leak most.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {[
-              {
-                category: "Cloud providers",
-                items: ["AWS Access Keys", "AWS Secret Keys", "Google API Keys"],
-                severity: "critical",
-              },
-              {
-                category: "Developer tools",
-                items: ["GitHub Personal Tokens", "GitHub OAuth Tokens", "NPM Tokens"],
-                severity: "critical",
-              },
-              {
-                category: "Payments & APIs",
-                items: ["Stripe Live Keys", "OpenAI API Keys", "SendGrid Keys"],
-                severity: "high",
-              },
-              {
-                category: "Communications",
-                items: ["Slack Tokens", "Twilio Credentials", "JWT Tokens"],
-                severity: "high",
-              },
-              {
-                category: "Databases",
-                items: ["Connection Strings with Passwords", "MongoDB URIs"],
-                severity: "medium",
-              },
-              {
-                category: "Cryptography",
-                items: ["RSA Private Keys", "SSH Private Keys"],
-                severity: "critical",
-              },
-            ].map((group) => (
-              <div
-                key={group.category}
-                className="p-6 rounded-xl border border-slate-800 bg-slate-900/40"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold">{group.category}</h3>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full border font-mono ${
-                      group.severity === "critical"
-                        ? "border-red-900/60 bg-red-950/40 text-red-300"
-                        : group.severity === "high"
-                        ? "border-orange-900/60 bg-orange-950/40 text-orange-300"
-                        : "border-yellow-900/60 bg-yellow-950/40 text-yellow-300"
-                    }`}
-                  >
-                    {group.severity}
-                  </span>
-                </div>
-                <ul className="space-y-2">
-                  {group.items.map((item) => (
-                    <li
-                      key={item}
-                      className="text-sm text-slate-400 flex items-center gap-2"
-                    >
-                      <span className="w-1 h-1 rounded-full bg-slate-600" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          <p className="text-center text-xs text-slate-500 mt-12">
-            More patterns added regularly based on user reports.
-          </p>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section id="faq" className="border-t border-slate-800/60">
-        <div className="max-w-3xl mx-auto px-6 py-24">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-              Frequently asked
-            </h2>
-          </div>
-
-          <div className="space-y-4">
-            {[
-              {
-                q: "Do you store my source code?",
-                a: "No. We fetch files from the GitHub API only during a scan and discard them immediately after. Findings are stored; code is not.",
-              },
-              {
-                q: "What permissions does RepoGuard need?",
-                a: "Read-only access to repository contents and metadata. We never request write access, and we can never modify your code.",
-              },
-              {
-                q: "Can I scan private repositories?",
-                a: "Not yet. RepoGuard currently requests the public_repo OAuth scope only, so it can't read private code. Private repo support is on the roadmap.",
-              },
-              {
-                q: "How is this different from GitHub secret scanning?",
-                a: "GitHub's built-in scanning is free but limited to partner patterns. RepoGuard adds curated patterns, severity grouping, and a focused UI for solo devs and small teams.",
-              },
-              {
-                q: "Can I cancel anytime?",
-                a: "Yes. Cancel from your account settings in one click. No phone calls, no dark patterns.",
-              },
-              {
-                q: "Is RepoGuard free?",
-                a: "Yes, fully free during the current beta. I'm still figuring out what people value enough to pay for — feedback is very welcome.",
-              },
-            ].map((item) => (
-              <details
-                key={item.q}
-                className="group p-5 rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-900/60 transition"
-              >
-                <summary className="flex items-center justify-between cursor-pointer font-medium list-none">
-                  <span>{item.q}</span>
-                  <span className="text-slate-500 group-open:rotate-45 transition-transform text-xl leading-none">
-                    +
-                  </span>
-                </summary>
-                <p className="mt-3 text-sm text-slate-400 leading-relaxed">
-                  {item.a}
-                </p>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="border-t border-slate-800/60 bg-slate-950">
-        <div className="max-w-6xl mx-auto px-6 py-12">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-xs">
-                R
-              </div>
-              <span className="text-sm text-slate-400">
-                RepoGuard © {new Date().getFullYear()}
+      <div className="relative">
+        {/* NAV */}
+        <nav className="border-b border-slate-800/60 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
+          <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <span className="font-mono text-amber-400 text-sm">[R/]</span>
+              <span className="font-mono text-sm tracking-tight text-slate-100 group-hover:text-amber-400 transition">
+                repoguard
               </span>
-            </div>
-            <div className="flex items-center gap-6 text-sm text-slate-500 flex-wrap justify-center">
-              <a href="#features" className="hover:text-slate-300 transition">Features</a>
-              <a href="#faq" className="hover:text-slate-300 transition">FAQ</a>
-              <Link href="/security" className="hover:text-slate-300 transition">Security</Link>
+            </Link>
+            <div className="flex items-center gap-7 text-xs font-mono text-slate-400">
+              <a
+                href="#detectors"
+                className="hidden sm:inline hover:text-slate-100 transition"
+              >
+                detectors
+              </a>
+              <a
+                href="#faq"
+                className="hidden sm:inline hover:text-slate-100 transition"
+              >
+                faq
+              </a>
+              <Link
+                href="/security"
+                className="hidden md:inline hover:text-slate-100 transition"
+              >
+                security
+              </Link>
               <a
                 href="https://github.com/silviooerudon/repoguard"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-slate-300 transition"
+                className="hidden md:inline hover:text-slate-100 transition"
               >
-                GitHub
+                github ↗
               </a>
+              <Link
+                href="/signin"
+                className="px-3 py-1.5 border border-amber-400/40 text-amber-300 hover:bg-amber-400 hover:text-slate-950 transition"
+              >
+                sign in
+              </Link>
             </div>
           </div>
+        </nav>
 
-          <div className="mt-8 pt-8 border-t border-slate-800/40 flex flex-col md:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-slate-600 text-center md:text-left">
-              Built in Dublin by{" "}
-              <a
-                href="https://www.linkedin.com/in/silvio-junior-de-almeida-gazzoli-78453a8a/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-slate-400 hover:text-slate-200 transition underline decoration-slate-700 underline-offset-2"
+        {/* HERO */}
+        <section className="max-w-6xl mx-auto px-6 pt-20 md:pt-28 pb-20">
+          <div className="grid md:grid-cols-12 gap-8">
+            <div className="md:col-span-8">
+              <div className="font-mono text-xs text-amber-400 mb-8 flex items-center gap-2.5">
+                <span className="inline-block w-1.5 h-1.5 bg-amber-400 animate-pulse" />
+                v0.9 · free during beta · no card required
+              </div>
+              <h1 className="font-display text-5xl md:text-7xl font-bold tracking-tight leading-[0.95] mb-8 text-balance">
+                see what
+                <br />
+                you <span className="text-amber-400">committed.</span>
+              </h1>
+              <p className="text-slate-400 text-lg max-w-2xl mb-10 leading-relaxed">
+                RepoGuard scans any public GitHub repo for{" "}
+                <span className="text-slate-100">exposed secrets</span>,{" "}
+                <span className="text-slate-100">vulnerable dependencies</span>,
+                and{" "}
+                <span className="text-slate-100">IaC misconfigurations</span>.
+                Nine detectors, one click, results in under sixty seconds.
+              </p>
+              <PublicScanInput />
+              <div className="mt-4 flex items-center gap-x-3 gap-y-2 text-xs font-mono text-slate-500 flex-wrap">
+                <span className="text-slate-600">try:</span>
+                {EXAMPLE_REPOS.map((repo) => (
+                  <Link
+                    key={repo}
+                    href={`/scan-public/${repo}`}
+                    className="text-slate-400 hover:text-amber-400 transition border-b border-dashed border-slate-700 hover:border-amber-400"
+                  >
+                    {repo}
+                  </Link>
+                ))}
+              </div>
+              <div className="mt-10">
+                <Link
+                  href="/signin"
+                  className="text-xs font-mono text-slate-500 hover:text-amber-400 transition inline-flex items-center gap-1.5"
+                >
+                  → or sign in with github for unlimited scans
+                </Link>
+              </div>
+            </div>
+            <div className="md:col-span-4 hidden md:block relative">
+              <div
+                aria-hidden
+                className="font-display text-[12rem] leading-none font-bold text-slate-900 select-none absolute right-0 top-0"
               >
-                Silvio Gazzoli
-              </a>
-              {" "}— IAM specialist with 10+ years experience. Not affiliated with GitHub.
+                16
+              </div>
+              <div
+                aria-hidden
+                className="absolute right-0 top-[10rem] font-mono text-xs text-slate-600 text-right leading-relaxed"
+              >
+                secret patterns
+                <br />
+                in production
+                <br />
+                <span className="text-amber-400/80">// always growing</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* STAT BAR */}
+        <section className="border-y border-slate-800/60 bg-slate-900/30">
+          <div className="max-w-6xl mx-auto px-6 py-5 flex flex-wrap items-center gap-x-8 gap-y-3 font-mono text-xs uppercase tracking-wider">
+            {STAT_BAR.map((stat) => (
+              <div key={stat.label} className="flex items-baseline gap-2">
+                <span className="text-amber-400 text-base">{stat.value}</span>
+                <span className="text-slate-500">{stat.label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* EXAMPLE OUTPUT */}
+        <section className="max-w-6xl mx-auto px-6 py-24">
+          <div className="grid md:grid-cols-12 gap-10 items-start">
+            <div className="md:col-span-4">
+              <div className="font-mono text-xs text-amber-400 mb-3">
+                // example output
+              </div>
+              <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-5 leading-tight">
+                what a real scan looks like.
+              </h2>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                Findings come back grouped by severity, with a file path, line
+                number, and a masked preview. No 800-page PDF. No upsell to
+                enterprise.
+              </p>
+            </div>
+            <div className="md:col-span-8">
+              <Terminal />
+            </div>
+          </div>
+        </section>
+
+        {/* DETECTORS */}
+        <section id="detectors" className="border-t border-slate-800/60">
+          <div className="max-w-6xl mx-auto px-6 py-24">
+            <div className="grid md:grid-cols-12 gap-10 mb-12">
+              <div className="md:col-span-5">
+                <div className="font-mono text-xs text-amber-400 mb-3">
+                  // detectors
+                </div>
+                <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight leading-tight">
+                  nine detectors,
+                  <br />
+                  run in parallel.
+                </h2>
+              </div>
+              <div className="md:col-span-7 flex items-end">
+                <p className="text-slate-400 leading-relaxed">
+                  Each scan runs every detector against your repo concurrently.
+                  No setup, no config files, no allowlist tuning — just sane
+                  defaults that flag what an attacker would actually find.
+                </p>
+              </div>
+            </div>
+            <div className="border border-slate-800 divide-y divide-slate-800/60 rounded-lg overflow-hidden">
+              {DETECTORS.map((d) => (
+                <DetectorRow key={d.id} {...d} />
+              ))}
+            </div>
+            <p className="text-center text-xs font-mono text-slate-600 mt-10">
+              // more detectors added based on what users actually leak
             </p>
-            <span className="text-xs text-slate-600">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5" />
-              Open source
-            </span>
+          </div>
+        </section>
+
+        {/* WHY */}
+        <section className="border-t border-slate-800/60 bg-slate-900/20">
+          <div className="max-w-6xl mx-auto px-6 py-24">
+            <div className="font-mono text-xs text-amber-400 mb-3">
+              // why repoguard
+            </div>
+            <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-12 leading-tight">
+              built for the dev who skips snyk.
+            </h2>
+            <div className="grid md:grid-cols-3 gap-px bg-slate-800/40 border border-slate-800/40 rounded-lg overflow-hidden">
+              <WhyCard
+                title="fast"
+                desc="Sign in with GitHub, pick a repo, get findings. No CLI, no pipeline, no config. Most scans finish in under a minute."
+              />
+              <WhyCard
+                title="private"
+                desc="We never store your source code. Only metadata, file paths, and masked previews. All in EU region. Open source — audit it."
+              />
+              <WhyCard
+                title="yours"
+                desc="No upsell to enterprise. No mandatory SSO. No usage gating during beta. The scan you'd actually run."
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section id="faq" className="border-t border-slate-800/60">
+          <div className="max-w-3xl mx-auto px-6 py-24">
+            <div className="font-mono text-xs text-amber-400 mb-3">// faq</div>
+            <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-10 leading-tight">
+              asked &amp; answered.
+            </h2>
+            <div className="border-t border-slate-800/60">
+              {FAQ.map((item) => (
+                <details
+                  key={item.q}
+                  className="group border-b border-slate-800/60"
+                >
+                  <summary className="cursor-pointer flex items-center justify-between gap-6 py-5 list-none">
+                    <span className="font-mono text-sm text-slate-200 group-hover:text-amber-300 transition">
+                      {item.q}
+                    </span>
+                    <span className="font-mono text-amber-400 group-open:rotate-45 transition-transform text-lg leading-none shrink-0">
+                      +
+                    </span>
+                  </summary>
+                  <p className="pb-5 pr-10 text-sm text-slate-400 leading-relaxed">
+                    {item.a}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* FOOTER */}
+        <footer className="border-t border-slate-800/60">
+          <div className="max-w-6xl mx-auto px-6 py-14 font-mono text-xs">
+            <div className="grid md:grid-cols-12 gap-8">
+              <div className="md:col-span-7">
+                <div className="text-amber-400 mb-3">[R/] repoguard</div>
+                <p className="text-slate-400 leading-relaxed">
+                  <span className="text-slate-600">$ whoami</span>
+                  <br />→ built in dublin by{" "}
+                  <a
+                    href="https://www.linkedin.com/in/silvio-junior-de-almeida-gazzoli-78453a8a/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-slate-200 hover:text-amber-400 transition border-b border-dashed border-slate-700 hover:border-amber-400"
+                  >
+                    silvio gazzoli
+                  </a>
+                  , iam specialist · 10+ years
+                  <br />→ not affiliated with github
+                </p>
+              </div>
+              <div className="md:col-span-5 flex md:justify-end items-start gap-x-6 gap-y-2 flex-wrap text-slate-500">
+                <Link
+                  href="/security"
+                  className="hover:text-amber-400 transition"
+                >
+                  security
+                </Link>
+                <a
+                  href="#detectors"
+                  className="hover:text-amber-400 transition"
+                >
+                  detectors
+                </a>
+                <a href="#faq" className="hover:text-amber-400 transition">
+                  faq
+                </a>
+                <a
+                  href="https://github.com/silviooerudon/repoguard"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-amber-400 transition"
+                >
+                  github ↗
+                </a>
+              </div>
+            </div>
+            <div className="mt-12 pt-6 border-t border-slate-800/40 flex justify-between items-center text-slate-600 flex-wrap gap-2">
+              <span>repoguard © {new Date().getFullYear()}</span>
+              <span className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                mit license · open source
+              </span>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </main>
+  );
+}
+
+function DetectorRow({
+  id,
+  name,
+  desc,
+  refs,
+}: {
+  id: string;
+  name: string;
+  desc: string;
+  refs: string;
+}) {
+  return (
+    <div className="grid md:grid-cols-12 gap-2 md:gap-4 px-5 py-4 hover:bg-slate-900/40 transition">
+      <div className="md:col-span-1 font-mono text-xs text-slate-600">{id}</div>
+      <div className="md:col-span-3 font-mono text-sm text-amber-300">
+        {name}
+      </div>
+      <div className="md:col-span-6 text-sm text-slate-300 leading-relaxed">
+        {desc}
+      </div>
+      <div className="md:col-span-2 font-mono text-xs text-slate-500 md:text-right">
+        {refs}
+      </div>
+    </div>
+  );
+}
+
+function WhyCard({ title, desc }: { title: string; desc: string }) {
+  return (
+    <div className="bg-slate-950 p-7">
+      <div className="font-mono text-amber-400 text-xs mb-3 tracking-wider">
+        ## {title}
+      </div>
+      <p className="text-slate-300 leading-relaxed">{desc}</p>
+    </div>
+  );
+}
+
+function Terminal() {
+  return (
+    <div className="border border-slate-800 rounded-lg overflow-hidden bg-slate-950 shadow-2xl shadow-amber-400/[0.04]">
+      <div className="bg-slate-900 px-4 py-2.5 border-b border-slate-800 flex items-center gap-2">
+        <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+        <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+        <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+        <span className="ml-2 font-mono text-xs text-slate-500">
+          repoguard — scan
+        </span>
+      </div>
+      <div className="p-5 font-mono text-xs leading-relaxed">
+        <div className="text-slate-500">
+          <span className="text-amber-400">$</span>{" "}
+          <span className="text-slate-200">
+            repoguard scan vercel/next.js
+          </span>
+        </div>
+        <div className="mt-4 space-y-1 text-slate-400">
+          <div>┌─ summary ────────────────────────────</div>
+          <div>
+            │ risk score{"     "}
+            <span className="text-emerald-400">92 / 100</span>
+            {"  "}excellent
+          </div>
+          <div>
+            │ files scanned{"  "}
+            <span className="text-slate-200">1,247</span>
+          </div>
+          <div>
+            │ duration{"       "}
+            <span className="text-slate-200">47s</span>
+          </div>
+          <div>└──────────────────────────────────────</div>
+        </div>
+        <div className="mt-4 space-y-1.5">
+          <FindingLine
+            sev="CRIT"
+            tone="text-red-400"
+            rule="aws-access-key"
+            path=".env.example:14"
+          />
+          <FindingLine
+            sev="HIGH"
+            tone="text-orange-400"
+            rule="cve-2024-21501  lodash@4.17.20"
+            path="package.json"
+          />
+          <FindingLine
+            sev="MED "
+            tone="text-yellow-400"
+            rule="dockerfile-uses-latest-tag"
+            path="Dockerfile:3"
+          />
+          <FindingLine
+            sev="MED "
+            tone="text-yellow-400"
+            rule="github-actions-not-pinned"
+            path=".github/workflows/ci.yml:23"
+          />
+          <FindingLine
+            sev="LOW "
+            tone="text-slate-500"
+            rule="missing-csp-header"
+            path="middleware.ts:8"
+          />
+          <div className="text-slate-600 pt-3">
+            // 5 of 12 findings shown · prioritized by severity
           </div>
         </div>
-      </footer>
-    </main>
+      </div>
+    </div>
+  );
+}
+
+function FindingLine({
+  sev,
+  tone,
+  rule,
+  path,
+}: {
+  sev: string;
+  tone: string;
+  rule: string;
+  path: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 -mx-2 px-2 py-0.5 rounded hover:bg-slate-900/50 transition">
+      <span className={`${tone} font-bold whitespace-pre`}>[{sev}]</span>
+      <span className="text-slate-200 flex-1 truncate">{rule}</span>
+      <span className="text-slate-500 text-[11px] hidden sm:inline">
+        {path}
+      </span>
+    </div>
   );
 }

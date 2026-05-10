@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from "react"
 import Link from "next/link"
+import { AlertTriangleIcon } from "@/app/components/icons"
 import type { ScanResult } from "@/lib/scan"
 import type { DependencyFinding } from "@/lib/types"
 import type { PrioritizedFinding, RiskBreakdown } from "@/lib/risk"
@@ -96,12 +97,12 @@ export default function PublicScanPage({ params, searchParams }: PageProps) {
   }, [owner, repo, branch])
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 text-white px-6 py-12">
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white px-6 py-12">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-10">
           <Link
             href="/"
-            className="text-gray-400 hover:text-white text-sm flex items-center gap-1 transition"
+            className="text-slate-400 hover:text-white text-sm flex items-center gap-1 transition"
           >
             ← Back to home
           </Link>
@@ -119,17 +120,17 @@ export default function PublicScanPage({ params, searchParams }: PageProps) {
             {owner}/{repo}
           </span>
         </h1>
-        <p className="text-gray-400 text-sm mb-8">
+        <p className="text-slate-400 text-sm mb-8">
           Public scan — no login required. Secrets, dependencies, code
           vulnerabilities, CI/IaC configuration and git history
           {branch ? ` on ${branch}` : ""}.
         </p>
 
         {status === "running" && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
             <div className="inline-block w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4" />
-            <p className="text-gray-300">Scanning repository…</p>
-            <p className="text-gray-500 text-sm mt-2">
+            <p className="text-slate-300">Scanning repository…</p>
+            <p className="text-slate-500 text-sm mt-2">
               Nine detectors running in parallel — usually under a minute.
             </p>
           </div>
@@ -137,9 +138,12 @@ export default function PublicScanPage({ params, searchParams }: PageProps) {
 
         {status === "error" && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6">
-            <p className="text-red-400 font-semibold mb-1">⚠️ Scan failed</p>
+            <p className="text-red-400 font-semibold mb-1 flex items-center gap-2">
+              <AlertTriangleIcon size={16} aria-hidden="true" />
+              Scan failed
+            </p>
             <p className="text-red-300/80 text-sm">{errorMessage}</p>
-            <p className="text-gray-400 text-xs mt-3">
+            <p className="text-slate-400 text-xs mt-3">
               Public scans are limited to 60 requests per hour (GitHub API
               limit). Sign in for unlimited scans.
             </p>
@@ -149,7 +153,7 @@ export default function PublicScanPage({ params, searchParams }: PageProps) {
         {status === "rate-limited" && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6">
             <p className="text-amber-300 font-semibold mb-1">
-              ⏳ Anonymous scans rate-limited
+              Anonymous scans rate-limited
             </p>
             <p className="text-amber-200/80 text-sm">
               Public scans share a pool of 60 GitHub requests per hour.
@@ -201,7 +205,7 @@ function SignInCTA() {
   return (
     <div className="mt-10 bg-blue-500/10 border border-blue-500/20 rounded-xl p-6 text-center">
       <h2 className="text-xl font-semibold mb-2">Want to track this over time?</h2>
-      <p className="text-gray-400 text-sm mb-4 max-w-md mx-auto">
+      <p className="text-slate-400 text-sm mb-4 max-w-md mx-auto">
         Sign in with GitHub to save scan history, scan more repos, and revisit
         findings later.
       </p>
@@ -263,7 +267,7 @@ function ScanResultView({ result }: { result: ScanResultFull }) {
   )
 
   const meta = (
-    <p className="text-xs text-gray-500">
+    <p className="text-xs text-slate-500">
       Scan took {(result.durationMs / 1000).toFixed(2)}s •{" "}
       {result.filesSkipped} files skipped
       {result.truncated && " • results truncated (repo too large)"}
@@ -297,16 +301,16 @@ function ScanResultView({ result }: { result: ScanResultFull }) {
     <div className="space-y-6">
       {summaryRow}
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center md:items-stretch">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center md:items-stretch">
         <div className="shrink-0 flex items-center justify-center">
           <RiskGauge score={result.riskScore!} />
         </div>
         <div className="flex-1 w-full flex flex-col justify-center">
-          <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-3">
+          <h2 className="text-sm uppercase tracking-wider text-slate-500 mb-3">
             Where the score comes from
           </h2>
           <RiskBreakdownChart breakdown={result.riskBreakdown!} />
-          <p className="text-xs text-gray-500 mt-4">
+          <p className="text-xs text-slate-500 mt-4">
             {result.prioritized!.length} finding
             {result.prioritized!.length === 1 ? "" : "s"} ranked by risk.
           </p>

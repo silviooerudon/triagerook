@@ -66,7 +66,7 @@ export function PostureGauge({ score, grade, degraded, size = 160 }: PostureGaug
             {grade}
           </span>
           <span
-            className="text-gray-500 mt-1"
+            className="text-slate-500 mt-1"
             style={{ fontSize: Math.round(size * 0.13) }}
           >
             {clamped} / 100

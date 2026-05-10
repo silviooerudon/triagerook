@@ -5,18 +5,18 @@ export default function SecurityPage() {
     <main className="min-h-screen bg-slate-950 text-slate-100">
       {/* NAV */}
       <nav className="border-b border-slate-800/60 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-sm">
-              R
-            </div>
-            <span className="font-semibold tracking-tight">RepoGuard</span>
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <span className="font-mono text-amber-400 text-sm">[R/]</span>
+            <span className="font-mono text-sm tracking-tight text-slate-100 group-hover:text-amber-400 transition">
+              repoguard
+            </span>
           </Link>
           <Link
             href="/"
-            className="text-sm text-slate-400 hover:text-slate-100 transition"
+            className="text-xs font-mono text-slate-400 hover:text-amber-400 transition"
           >
-            ← Back to home
+            ← back to home
           </Link>
         </div>
       </nav>
