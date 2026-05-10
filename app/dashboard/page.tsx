@@ -2,6 +2,7 @@ import { auth, signOut } from "@/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { fetchUserRepos, type GitHubRepo } from "@/lib/github"
+import { AlertTriangleIcon, StarIcon } from "@/app/components/icons"
 
 export default async function Dashboard() {
   const session = await auth()
@@ -87,7 +88,10 @@ export default async function Dashboard() {
         {/* Error state */}
         {fetchError && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6">
-            <p className="text-red-400 text-sm">⚠️ {fetchError}</p>
+            <p className="text-red-400 text-sm flex items-center gap-2">
+              <AlertTriangleIcon size={14} aria-hidden="true" />
+              {fetchError}
+            </p>
           </div>
         )}
 
@@ -127,7 +131,10 @@ export default async function Dashboard() {
                           {repo.language}
                         </span>
                       )}
-                      <span>⭐ {repo.stargazers_count}</span>
+                      <span className="inline-flex items-center gap-1">
+                        <StarIcon size={12} aria-hidden="true" />
+                        {repo.stargazers_count}
+                      </span>
                       <span>
                         Updated{" "}
                         {new Date(repo.updated_at).toLocaleDateString("en-US", {

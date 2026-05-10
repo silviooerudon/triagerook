@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { AlertTriangleIcon, CheckIcon, InboxIcon } from "@/app/components/icons"
 
 type ScanSummary = {
   id: string
@@ -64,14 +65,21 @@ export default function HistoryPage() {
 
         {status === "error" && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6">
-            <p className="text-red-400 font-semibold mb-1">⚠️ Failed to load</p>
+            <p className="text-red-400 font-semibold mb-1 flex items-center gap-2">
+              <AlertTriangleIcon size={16} aria-hidden="true" />
+              Failed to load
+            </p>
             <p className="text-red-300/80 text-sm">{errorMessage}</p>
           </div>
         )}
 
         {status === "done" && scans.length === 0 && (
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
-            <p className="text-5xl mb-3">📭</p>
+            <InboxIcon
+              size={40}
+              className="mx-auto mb-3 text-gray-500"
+              aria-hidden="true"
+            />
             <h2 className="text-xl font-semibold mb-2">No scans yet</h2>
             <p className="text-gray-400 text-sm">
               Head back to your repositories and run your first scan.
@@ -129,8 +137,9 @@ function ScanRow({ scan }: { scan: ScanSummary }) {
             tone={scan.deps_count > 0 ? "orange" : "neutral"}
           />
           {!hasFindings && (
-            <span className="text-xs px-2 py-0.5 rounded-full border bg-green-500/10 border-green-500/20 text-green-400">
-              ✓ clean
+            <span className="text-xs px-2 py-0.5 rounded-full border bg-green-500/10 border-green-500/20 text-green-400 inline-flex items-center gap-1">
+              <CheckIcon size={12} aria-hidden="true" />
+              clean
             </span>
           )}
         </div>

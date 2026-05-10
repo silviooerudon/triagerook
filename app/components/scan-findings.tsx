@@ -8,6 +8,7 @@ import type {
 } from "@/lib/types"
 import type { PrioritizedFinding } from "@/lib/risk"
 import { FindingCard } from "./finding-card"
+import { CheckCircleIcon } from "./icons"
 
 type SeverityBadge = { label: string; badge: string }
 
@@ -417,7 +418,11 @@ export function PrioritizedList({
 export function AllClear() {
   return (
     <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-8 text-center">
-      <p className="text-5xl mb-3">✅</p>
+      <CheckCircleIcon
+        size={40}
+        className="mx-auto mb-3 text-green-400"
+        aria-hidden="true"
+      />
       <h2 className="text-xl font-semibold text-green-400 mb-2">
         No issues found
       </h2>

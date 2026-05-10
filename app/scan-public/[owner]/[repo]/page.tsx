@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from "react"
 import Link from "next/link"
+import { AlertTriangleIcon } from "@/app/components/icons"
 import type { ScanResult } from "@/lib/scan"
 import type { DependencyFinding } from "@/lib/types"
 import type { PrioritizedFinding, RiskBreakdown } from "@/lib/risk"
@@ -137,7 +138,10 @@ export default function PublicScanPage({ params, searchParams }: PageProps) {
 
         {status === "error" && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6">
-            <p className="text-red-400 font-semibold mb-1">⚠️ Scan failed</p>
+            <p className="text-red-400 font-semibold mb-1 flex items-center gap-2">
+              <AlertTriangleIcon size={16} aria-hidden="true" />
+              Scan failed
+            </p>
             <p className="text-red-300/80 text-sm">{errorMessage}</p>
             <p className="text-gray-400 text-xs mt-3">
               Public scans are limited to 60 requests per hour (GitHub API
@@ -149,7 +153,7 @@ export default function PublicScanPage({ params, searchParams }: PageProps) {
         {status === "rate-limited" && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6">
             <p className="text-amber-300 font-semibold mb-1">
-              ⏳ Anonymous scans rate-limited
+              Anonymous scans rate-limited
             </p>
             <p className="text-amber-200/80 text-sm">
               Public scans share a pool of 60 GitHub requests per hour.

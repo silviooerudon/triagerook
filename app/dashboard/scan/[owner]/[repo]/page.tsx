@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, use } from "react"
+import { AlertTriangleIcon } from "@/app/components/icons"
 import type { ScanResult } from "@/lib/scan"
 import type { DependencyFinding } from "@/lib/types"
 import type { PrioritizedFinding, RiskBreakdown } from "@/lib/risk"
@@ -118,7 +119,10 @@ export default function ScanPage({ params, searchParams }: PageProps) {
 
         {status === "error" && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6">
-            <p className="text-red-400 font-semibold mb-1">⚠️ Scan failed</p>
+            <p className="text-red-400 font-semibold mb-1 flex items-center gap-2">
+              <AlertTriangleIcon size={16} aria-hidden="true" />
+              Scan failed
+            </p>
             <p className="text-red-300/80 text-sm">{errorMessage}</p>
           </div>
         )}
