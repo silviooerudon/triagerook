@@ -73,7 +73,7 @@ export function SupplyChainGauge({ score, level, size = 160 }: SupplyChainGaugeP
             {clamped}
           </span>
           <span
-            className="text-gray-500 mt-1"
+            className="text-slate-500 mt-1"
             style={{ fontSize: Math.round(size * 0.13) }}
           >
             / 100

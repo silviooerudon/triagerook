@@ -85,12 +85,12 @@ export default function ScanPage({ params, searchParams }: PageProps) {
   }, [owner, repo, branch])
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 text-white px-6 py-12">
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white px-6 py-12">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-10">
           <a
             href="/dashboard"
-            className="text-gray-400 hover:text-white text-sm flex items-center gap-1 transition"
+            className="text-slate-400 hover:text-white text-sm flex items-center gap-1 transition"
           >
             ← Back to repositories
           </a>
@@ -102,16 +102,16 @@ export default function ScanPage({ params, searchParams }: PageProps) {
             {owner}/{repo}
           </span>
         </h1>
-        <p className="text-gray-400 text-sm mb-8">
+        <p className="text-slate-400 text-sm mb-8">
           Secrets, dependencies, code vulnerabilities, CI/IaC configuration and
           git history{branch ? ` (branch ${branch})` : ""}.
         </p>
 
         {status === "running" && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
             <div className="inline-block w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4" />
-            <p className="text-gray-300">Scanning repository…</p>
-            <p className="text-gray-500 text-sm mt-2">
+            <p className="text-slate-300">Scanning repository…</p>
+            <p className="text-slate-500 text-sm mt-2">
               Nine detectors running in parallel — usually under a minute.
             </p>
           </div>
@@ -181,7 +181,7 @@ function ScanResultView({ result }: { result: ScanResultFull }) {
   )
 
   const meta = (
-    <p className="text-xs text-gray-500">
+    <p className="text-xs text-slate-500">
       Scan took {(result.durationMs / 1000).toFixed(2)}s •{" "}
       {result.filesSkipped} files skipped
       {result.truncated && " • results truncated (repo too large)"}
@@ -218,16 +218,16 @@ function ScanResultView({ result }: { result: ScanResultFull }) {
       <ExpiredSuppressionsBanner count={result.expiredSuppressionsCount ?? 0} />
       {summaryRow}
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center md:items-stretch">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center md:items-stretch">
         <div className="shrink-0 flex items-center justify-center">
           <RiskGauge score={result.riskScore!} />
         </div>
         <div className="flex-1 w-full flex flex-col justify-center">
-          <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-3">
+          <h2 className="text-sm uppercase tracking-wider text-slate-500 mb-3">
             Where the score comes from
           </h2>
           <RiskBreakdownChart breakdown={result.riskBreakdown!} />
-          <p className="text-xs text-gray-500 mt-4">
+          <p className="text-xs text-slate-500 mt-4">
             {result.prioritized!.length} finding
             {result.prioritized!.length === 1 ? "" : "s"} ranked by risk.
           </p>

@@ -50,11 +50,11 @@ function FindingItem({ finding }: { finding: SupplyChainFinding }) {
       : ""
 
   return (
-    <li className="border border-gray-800 rounded-lg overflow-hidden">
+    <li className="border border-slate-800 rounded-lg overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-800/50 transition"
+        className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-slate-800/50 transition"
       >
         <span
           className="text-xs uppercase tracking-wider font-bold shrink-0 w-20"
@@ -62,35 +62,35 @@ function FindingItem({ finding }: { finding: SupplyChainFinding }) {
         >
           {finding.severity}
         </span>
-        <span className="flex-1 text-sm text-gray-200 truncate">
+        <span className="flex-1 text-sm text-slate-200 truncate">
           {finding.pattern}
           {finding.package ? " - " + finding.package : ""}
         </span>
-        <span className="text-xs text-gray-500 font-mono truncate max-w-[40%]">
+        <span className="text-xs text-slate-500 font-mono truncate max-w-[40%]">
           {finding.file}
           {locationSuffix}
         </span>
-        <span className="text-gray-500 shrink-0">{open ? "-" : "+"}</span>
+        <span className="text-slate-500 shrink-0">{open ? "-" : "+"}</span>
       </button>
       {open ? (
-        <div className="px-3 py-3 border-t border-gray-800 bg-gray-950/50 space-y-3">
+        <div className="px-3 py-3 border-t border-slate-800 bg-slate-950/50 space-y-3">
           <div>
-            <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">
+            <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">
               What this means
             </div>
-            <p className="text-sm text-gray-300">{finding.message}</p>
+            <p className="text-sm text-slate-300">{finding.message}</p>
           </div>
           {finding.evidence ? (
             <div>
-              <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">
+              <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">
                 Evidence
               </div>
-              <pre className="text-xs text-gray-400 font-mono bg-black/40 rounded p-2 overflow-x-auto whitespace-pre-wrap break-all">
+              <pre className="text-xs text-slate-400 font-mono bg-black/40 rounded p-2 overflow-x-auto whitespace-pre-wrap break-all">
                 {finding.evidence}
               </pre>
             </div>
           ) : null}
-          <div className="text-xs text-gray-500 font-mono">
+          <div className="text-xs text-slate-500 font-mono">
             id: {finding.id}
           </div>
         </div>
@@ -117,12 +117,12 @@ export function SupplyChainCard({ supplyChain }: SupplyChainCardProps) {
     supplyChain.scanned.pyprojectCount
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center md:items-stretch">
+    <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center md:items-stretch">
       <div className="shrink-0 flex items-center justify-center">
         <SupplyChainGauge score={supplyChain.score} level={supplyChain.level} />
       </div>
       <div className="flex-1 w-full flex flex-col justify-center min-w-0">
-        <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-3">
+        <h2 className="text-sm uppercase tracking-wider text-slate-500 mb-3">
           Supply chain risk
         </h2>
 
@@ -140,7 +140,7 @@ export function SupplyChainCard({ supplyChain }: SupplyChainCardProps) {
                     className="inline-block w-2 h-2 rounded-full shrink-0"
                     style={{ backgroundColor: color }}
                   />
-                  <span className="text-gray-300 truncate">
+                  <span className="text-slate-300 truncate">
                     {categoryLabel(cat.id)}
                   </span>
                 </div>
@@ -153,7 +153,7 @@ export function SupplyChainCard({ supplyChain }: SupplyChainCardProps) {
                       {sev}
                     </span>
                   ) : null}
-                  <span className="text-gray-500 font-mono text-xs">
+                  <span className="text-slate-500 font-mono text-xs">
                     {cat.findingCount}{" "}
                     {cat.findingCount === 1 ? "finding" : "findings"}
                   </span>
@@ -165,7 +165,7 @@ export function SupplyChainCard({ supplyChain }: SupplyChainCardProps) {
 
         {total > 0 ? (
           <div>
-            <h3 className="text-xs uppercase tracking-wider text-gray-500 mb-2">
+            <h3 className="text-xs uppercase tracking-wider text-slate-500 mb-2">
               Findings ({total})
             </h3>
             <ul className="space-y-2">
@@ -177,14 +177,14 @@ export function SupplyChainCard({ supplyChain }: SupplyChainCardProps) {
               <button
                 type="button"
                 onClick={() => setShowAll(true)}
-                className="mt-2 text-xs text-gray-400 hover:text-gray-200 underline"
+                className="mt-2 text-xs text-slate-400 hover:text-slate-200 underline"
               >
                 Show {hidden} more
               </button>
             ) : null}
           </div>
         ) : (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-slate-500">
             {manifestsScanned > 0
               ? "No supply chain risks detected across " +
                 manifestsScanned +

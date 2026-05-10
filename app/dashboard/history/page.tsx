@@ -40,26 +40,26 @@ export default function HistoryPage() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 text-white px-6 py-12">
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white px-6 py-12">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-10">
           <Link
             href="/dashboard"
-            className="text-gray-400 hover:text-white text-sm flex items-center gap-1 transition"
+            className="text-slate-400 hover:text-white text-sm flex items-center gap-1 transition"
           >
             ← Back to repositories
           </Link>
         </div>
 
         <h1 className="text-3xl font-bold mb-2">Scan history</h1>
-        <p className="text-gray-400 text-sm mb-8">
+        <p className="text-slate-400 text-sm mb-8">
           Your {scans.length > 0 ? `last ${scans.length}` : "recent"} scans.
         </p>
 
         {status === "loading" && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
             <div className="inline-block w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4" />
-            <p className="text-gray-300">Loading history…</p>
+            <p className="text-slate-300">Loading history…</p>
           </div>
         )}
 
@@ -74,14 +74,14 @@ export default function HistoryPage() {
         )}
 
         {status === "done" && scans.length === 0 && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
             <InboxIcon
               size={40}
-              className="mx-auto mb-3 text-gray-500"
+              className="mx-auto mb-3 text-slate-500"
               aria-hidden="true"
             />
             <h2 className="text-xl font-semibold mb-2">No scans yet</h2>
-            <p className="text-gray-400 text-sm">
+            <p className="text-slate-400 text-sm">
               Head back to your repositories and run your first scan.
             </p>
           </div>
@@ -114,14 +114,14 @@ function ScanRow({ scan }: { scan: ScanSummary }) {
   return (
     <Link
       href={`/dashboard/scan/view/${scan.id}`}
-      className="block bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-xl p-5 transition"
+      className="block bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-5 transition"
     >
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold font-mono truncate">
             {scan.owner}/{scan.repo}
           </h3>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             {dateStr} • {scan.files_scanned} files • {(scan.duration_ms / 1000).toFixed(1)}s
           </p>
         </div>
@@ -160,7 +160,7 @@ function CountBadge({
   if (count === 0) return null
 
   const colors = {
-    neutral: "bg-gray-800 border-gray-700 text-gray-400",
+    neutral: "bg-slate-800 border-slate-700 text-slate-400",
     red: "bg-red-500/10 border-red-500/20 text-red-400",
     orange: "bg-orange-500/10 border-orange-500/20 text-orange-400",
   }

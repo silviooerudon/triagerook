@@ -30,14 +30,14 @@ const ROWS: Row[] = [
   {
     key: "low",
     label: "Low",
-    barClass: "bg-gray-400",
-    labelClass: "text-gray-400",
+    barClass: "bg-slate-400",
+    labelClass: "text-slate-400",
   },
   {
     key: "fixture",
     label: "Fixture",
-    barClass: "bg-gray-500",
-    labelClass: "text-gray-500",
+    barClass: "bg-slate-500",
+    labelClass: "text-slate-500",
     dim: true,
   },
 ]
@@ -48,7 +48,7 @@ export function RiskBreakdownChart({ breakdown }: { breakdown: RiskBreakdown }) 
 
   if (max === 0) {
     return (
-      <div className="text-sm text-gray-500">
+      <div className="text-sm text-slate-500">
         No findings contribute to score yet.
       </div>
     )
@@ -69,13 +69,13 @@ export function RiskBreakdownChart({ breakdown }: { breakdown: RiskBreakdown }) 
             >
               {row.label}
             </div>
-            <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
+            <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full ${row.barClass}`}
                 style={{ width: `${widthPct}%` }}
               />
             </div>
-            <div className="w-12 text-right text-xs font-mono text-gray-400">
+            <div className="w-12 text-right text-xs font-mono text-slate-400">
               {Math.round(value)}
             </div>
           </div>

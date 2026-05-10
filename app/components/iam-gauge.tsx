@@ -74,7 +74,7 @@ export function IamGauge({ score, level, degraded, size = 160 }: IamGaugeProps) 
             {clamped}
           </span>
           <span
-            className="text-gray-500 mt-1"
+            className="text-slate-500 mt-1"
             style={{ fontSize: Math.round(size * 0.13) }}
           >
             / 100

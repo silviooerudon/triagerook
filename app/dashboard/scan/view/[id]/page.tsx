@@ -83,21 +83,21 @@ export default function ScanViewPage({ params }: PageProps) {
   }, [id])
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 text-white px-6 py-12">
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white px-6 py-12">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-10">
           <Link
             href="/dashboard/history"
-            className="text-gray-400 hover:text-white text-sm flex items-center gap-1 transition"
+            className="text-slate-400 hover:text-white text-sm flex items-center gap-1 transition"
           >
             ← Back to history
           </Link>
         </div>
 
         {status === "loading" && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
             <div className="inline-block w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4" />
-            <p className="text-gray-300">Loading scan…</p>
+            <p className="text-slate-300">Loading scan…</p>
           </div>
         )}
 
@@ -193,7 +193,7 @@ function SavedScanView({ scan }: { scan: SavedScan }) {
             {scan.owner}/{scan.repo}
           </span>
         </h1>
-        <p className="text-gray-400 text-sm">
+        <p className="text-slate-400 text-sm">
           Scanned on {dateStr} • {scan.files_scanned} files •{" "}
           {(scan.duration_ms / 1000).toFixed(2)}s
         </p>
@@ -202,16 +202,16 @@ function SavedScanView({ scan }: { scan: SavedScan }) {
       {summaryRow}
 
       {hasRisk && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center md:items-stretch">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center md:items-stretch">
           <div className="shrink-0 flex items-center justify-center">
             <RiskGauge score={scan.riskScore!} />
           </div>
           <div className="flex-1 w-full flex flex-col justify-center">
-            <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-3">
+            <h2 className="text-sm uppercase tracking-wider text-slate-500 mb-3">
               Where the score comes from
             </h2>
             <RiskBreakdownChart breakdown={scan.riskBreakdown!} />
-            <p className="text-xs text-gray-500 mt-4">
+            <p className="text-xs text-slate-500 mt-4">
               {scan.prioritized!.length} finding
               {scan.prioritized!.length === 1 ? "" : "s"} ranked by risk.
             </p>

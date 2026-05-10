@@ -27,7 +27,7 @@ export function PostureCard({ posture }: PostureCardProps) {
   const hasQuickWins = posture.quickWins.length > 0
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center md:items-stretch">
+    <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center md:items-stretch">
       <div className="shrink-0 flex items-center justify-center">
         <PostureGauge
           score={posture.score}
@@ -36,7 +36,7 @@ export function PostureCard({ posture }: PostureCardProps) {
         />
       </div>
       <div className="flex-1 w-full flex flex-col justify-center">
-        <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-3">
+        <h2 className="text-sm uppercase tracking-wider text-slate-500 mb-3">
           Repo posture
         </h2>
 
@@ -47,12 +47,12 @@ export function PostureCard({ posture }: PostureCardProps) {
             return (
               <div key={cat.id}>
                 <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-gray-300">{categoryLabel(cat.id)}</span>
-                  <span className="text-gray-500 font-mono">
+                  <span className="text-slate-300">{categoryLabel(cat.id)}</span>
+                  <span className="text-slate-500 font-mono">
                     {cat.pointsEarned} / {cat.pointsMax}
                   </span>
                 </div>
-                <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full"
                     style={{
@@ -69,17 +69,17 @@ export function PostureCard({ posture }: PostureCardProps) {
 
         {hasQuickWins ? (
           <div>
-            <h3 className="text-xs uppercase tracking-wider text-gray-500 mb-2">
+            <h3 className="text-xs uppercase tracking-wider text-slate-500 mb-2">
               Quick wins to improve
             </h3>
             <ul className="space-y-1">
               {posture.quickWins.map((qw) => (
                 <li
                   key={qw.signalId}
-                  className="text-sm text-gray-300 flex items-baseline justify-between gap-3"
+                  className="text-sm text-slate-300 flex items-baseline justify-between gap-3"
                 >
                   <span>- {qw.label}</span>
-                  <span className="text-xs text-gray-500 font-mono shrink-0">
+                  <span className="text-xs text-slate-500 font-mono shrink-0">
                     +{qw.pointsAvailable} pts
                   </span>
                 </li>
@@ -87,7 +87,7 @@ export function PostureCard({ posture }: PostureCardProps) {
             </ul>
           </div>
         ) : (
-          <p className="text-sm text-gray-500">No quick wins remaining - solid posture.</p>
+          <p className="text-sm text-slate-500">No quick wins remaining - solid posture.</p>
         )}
       </div>
     </div>

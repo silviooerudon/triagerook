@@ -18,7 +18,7 @@ const KIND_LABELS: Record<PrioritizedFinding["kind"], string> = {
 
 function KindBadge({ kind }: { kind: PrioritizedFinding["kind"] }) {
   return (
-    <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border bg-gray-800/60 border-gray-700 text-gray-400">
+    <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border bg-slate-800/60 border-slate-700 text-slate-400">
       {KIND_LABELS[kind]}
     </span>
   )
@@ -58,7 +58,7 @@ function CardShell({
 }) {
   return (
     <article
-      className={`bg-gray-900 border border-gray-800 rounded-xl p-5 ${
+      className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${
         dim ? "opacity-60" : ""
       }`}
     >
@@ -92,13 +92,13 @@ function SecretFindingCard({ data }: { data: SecretFinding }) {
           />
         )}
       </header>
-      <p className="text-sm text-gray-400 mb-3">{data.description}</p>
-      <pre className="font-mono text-xs bg-black/40 border border-gray-800 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
+      <p className="text-sm text-slate-400 mb-3">{data.description}</p>
+      <pre className="font-mono text-xs bg-black/40 border border-slate-800 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
         <code>
-          <span className="text-gray-500 block mb-1">
+          <span className="text-slate-500 block mb-1">
             {data.filePath}:{data.lineNumber}
           </span>
-          <span className="text-gray-300">{data.lineContent}</span>
+          <span className="text-slate-300">{data.lineContent}</span>
         </code>
       </pre>
     </CardShell>
@@ -116,13 +116,13 @@ function CodeFindingCard({ data }: { data: CodeFinding }) {
         {data.cwe && <BadgePill label={data.cwe} />}
         {isFixture && <FixtureBadge />}
       </header>
-      <p className="text-sm text-gray-400 mb-3">{data.description}</p>
-      <pre className="font-mono text-xs bg-black/40 border border-gray-800 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
+      <p className="text-sm text-slate-400 mb-3">{data.description}</p>
+      <pre className="font-mono text-xs bg-black/40 border border-slate-800 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
         <code>
-          <span className="text-gray-500 block mb-1">
+          <span className="text-slate-500 block mb-1">
             {data.filePath}:{data.lineNumber}
           </span>
-          <span className="text-gray-300">{data.lineContent}</span>
+          <span className="text-slate-300">{data.lineContent}</span>
         </code>
       </pre>
     </CardShell>
@@ -138,22 +138,22 @@ function IaCFindingCard({ data }: { data: IaCFinding }) {
         <KindBadge kind="iac" />
         <BadgePill label={iacCategoryLabel(data.category)} />
       </header>
-      <p className="text-sm text-gray-400 mb-3">{data.description}</p>
+      <p className="text-sm text-slate-400 mb-3">{data.description}</p>
       {(data.lineContent || data.lineNumber) && (
-        <pre className="font-mono text-xs bg-black/40 border border-gray-800 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
+        <pre className="font-mono text-xs bg-black/40 border border-slate-800 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
           <code>
-            <span className="text-gray-500 block mb-1">
+            <span className="text-slate-500 block mb-1">
               {data.filePath}
               {data.lineNumber ? `:${data.lineNumber}` : ""}
             </span>
             {data.lineContent && (
-              <span className="text-gray-300">{data.lineContent}</span>
+              <span className="text-slate-300">{data.lineContent}</span>
             )}
           </code>
         </pre>
       )}
-      <p className="text-xs text-gray-500 mt-3">
-        <span className="text-gray-400">Remediation:</span> {data.remediation}
+      <p className="text-xs text-slate-500 mt-3">
+        <span className="text-slate-400">Remediation:</span> {data.remediation}
       </p>
     </CardShell>
   )
@@ -167,12 +167,12 @@ function SensitiveFileFindingCard({ data }: { data: SensitiveFileFinding }) {
         <SeverityPill severity={data.severity} />
         <KindBadge kind="sensitive-file" />
       </header>
-      <p className="text-sm text-gray-400 mb-3">{data.description}</p>
-      <pre className="font-mono text-xs bg-black/40 border border-gray-800 rounded-lg p-3 overflow-x-auto">
-        <code className="text-gray-300">{data.filePath}</code>
+      <p className="text-sm text-slate-400 mb-3">{data.description}</p>
+      <pre className="font-mono text-xs bg-black/40 border border-slate-800 rounded-lg p-3 overflow-x-auto">
+        <code className="text-slate-300">{data.filePath}</code>
       </pre>
-      <p className="text-xs text-gray-500 mt-3">
-        <span className="text-gray-400">Remediation:</span> {data.remediation}
+      <p className="text-xs text-slate-500 mt-3">
+        <span className="text-slate-400">Remediation:</span> {data.remediation}
       </p>
     </CardShell>
   )
@@ -195,23 +195,23 @@ function DependencyFindingCard({ data }: { data: DependencyFinding }) {
         )}
         {data.source && <BadgePill label={data.source} tone="warn" />}
       </header>
-      <p className="text-sm text-gray-400 mb-3">{data.title}</p>
-      <div className="text-xs space-y-1 bg-black/40 border border-gray-800 rounded-lg p-3">
+      <p className="text-sm text-slate-400 mb-3">{data.title}</p>
+      <div className="text-xs space-y-1 bg-black/40 border border-slate-800 rounded-lg p-3">
         {data.ghsa && (
-          <div className="text-gray-400">
-            <span className="text-gray-500">Advisory:</span>{" "}
+          <div className="text-slate-400">
+            <span className="text-slate-500">Advisory:</span>{" "}
             <span className="font-mono">{data.ghsa}</span>
           </div>
         )}
-        <div className="text-gray-400">
-          <span className="text-gray-500">Vulnerable versions:</span>{" "}
+        <div className="text-slate-400">
+          <span className="text-slate-500">Vulnerable versions:</span>{" "}
           <span className="font-mono text-red-400">
             {data.vulnerable_versions}
           </span>
         </div>
         {data.cvss_score !== null && (
-          <div className="text-gray-400">
-            <span className="text-gray-500">CVSS score:</span>{" "}
+          <div className="text-slate-400">
+            <span className="text-slate-500">CVSS score:</span>{" "}
             <span className="font-mono">{data.cvss_score}</span>
           </div>
         )}
