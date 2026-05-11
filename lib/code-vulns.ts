@@ -359,6 +359,94 @@ const CODE_RULES: CodeRule[] = [
     regex:
       /\bres\.(?:redirect|location)\s*\(\s*(?:req\.(?:body|params|query|headers)|\w+\.(?:body|params|query)\.\w+)/g,
   },
+
+  // ─────────────────────────  TLS verification  ─────────────────────────────
+  {
+    id: "js-tls-verify-disabled",
+    name: "TLS certificate verification disabled",
+    severity: "high",
+    category: "tls-verification",
+    cwe: "CWE-295",
+    description:
+      "rejectUnauthorized: false disables TLS certificate validation, breaking the trust chain and exposing the connection to MitM attacks. Common when AI assistants suggest 'fixes' for self-signed cert errors — the right fix is to add the CA to the trust store, not to disable validation.",
+    languages: ["js"],
+    regex: /\brejectUnauthorized\s*:\s*false\b/g,
+  },
+  {
+    id: "py-tls-verify-disabled",
+    name: "TLS verification disabled in HTTP client",
+    severity: "high",
+    category: "tls-verification",
+    cwe: "CWE-295",
+    description:
+      "Passing verify=False to requests/httpx skips certificate validation and exposes the call to MitM. Configure the CA bundle (REQUESTS_CA_BUNDLE / verify='/path/to/ca.pem') instead.",
+    languages: ["python"],
+    regex: /\b(?:requests|httpx)\.(?:get|post|put|delete|patch|head|request)\s*\([^)]*\bverify\s*=\s*False\b/g,
+  },
+
+  // ─────────────────────────  Insecure cookie config  ───────────────────────
+  {
+    id: "js-cookie-httponly-false",
+    name: "Cookie set with httpOnly: false in auth context",
+    severity: "high",
+    category: "insecure-cookie",
+    cwe: "CWE-1004",
+    description:
+      "Auth/session cookies should always be HttpOnly so client-side scripts can't read them, eliminating cookie-stealing XSS. AI-generated cookie middleware often omits httpOnly or sets it to false to enable client JS reads.",
+    languages: ["js"],
+    regex: /\bhttpOnly\s*:\s*false\b/g,
+  },
+  {
+    id: "js-cookie-insecure-prod",
+    name: "Session cookie with secure: false",
+    severity: "medium",
+    category: "insecure-cookie",
+    cwe: "CWE-614",
+    description:
+      "secure: false sends the cookie over plain HTTP, making it interceptable on any shared network. Production session cookies must be `secure: true` so they ride only over TLS.",
+    languages: ["js"],
+    regex:
+      /\b(?:session|cookie)\s*\([\s\S]{0,200}?\bsecure\s*:\s*false\b/gi,
+  },
+
+  // ─────────────────────────  Weak password hashing  ────────────────────────
+  {
+    id: "js-bcrypt-low-rounds",
+    name: "bcrypt cost factor below 10",
+    severity: "medium",
+    category: "weak-crypto",
+    cwe: "CWE-916",
+    description:
+      "bcrypt.hash(..., N) with N below 10 makes offline password cracking cheap. Use at least 10 (current OWASP recommendation is 12+). AI-generated examples often default to 4 or 8 for 'speed'.",
+    languages: ["js"],
+    regex: /\bbcrypt\.(?:hash|hashSync)\s*\([^,]+,\s*[1-9]\s*[,)]/g,
+  },
+
+  // ─────────────────────────  Hardcoded / leaked credentials  ───────────────
+  {
+    id: "js-env-fallback-secret",
+    name: "process.env fallback to a hardcoded secret-shaped string",
+    severity: "high",
+    category: "hardcoded-creds",
+    cwe: "CWE-798",
+    description:
+      "`process.env.FOO || \"sk-...\"` makes the fallback string a hardcoded credential committed to the repo. AI assistants frequently emit this pattern so the snippet 'works' without an env var — and it then ships to prod.",
+    languages: ["js"],
+    regex:
+      /\bprocess\.env\.[A-Z0-9_]+\s*(?:\|\||\?\?)\s*["'`](?:sk-[A-Za-z0-9_-]{20,}|sk_(?:live|test)_[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{20,}|xox[baprs]-[0-9]{6,})/g,
+  },
+  {
+    id: "js-next-public-secret-name",
+    name: "NEXT_PUBLIC_ env var with a secret-like name",
+    severity: "high",
+    category: "hardcoded-creds",
+    cwe: "CWE-200",
+    description:
+      "Any env var prefixed NEXT_PUBLIC_ is inlined into the client bundle at build time and visible to every visitor. Naming one *SECRET*, *KEY*, *TOKEN*, *PASSWORD* (other than well-known public keys like Stripe pk_*) almost certainly leaks a credential. AI assistants confuse client-side and server-side env in Next.js routinely.",
+    languages: ["js"],
+    regex:
+      /\bprocess\.env\.NEXT_PUBLIC_[A-Z0-9_]*(?:SECRET|PRIVATE|API_KEY|AUTH_TOKEN|PASSWORD|SERVICE_ROLE|ACCESS_TOKEN)[A-Z0-9_]*\b/g,
+  },
 ]
 
 const JS_EXTENSIONS = new Set(["js", "jsx", "ts", "tsx", "mjs", "cjs"])

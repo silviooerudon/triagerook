@@ -27,6 +27,9 @@ export type CodeVulnCategory =
   | "deserialization"
   | "eval"
   | "open-redirect"
+  | "tls-verification"
+  | "insecure-cookie"
+  | "hardcoded-creds"
 
 export type CodeFinding = {
   ruleId: string

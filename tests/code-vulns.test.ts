@@ -65,3 +65,75 @@ describe("findCodeVulns", () => {
     expect(findings[0].lineNumber).toBeGreaterThan(0)
   })
 })
+
+describe("findCodeVulns — AI-typical insecure patterns", () => {
+  it("flags JS TLS verification disabled (rejectUnauthorized: false)", () => {
+    const code = `const agent = new https.Agent({ rejectUnauthorized: false })`
+    expect(findCategories(code, "src/http.ts")).toContain("tls-verification")
+  })
+
+  it("flags Python requests with verify=False", () => {
+    const code = `r = requests.get(url, verify=False)`
+    expect(findCategories(code, "src/client.py")).toContain("tls-verification")
+  })
+
+  it("flags httpx with verify=False", () => {
+    const code = `r = httpx.post(url, json=data, verify=False)`
+    expect(findCategories(code, "src/client.py")).toContain("tls-verification")
+  })
+
+  it("flags Cookie httpOnly: false", () => {
+    const code = `res.cookie('session', token, { httpOnly: false, maxAge: 3600 })`
+    expect(findCategories(code, "src/auth.ts")).toContain("insecure-cookie")
+  })
+
+  it("flags session() middleware with secure: false", () => {
+    const code = `app.use(session({ secret: s, cookie: { secure: false, maxAge: 60000 } }))`
+    expect(findCategories(code, "src/server.ts")).toContain("insecure-cookie")
+  })
+
+  it("flags bcrypt cost factor below 10", () => {
+    const code = `const hash = await bcrypt.hash(password, 8)`
+    expect(findCategories(code, "src/auth.ts")).toContain("weak-crypto")
+  })
+
+  it("does NOT flag bcrypt with cost factor >= 10", () => {
+    const code = `const hash = await bcrypt.hash(password, 12)`
+    const findings = findCodeVulns(code, "src/auth.ts", false)
+    expect(findings.find((f) => f.ruleId === "js-bcrypt-low-rounds")).toBeUndefined()
+  })
+
+  it("flags process.env fallback to a hardcoded secret-shaped string", () => {
+    const sk = "sk" + "-abcdefghijklmnopqrstuvwxyz123456"
+    const code = `const apiKey = process.env.OPENAI_API_KEY || "${sk}"`
+    expect(findCategories(code, "src/openai.ts")).toContain("hardcoded-creds")
+  })
+
+  it("flags process.env nullish fallback (??) to a secret-shaped string", () => {
+    const ghp = "ghp" + "_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789"
+    const code = `const token = process.env.GITHUB_TOKEN ?? "${ghp}"`
+    expect(findCategories(code, "src/gh.ts")).toContain("hardcoded-creds")
+  })
+
+  it("does NOT flag env fallback to a clearly placeholder string", () => {
+    const code = `const apiKey = process.env.OPENAI_API_KEY || "your-key-here"`
+    const findings = findCodeVulns(code, "src/openai.ts", false)
+    expect(findings.find((f) => f.ruleId === "js-env-fallback-secret")).toBeUndefined()
+  })
+
+  it("flags NEXT_PUBLIC_*SECRET* env access", () => {
+    const code = `const k = process.env.NEXT_PUBLIC_API_SECRET`
+    expect(findCategories(code, "app/page.tsx")).toContain("hardcoded-creds")
+  })
+
+  it("flags NEXT_PUBLIC_SUPABASE_SERVICE_ROLE access", () => {
+    const code = `createClient(url, process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY)`
+    expect(findCategories(code, "lib/db.ts")).toContain("hardcoded-creds")
+  })
+
+  it("does NOT flag NEXT_PUBLIC_SUPABASE_URL (no secret-like suffix)", () => {
+    const code = `const url = process.env.NEXT_PUBLIC_SUPABASE_URL`
+    const findings = findCodeVulns(code, "lib/db.ts", false)
+    expect(findings.find((f) => f.ruleId === "js-next-public-secret-name")).toBeUndefined()
+  })
+})
