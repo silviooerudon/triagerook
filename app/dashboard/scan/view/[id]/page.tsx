@@ -241,7 +241,10 @@ function SavedScanView({ scan }: { scan: SavedScan }) {
           </div>
 
           {view === "prioritized" ? (
-            <PrioritizedList findings={scan.prioritized!} />
+            <PrioritizedList
+              findings={scan.prioritized!}
+              fixContext={{ owner: scan.owner, repo: scan.repo }}
+            />
           ) : (
             legacySections
           )}

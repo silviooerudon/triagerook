@@ -402,14 +402,16 @@ export function DependenciesSection({
 
 export function PrioritizedList({
   findings,
+  fixContext,
 }: {
   findings: PrioritizedFinding[]
+  fixContext?: { owner: string; repo: string }
 }) {
   if (findings.length === 0) return <AllClear />
   return (
     <section className="space-y-3">
       {findings.map((f, i) => (
-        <FindingCard key={i} finding={f} />
+        <FindingCard key={i} finding={f} fixContext={fixContext} />
       ))}
     </section>
   )

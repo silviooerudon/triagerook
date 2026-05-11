@@ -127,13 +127,23 @@ export default function ScanPage({ params, searchParams }: PageProps) {
           </div>
         )}
 
-        {status === "done" && result && <ScanResultView result={result} />}
+        {status === "done" && result && (
+          <ScanResultView result={result} owner={owner} repo={repo} />
+        )}
       </div>
     </main>
   )
 }
 
-function ScanResultView({ result }: { result: ScanResultFull }) {
+function ScanResultView({
+  result,
+  owner,
+  repo,
+}: {
+  result: ScanResultFull
+  owner: string
+  repo: string
+}) {
   const [view, setView] = useState<"prioritized" | "by-detector">("prioritized")
 
   const all: AllFindings = {
@@ -256,7 +266,10 @@ function ScanResultView({ result }: { result: ScanResultFull }) {
       </div>
 
       {view === "prioritized" ? (
-        <PrioritizedList findings={result.prioritized!} />
+        <PrioritizedList
+          findings={result.prioritized!}
+          fixContext={{ owner, repo }}
+        />
       ) : (
         legacySections
       )}
