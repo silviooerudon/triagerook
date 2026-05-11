@@ -17,7 +17,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
   const userId = session.user?.name ?? session.user?.email ?? "unknown"
   const { id } = await params
 
-  // 2. Fetch scan from DB - includes 12 dedicated columns from migrations 003-005
+  // 2. Fetch scan from DB - includes dedicated columns from migrations 003-006
   const { data, error } = await supabase
     .from("scans")
     .select(
@@ -33,6 +33,8 @@ export async function GET(_request: Request, { params }: RouteParams) {
         "deps_count",
         "user_id",
         "risk_score",
+        "risk_breakdown",
+        "prioritized_findings",
         "suppressed_count",
         "posture_score",
         "posture_grade",
@@ -42,10 +44,12 @@ export async function GET(_request: Request, { params }: RouteParams) {
         "iam_level",
         "iam_breakdown",
         "iam_findings",
+        "iam_files_scanned",
         "supply_chain_score",
         "supply_chain_level",
         "supply_chain_breakdown",
         "supply_chain_findings",
+        "supply_chain_scanned",
       ].join(", "),
     )
     .eq("id", id)
@@ -60,31 +64,37 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  // 4. Re-compute risk breakdown + prioritized list from result JSONB.
-  // Note: this re-scores ALL findings in the saved result, including any that
-  // were filtered out by .repoguardignore at scan-time (the persisted result
-  // JSONB does not record which findings were suppressed). The persisted
-  // `risk_score` column reflects post-suppression. We use the recomputed
-  // values here for internal consistency between gauge / breakdown /
-  // prioritized list. Score may differ slightly from persisted in scans
-  // that had active suppressions.
-  // Backlog: persist breakdown + prioritized + suppressed in DB to avoid drift.
-  let riskScore: number | null = null
+  // 4. Resolve risk score / breakdown / prioritized list.
+  // Post-migration-006 scans persist all three — we read them directly and
+  // they match exactly what the user saw at scan-time (no drift when rules
+  // change later). Pre-006 scans have NULL columns; we fall back to the
+  // re-derive path so the dashboard keeps working for legacy data.
+  let riskScore: number | null =
+    typeof data.risk_score === "number" ? data.risk_score : null
   let riskBreakdown: ReturnType<typeof scoreRepo>["breakdown"] | null = null
   let prioritized: ReturnType<typeof scoreRepo>["prioritized"] | null = null
-  try {
-    const result = (data.result as Parameters<typeof flattenScan>[0]) ?? null
-    if (result) {
-      const flat = flattenScan(result)
-      const assessment = scoreRepo(flat)
-      riskScore = assessment.score
-      riskBreakdown = assessment.breakdown
-      prioritized = assessment.prioritized
+
+  if (data.risk_breakdown && data.prioritized_findings) {
+    riskBreakdown = data.risk_breakdown as ReturnType<typeof scoreRepo>["breakdown"]
+    prioritized = data.prioritized_findings as ReturnType<typeof scoreRepo>["prioritized"]
+  } else {
+    // Legacy path: re-derive from the saved result JSONB. Re-scores ALL
+    // findings, including ones filtered by .repoguardignore at scan-time
+    // (the result JSONB does not record which were suppressed). Score may
+    // drift slightly from the persisted risk_score in scans that had
+    // active suppressions.
+    try {
+      const result = (data.result as Parameters<typeof flattenScan>[0]) ?? null
+      if (result) {
+        const flat = flattenScan(result)
+        const assessment = scoreRepo(flat)
+        riskScore = assessment.score
+        riskBreakdown = assessment.breakdown
+        prioritized = assessment.prioritized
+      }
+    } catch (recomputeErr) {
+      console.error("[scans/[id]] Failed to recompute risk:", recomputeErr)
     }
-  } catch (recomputeErr) {
-    console.error("[scans/[id]] Failed to recompute risk:", recomputeErr)
-    riskScore =
-      typeof data.risk_score === "number" ? data.risk_score : null
   }
 
   // 5. Reconstruct nested feature objects from dedicated columns.
@@ -111,10 +121,12 @@ export async function GET(_request: Request, { params }: RouteParams) {
           level: data.iam_level,
           breakdown: data.iam_breakdown ?? [],
           findings: data.iam_findings ?? [],
-          // `filesScanned` is not persisted in a dedicated column. The
-          // IamCard renders a "across N files" footer; defaulting to 0 is a
-          // best-effort approximation for historic scans.
-          filesScanned: 0,
+          // Post-migration-006: read from dedicated column. Legacy scans
+          // (NULL) fall back to 0 so the "across N files" footer renders.
+          filesScanned:
+            typeof data.iam_files_scanned === "number"
+              ? data.iam_files_scanned
+              : 0,
         }
       : null
 
@@ -127,16 +139,15 @@ export async function GET(_request: Request, { params }: RouteParams) {
           // the `supply_chain_breakdown` column. Reconstructing matches.
           categories: data.supply_chain_breakdown ?? [],
           findings: data.supply_chain_findings ?? [],
-          // `scanned` counts (packageJsonCount / setupPyCount / etc) are not
-          // persisted. Defaulting to zeros surfaces "across 0 manifests" in
-          // the card footer, which signals the data is not available without
-          // crashing the render.
-          scanned: {
-            packageJsonCount: 0,
-            setupPyCount: 0,
-            pyprojectCount: 0,
-            depsAnalyzed: 0,
-          },
+          // Post-migration-006: read from dedicated column. Legacy scans
+          // (NULL) fall back to zero-counts so the card footer renders.
+          scanned:
+            (data.supply_chain_scanned as Record<string, number>) ?? {
+              packageJsonCount: 0,
+              setupPyCount: 0,
+              pyprojectCount: 0,
+              depsAnalyzed: 0,
+            },
         }
       : null
 

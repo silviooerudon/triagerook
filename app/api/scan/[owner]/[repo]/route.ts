@@ -110,6 +110,11 @@ export async function POST(
       secrets_count: secretsResult.findings.length,
       deps_count: npmResult.vulns.length + pythonDeps.length,
       risk_score: assessment.score,
+      // Persisted from migration 006 to lock the user-visible breakdown +
+      // prioritized list against future rule changes and to make scan-diff
+      // a single DB read instead of a re-derive.
+      risk_breakdown: assessment.breakdown,
+      prioritized_findings: assessment.prioritized,
       suppressed_count: suppressionResult.suppressed.length,
       posture_score: postureResult.score,
       posture_grade: postureResult.grade,
@@ -119,10 +124,12 @@ export async function POST(
       iam_level: iamResult.level,
       iam_breakdown: iamResult.breakdown,
       iam_findings: iamResult.findings,
+      iam_files_scanned: iamResult.filesScanned,
       supply_chain_score: supplyChainResult.score,
       supply_chain_level: supplyChainResult.level,
       supply_chain_breakdown: supplyChainResult.categories,
       supply_chain_findings: supplyChainResult.findings,
+      supply_chain_scanned: supplyChainResult.scanned,
     })
 
     if (dbError) {
