@@ -47,6 +47,13 @@ Conservative pattern rules over your JavaScript/TypeScript and Python code, each
 - **Insecure deserialization (CWE-502)** — `pickle.loads`, `yaml.load` without `SafeLoader`
 - **CORS misconfiguration (CWE-942)** — wildcard origin combined with `credentials: true`
 - **Open redirect (CWE-601)** — `res.redirect` with request-derived URL
+- **TLS verification disabled (CWE-295)** — `rejectUnauthorized: false` in JS, `verify=False` in Python `requests`/`httpx`
+- **Insecure cookies (CWE-1004 / CWE-614)** — auth/session cookies with `httpOnly: false` or `secure: false`
+- **Weak bcrypt cost (CWE-916)** — `bcrypt.hash(..., N)` with N below 10
+- **Hardcoded credentials (CWE-798)** — `process.env.X || "sk-…"` style fallbacks where the literal is a real-shaped credential
+- **Client-side secret exposure (CWE-200)** — `NEXT_PUBLIC_*SECRET*` / `*SERVICE_ROLE*` env reads (Next.js inlines these into the client bundle)
+
+The last five catch patterns AI coding assistants commonly generate when scaffolding auth, HTTP clients, or Next.js apps.
 
 ### 6. Vulnerable dependencies (npm and PyPI)
 
