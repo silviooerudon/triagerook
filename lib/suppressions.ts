@@ -145,6 +145,29 @@ export function getFindingPath(finding: FindingLike): string {
   return "";
 }
 
+const NPM_MANIFESTS = new Set(["package.json", "package-lock.json"]);
+const PY_MANIFESTS = new Set(["requirements.txt", "pyproject.toml", "Pipfile"]);
+
+// Dep findings can carry a `source` of either the human-edited manifest
+// (package.json, requirements.txt) or a lockfile / alternate manifest
+// (package-lock.json, pyproject.toml, Pipfile). Users almost always
+// suppress per-package without caring which file the bad version lives
+// in, and the comment in findRuleIdForFinding even recommends
+// `* [rule=dependency/<pkg>]`. To make the more natural pathGlob
+// `package.json [rule=dependency/<pkg>]` work for transitives too, we
+// match against all manifests in the same ecosystem.
+export function getFindingPaths(finding: FindingLike): string[] {
+  const kind = finding?.kind;
+  const data = finding?.data ?? {};
+
+  if (kind !== "dependency") return [getFindingPath(finding)];
+
+  const source = data.source ?? "package.json";
+  if (NPM_MANIFESTS.has(source)) return Array.from(NPM_MANIFESTS);
+  if (PY_MANIFESTS.has(source)) return Array.from(PY_MANIFESTS);
+  return [source];
+}
+
 export function findAlternateRuleIds(finding: FindingLike): string[] {
   const primary = findRuleIdForFinding(finding);
   const kind = finding?.kind;
@@ -208,12 +231,13 @@ export function applySuppressions(
   const expiredSuppressionLines = new Set<number>();
 
   for (const finding of findings) {
-    const path = getFindingPath(finding);
+    const paths = getFindingPaths(finding);
     const ruleIds = findAlternateRuleIds(finding);
 
     let matched: Suppression | null = null;
     for (const s of ordered) {
-      if (!minimatch(path, s.pathGlob, { dot: true })) continue;
+      const pathHit = paths.some((p) => minimatch(p, s.pathGlob, { dot: true }));
+      if (!pathHit) continue;
       if (s.ruleGlob !== undefined) {
         const ruleHit = ruleIds.some((rid) => minimatch(rid, s.ruleGlob!, { dot: true }));
         if (!ruleHit) continue;
