@@ -118,4 +118,74 @@ describe("applySuppressions", () => {
     const result = applySuppressions(findings, suppressions)
     expect(result.suppressed).toHaveLength(1)
   })
+
+  it("dep suppression with pathGlob 'package.json' matches transitive deps recorded under package-lock.json", () => {
+    const finding: AnyFinding = {
+      kind: "dependency",
+      data: {
+        package: "postcss",
+        version: "8.4.31",
+        ecosystem: "npm",
+        severity: "moderate",
+        title: "postcss vuln",
+        ghsa: "GHSA-qx2v-qp2m-jg93",
+        vulnerable_versions: "<8.5.10",
+        cvss_score: null,
+        url: "",
+        source: "package-lock.json",
+        isTransitive: true,
+      },
+    }
+    const suppressions = parseSuppressions("package.json [rule=dependency/postcss]")
+    const result = applySuppressions([finding], suppressions)
+    expect(result.suppressed).toHaveLength(1)
+    expect(result.kept).toHaveLength(0)
+  })
+
+  it("dep suppression with pathGlob 'requirements.txt' matches deps in any python manifest", () => {
+    const inPyproject: AnyFinding = {
+      kind: "dependency",
+      data: {
+        package: "django",
+        version: "4.2.1",
+        ecosystem: "PyPI",
+        severity: "high",
+        title: "django vuln",
+        ghsa: "GHSA-django",
+        vulnerable_versions: "<4.2.7",
+        cvss_score: null,
+        url: "",
+        source: "pyproject.toml",
+      },
+    }
+    const inPipfile: AnyFinding = {
+      ...inPyproject,
+      data: { ...inPyproject.data, source: "Pipfile" },
+    } as AnyFinding
+    const suppressions = parseSuppressions("requirements.txt [rule=dependency/django]")
+    const result = applySuppressions([inPyproject, inPipfile], suppressions)
+    expect(result.suppressed).toHaveLength(2)
+    expect(result.kept).toHaveLength(0)
+  })
+
+  it("dep suppression with exact source still matches (no regression for explicit lock-file scope)", () => {
+    const finding: AnyFinding = {
+      kind: "dependency",
+      data: {
+        package: "postcss",
+        version: "8.4.31",
+        ecosystem: "npm",
+        severity: "moderate",
+        title: "x",
+        ghsa: null,
+        vulnerable_versions: "<8.5.10",
+        cvss_score: null,
+        url: "",
+        source: "package-lock.json",
+      },
+    }
+    const suppressions = parseSuppressions("package-lock.json [rule=dependency/postcss]")
+    const result = applySuppressions([finding], suppressions)
+    expect(result.suppressed).toHaveLength(1)
+  })
 })
