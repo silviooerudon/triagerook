@@ -1,4 +1,5 @@
 import { auth } from "@/auth"
+import { getUserId } from "@/lib/auth-utils"
 import {
   scanRepo,
   GitHubRateLimitError,
@@ -27,12 +28,12 @@ export async function POST(
   { params }: RouteParams
 ) {
   const session = await auth()
-  if (!session) {
+  const userId = getUserId(session)
+  if (!userId || !session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  // @ts-expect-error - accessToken custom field
-  const accessToken = session.accessToken as string | undefined
+  const accessToken = session.accessToken
   if (!accessToken) {
     return NextResponse.json(
       { error: "No access token available. Please sign in again." },
@@ -99,7 +100,6 @@ export async function POST(
 
     const assessment = scoreRepo(suppressionResult.kept)
 
-    const userId = session.user?.name ?? session.user?.email ?? "unknown"
     const { error: dbError } = await supabase.from("scans").insert({
       user_id: userId,
       owner,

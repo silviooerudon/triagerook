@@ -1,15 +1,15 @@
 import { auth } from "@/auth"
 import { supabase } from "@/lib/supabase"
+import { getUserId } from "@/lib/auth-utils"
 import { NextResponse } from "next/server"
 
 export async function GET() {
   // 1. Check authentication
   const session = await auth()
-  if (!session) {
+  const userId = getUserId(session)
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-
-  const userId = session.user?.name ?? session.user?.email ?? "unknown"
 
   // 2. Fetch user's scans (most recent first, cap at 50)
   const { data, error } = await supabase
