@@ -23,12 +23,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, account }) {
       if (account) {
         token.accessToken = account.access_token
+        // providerAccountId is the GitHub numeric user id — stable, unique,
+        // and unaffected by display-name changes. This is the source of
+        // truth for user identity in RepoGuard; never use session.user.name
+        // (mutable, non-unique) as a key into the scans table.
+        if (account.providerAccountId) {
+          token.githubId = account.providerAccountId
+        }
       }
       return token
     },
     async session({ session, token }) {
-      // @ts-expect-error - accessToken custom field
       session.accessToken = token.accessToken
+      if (session.user && token.githubId) {
+        session.user.id = token.githubId
+      }
       return session
     },
   },

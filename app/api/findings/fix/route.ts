@@ -8,6 +8,10 @@ import {
   getRepoDefaultBranch,
   createPullRequestFromPatches,
 } from "@/lib/octokit-app"
+import { isSafeRepoFilePath } from "@/lib/path-validation"
+import { userHasPushAccess } from "@/lib/repo-access"
+
+const SAFE_OWNER_REPO = /^[A-Za-z0-9._-]+$/
 
 export const dynamic = "force-dynamic"
 
@@ -51,6 +55,25 @@ export async function POST(request: Request) {
       { status: 400 }
     )
   }
+  if (!SAFE_OWNER_REPO.test(owner) || !SAFE_OWNER_REPO.test(repo)) {
+    return NextResponse.json({ error: "Invalid owner or repo format" }, { status: 400 })
+  }
+
+  // Auth gate: caller must have push access to the target repo (proven
+  // via their own GitHub access token) before we open a PR under the
+  // GitHub App identity. Without this check, any logged-in RepoGuard
+  // user could open PRs on any repo where the App happens to be
+  // installed.
+  const userToken = session.accessToken
+  if (!userToken) {
+    return NextResponse.json({ error: "No access token in session" }, { status: 401 })
+  }
+  if (!(await userHasPushAccess(userToken, owner, repo))) {
+    return NextResponse.json(
+      { error: "You do not have push access to this repository" },
+      { status: 403 }
+    )
+  }
 
   const supportedKind = findingSupportsFix(finding)
   if (!supportedKind) {
@@ -76,6 +99,14 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "Cannot resolve target file path from finding" },
       { status: 422 }
+    )
+  }
+  // Defence-in-depth: even though the finding came from our own scan,
+  // it arrives via the request body and could be tampered with.
+  if (!isSafeRepoFilePath(targetPath)) {
+    return NextResponse.json(
+      { error: "Refusing finding with unsafe file path" },
+      { status: 400 }
     )
   }
 

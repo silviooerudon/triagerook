@@ -12,8 +12,7 @@ export default async function Dashboard() {
     redirect("/")
   }
 
-  // @ts-expect-error - accessToken custom field
-  const accessToken = session.accessToken as string | undefined
+  const accessToken = session.accessToken
 
   let repos: GitHubRepo[] = []
   let fetchError: string | null = null

@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { supabase } from "@/lib/supabase"
+import { getUserId } from "@/lib/auth-utils"
 import { flattenScan, scoreRepo } from "@/lib/risk"
 import { NextResponse } from "next/server"
 
@@ -10,11 +11,11 @@ type RouteParams = {
 export async function GET(_request: Request, { params }: RouteParams) {
   // 1. Authentication
   const session = await auth()
-  if (!session) {
+  const userId = getUserId(session)
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const userId = session.user?.name ?? session.user?.email ?? "unknown"
   const { id } = await params
 
   // 2. Fetch scan from DB - includes dedicated columns from migrations 003-006

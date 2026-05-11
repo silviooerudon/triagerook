@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { supabase } from "@/lib/supabase"
+import { getUserId } from "@/lib/auth-utils"
 import { flattenScan, scoreRepo } from "@/lib/risk"
 import type { PrioritizedFinding, RiskBreakdown } from "@/lib/risk"
 import { diffScans, type ScanSnapshot } from "@/lib/scan-diff"
@@ -67,10 +68,10 @@ function rowToSnapshot(row: ScanRow): ScanSnapshot {
 
 export async function GET(request: Request) {
   const session = await auth()
-  if (!session) {
+  const userId = getUserId(session)
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  const userId = session.user?.name ?? session.user?.email ?? "unknown"
 
   const url = new URL(request.url)
   const fromId = url.searchParams.get("from")
