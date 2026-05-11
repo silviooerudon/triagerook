@@ -7,6 +7,10 @@ import type {
   SensitiveFileFinding,
 } from "@/lib/types"
 import { SeverityPill, BadgePill } from "./scan-findings"
+import { FixPrButton } from "./fix-pr-button"
+import { findingSupportsFix } from "@/lib/fix-engines"
+
+type FixContext = { owner: string; repo: string }
 
 const KIND_LABELS: Record<PrioritizedFinding["kind"], string> = {
   secret: "secret",
@@ -228,19 +232,45 @@ function DependencyFindingCard({ data }: { data: DependencyFinding }) {
   )
 }
 
-export function FindingCard({ finding }: { finding: PrioritizedFinding }) {
-  switch (finding.kind) {
-    case "secret":
-      return <SecretFindingCard data={finding.data} />
-    case "code":
-      return <CodeFindingCard data={finding.data} />
-    case "iac":
-      return <IaCFindingCard data={finding.data} />
-    case "sensitive-file":
-      return <SensitiveFileFindingCard data={finding.data} />
-    case "dependency":
-      return <DependencyFindingCard data={finding.data} />
-  }
+export function FindingCard({
+  finding,
+  fixContext,
+}: {
+  finding: PrioritizedFinding
+  fixContext?: FixContext
+}) {
+  const showFixButton =
+    fixContext !== undefined && findingSupportsFix(finding) !== null
+
+  const card = (() => {
+    switch (finding.kind) {
+      case "secret":
+        return <SecretFindingCard data={finding.data} />
+      case "code":
+        return <CodeFindingCard data={finding.data} />
+      case "iac":
+        return <IaCFindingCard data={finding.data} />
+      case "sensitive-file":
+        return <SensitiveFileFindingCard data={finding.data} />
+      case "dependency":
+        return <DependencyFindingCard data={finding.data} />
+    }
+  })()
+
+  if (!showFixButton) return card
+
+  return (
+    <div className="space-y-2">
+      {card}
+      <div className="flex justify-end">
+        <FixPrButton
+          owner={fixContext!.owner}
+          repo={fixContext!.repo}
+          finding={finding}
+        />
+      </div>
+    </div>
+  )
 }
 
 export default FindingCard
