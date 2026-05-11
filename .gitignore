@@ -46,3 +46,17 @@ next-env.d.ts
 
 # GPG key backups (never commit private keys)
 gpg-backup-*/
+
+# Strategy / agent context docs - kept local, not tracked in public repo
+# (repo is public for build-in-public branding; these docs contain
+# user counts, employer info, monetization plans we keep private)
+AGENTS.md
+CLAUDE.md
+HANDOFF.md
+.agents/
+docs/HANDOFF.md
+docs/baseline-metrics.md
+docs/handoff-*.md
+docs/plan-*.md
+docs/session-*.md
+skills-lock.json

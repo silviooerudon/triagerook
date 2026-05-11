@@ -31,3 +31,18 @@ scripts/patch-iam-d3-1-heredoc.py [rule=code/*] [reason="JS-in-Python-heredoc fa
 # system. It contains intentional vuln patterns to verify suppression
 # logic works end-to-end.
 scripts/test-suppressions.ts [rule=code/*] [reason="Test fixture for suppression system"]
+
+# postcss is a transitive dep via tailwindcss. Upstream Next 16 ships an
+# old postcss; will resolve when Next bumps it. Time-boxed expiry forces
+# us to re-evaluate.
+package.json [rule=dependency/postcss] [reason="upstream next 16 ships old postcss"] [expires=2026-08-01]
+
+# tests/code-vulns.test.ts contains intentional bad patterns as fixtures
+# for the SAST detector tests. Each rule below corresponds to a fixture
+# that the detector itself should match by design.
+tests/code-vulns.test.ts [rule=code/js-next-public-secret-name] [reason="fixture"]
+tests/code-vulns.test.ts [rule=code/js-tls-verify-disabled] [reason="fixture"]
+tests/code-vulns.test.ts [rule=code/js-bcrypt-low-rounds] [reason="fixture"]
+tests/code-vulns.test.ts [rule=code/js-cookie-httponly-false] [reason="fixture"]
+tests/code-vulns.test.ts [rule=code/js-cookie-insecure-prod] [reason="fixture"]
+tests/code-vulns.test.ts [rule=code/js-env-fallback-secret] [reason="fixture"]
