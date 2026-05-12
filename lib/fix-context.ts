@@ -1,9 +1,29 @@
 import type { Session } from "next-auth"
 import type { PrioritizedFinding } from "@/lib/risk"
 import { findingSupportsFix, runFixEngine, type RunFixResult } from "@/lib/fix-engines"
-import { getInstallationToken, getFileContent, getRepoDefaultBranch } from "@/lib/octokit-app"
+import {
+  getInstallationToken,
+  getFileContent,
+  getRepoDefaultBranch,
+  GitHubAppFetchError,
+} from "@/lib/octokit-app"
 import { isSafeRepoFilePath } from "@/lib/path-validation"
 import { userHasPushAccess } from "@/lib/repo-access"
+
+// Stable error codes the UI can switch on. Keep the set small — every new
+// code is a new dialog the user might see.
+export type FixContextErrorCode =
+  | "invalid_body"
+  | "invalid_owner_repo"
+  | "missing_access_token"
+  | "no_push_access"
+  | "unsupported_finding"
+  | "app_auth_failed"
+  | "app_not_installed"
+  | "no_target_path"
+  | "unsafe_target_path"
+  | "fetch_failed"
+  | "engine_failed"
 
 // Shared between POST /api/findings/fix-preview and POST /api/findings/fix.
 // Both routes need the same gates (auth + owner/repo regex + push access +
@@ -30,7 +50,7 @@ export type FixContext = {
 
 export type FixContextOutcome =
   | { ok: true; ctx: FixContext }
-  | { ok: false; status: number; error: string }
+  | { ok: false; status: number; error: string; code: FixContextErrorCode }
 
 function resolveTargetPath(finding: PrioritizedFinding): string | null {
   if (finding.kind === "dependency") return finding.data.source ?? null
@@ -45,23 +65,48 @@ export async function prepareFixContext(
 ): Promise<FixContextOutcome> {
   const { owner, repo, finding } = body
   if (!owner || !repo || !finding) {
-    return { ok: false, status: 400, error: "Missing required fields: owner, repo, finding" }
+    return {
+      ok: false,
+      status: 400,
+      error: "Missing required fields: owner, repo, finding",
+      code: "invalid_body",
+    }
   }
   if (!SAFE_OWNER_REPO.test(owner) || !SAFE_OWNER_REPO.test(repo)) {
-    return { ok: false, status: 400, error: "Invalid owner or repo format" }
+    return {
+      ok: false,
+      status: 400,
+      error: "Invalid owner or repo format",
+      code: "invalid_owner_repo",
+    }
   }
 
   const userToken = session.accessToken
   if (!userToken) {
-    return { ok: false, status: 401, error: "No access token in session" }
+    return {
+      ok: false,
+      status: 401,
+      error: "No access token in session",
+      code: "missing_access_token",
+    }
   }
   if (!(await userHasPushAccess(userToken, owner, repo))) {
-    return { ok: false, status: 403, error: "You do not have push access to this repository" }
+    return {
+      ok: false,
+      status: 403,
+      error: "You do not have push access to this repository",
+      code: "no_push_access",
+    }
   }
 
   const supportedKind = findingSupportsFix(finding)
   if (!supportedKind) {
-    return { ok: false, status: 422, error: "This finding is not supported for auto-fix in v1" }
+    return {
+      ok: false,
+      status: 422,
+      error: "This finding is not supported for auto-fix in v1",
+      code: "unsupported_finding",
+    }
   }
 
   let token: string
@@ -72,16 +117,27 @@ export async function prepareFixContext(
     return {
       ok: false,
       status: 500,
-      error: "GitHub App auth failed (is the app installed on this repo?)",
+      error: "GitHub App auth failed (server-side credentials missing or invalid)",
+      code: "app_auth_failed",
     }
   }
 
   const targetPath = resolveTargetPath(finding)
   if (!targetPath) {
-    return { ok: false, status: 422, error: "Cannot resolve target file path from finding" }
+    return {
+      ok: false,
+      status: 422,
+      error: "Cannot resolve target file path from finding",
+      code: "no_target_path",
+    }
   }
   if (!isSafeRepoFilePath(targetPath)) {
-    return { ok: false, status: 400, error: "Refusing finding with unsafe file path" }
+    return {
+      ok: false,
+      status: 400,
+      error: "Refusing finding with unsafe file path",
+      code: "unsafe_target_path",
+    }
   }
 
   let defaultBranch: string
@@ -92,11 +148,20 @@ export async function prepareFixContext(
     defaultBranch = await getRepoDefaultBranch(token, owner, repo)
     fileContent = await getFileContent(token, owner, repo, targetPath, defaultBranch)
   } catch (err) {
+    if (err instanceof GitHubAppFetchError && err.appNotInstalled()) {
+      return {
+        ok: false,
+        status: 403,
+        error: "The RepoGuard Security GitHub App is not installed on this repository",
+        code: "app_not_installed",
+      }
+    }
     console.error(`[${logPrefix}] Failed to fetch repo state:`, err)
     return {
       ok: false,
       status: 502,
       error: "Could not fetch repository state via the GitHub App",
+      code: "fetch_failed",
     }
   }
 
@@ -113,7 +178,7 @@ export async function prepareFixContext(
     engineResult = runFixEngine({ finding, fileContent, envExampleContent })
   } catch (err) {
     const message = err instanceof Error ? err.message : "Engine failed"
-    return { ok: false, status: 422, error: message }
+    return { ok: false, status: 422, error: message, code: "engine_failed" }
   }
 
   return {
