@@ -17,13 +17,18 @@ export type RunFixResult = {
 }
 
 const JS_TS_EXTENSIONS = [".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"]
+const PY_EXTENSIONS = [".py"]
 
-const SIMPLE_ASSIGNMENT =
+const JS_ASSIGNMENT =
   /^(\s*)(const|let|var)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*(['"])([^'"]+)\4(\s*;?\s*)$/
+const PY_ASSIGNMENT =
+  /^(\s*)([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(['"])([^'"]+)\3(\s*)$/
 
-function isJsTs(filePath: string): boolean {
+function isExtractable(filePath: string, lineContent: string): boolean {
   const ext = filePath.slice(filePath.lastIndexOf("."))
-  return JS_TS_EXTENSIONS.includes(ext)
+  if (JS_TS_EXTENSIONS.includes(ext)) return JS_ASSIGNMENT.test(lineContent)
+  if (PY_EXTENSIONS.includes(ext)) return PY_ASSIGNMENT.test(lineContent)
+  return false
 }
 
 export function findingSupportsFix(
@@ -42,8 +47,7 @@ export function findingSupportsFix(
     const d = finding.data
     if (d.likelyTestFixture) return null
     if (d.source === "history") return null
-    if (!isJsTs(d.filePath)) return null
-    if (!SIMPLE_ASSIGNMENT.test(d.lineContent)) return null
+    if (!isExtractable(d.filePath, d.lineContent)) return null
     return "secret-extract"
   }
 
@@ -51,8 +55,7 @@ export function findingSupportsFix(
     const d = finding.data
     if (d.likelyTestFixture) return null
     if (d.category !== "hardcoded-creds") return null
-    if (!isJsTs(d.filePath)) return null
-    if (!SIMPLE_ASSIGNMENT.test(d.lineContent)) return null
+    if (!isExtractable(d.filePath, d.lineContent)) return null
     return "secret-extract"
   }
 
@@ -90,10 +93,15 @@ export function runFixEngine(input: RunFixInput): RunFixResult {
     fileContent: input.fileContent,
     envExampleContent: input.envExampleContent,
   })
+  const filePath = input.finding.data.filePath
+  const isPython = filePath.endsWith(".py")
+  const reference = isPython
+    ? `os.environ['${result.envVarName}']`
+    : `process.env.${result.envVarName}`
   return {
     kind,
     patches: result.patches,
-    summary: `Extract hardcoded secret into process.env.${result.envVarName}`,
+    summary: `Extract hardcoded secret into ${reference}`,
   }
 }
 

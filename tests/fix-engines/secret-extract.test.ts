@@ -158,3 +158,125 @@ describe("applySecretExtract - JS/TS const assignment", () => {
     ).toThrow(/extension|file type/i)
   })
 })
+
+function pythonSecretFinding(overrides: Partial<{ filePath: string; lineContent: string; lineNumber: number }> = {}): SecretFinding {
+  return {
+    patternId: "stripe-secret-key",
+    patternName: "Stripe Secret Key",
+    severity: "critical",
+    description: "Stripe live secret",
+    filePath: overrides.filePath ?? "config/stripe.py",
+    lineNumber: overrides.lineNumber ?? 1,
+    lineContent: overrides.lineContent ?? 'stripe_key = "sk_live_abc123def456"',
+    likelyTestFixture: false,
+  }
+}
+
+describe("applySecretExtract - Python assignment", () => {
+  it("replaces double-quoted literal with os.environ['X']", () => {
+    const fileContent = 'stripe_key = "sk_live_abc123def456"\n'
+
+    const result = applySecretExtract({
+      finding: pythonSecretFinding(),
+      fileContent,
+      envExampleContent: null,
+    })
+
+    const codePatch = result.patches.find((p) => p.path === "config/stripe.py")!
+    expect(codePatch.content).toContain("stripe_key = os.environ['STRIPE_KEY']")
+    expect(codePatch.content).not.toContain("sk_live_abc123def456")
+  })
+
+  it("handles single-quoted literals", () => {
+    const fileContent = "stripe_key = 'sk_live_abc123def456'\n"
+
+    const result = applySecretExtract({
+      finding: pythonSecretFinding({
+        lineContent: "stripe_key = 'sk_live_abc123def456'",
+      }),
+      fileContent,
+      envExampleContent: null,
+    })
+
+    const codePatch = result.patches.find((p) => p.path === "config/stripe.py")!
+    expect(codePatch.content).toContain("stripe_key = os.environ['STRIPE_KEY']")
+  })
+
+  it("derives SCREAMING_SNAKE_CASE env var from snake_case identifier", () => {
+    const result = applySecretExtract({
+      finding: pythonSecretFinding(),
+      fileContent: 'stripe_key = "sk_live_abc"\n',
+      envExampleContent: null,
+    })
+    expect(result.envVarName).toBe("STRIPE_KEY")
+  })
+
+  it("prepends 'import os' when not already imported", () => {
+    const fileContent = 'stripe_key = "sk_live_abc"\n'
+    const result = applySecretExtract({
+      finding: pythonSecretFinding(),
+      fileContent,
+      envExampleContent: null,
+    })
+    const codePatch = result.patches.find((p) => p.path === "config/stripe.py")!
+    expect(codePatch.content.startsWith("import os\n")).toBe(true)
+  })
+
+  it("does NOT prepend 'import os' when already imported", () => {
+    const fileContent = [
+      "import os",
+      "import sys",
+      "",
+      'stripe_key = "sk_live_abc"',
+      "",
+    ].join("\n")
+
+    const result = applySecretExtract({
+      finding: pythonSecretFinding({ lineNumber: 4 }),
+      fileContent,
+      envExampleContent: null,
+    })
+    const codePatch = result.patches.find((p) => p.path === "config/stripe.py")!
+    const importCount = (codePatch.content.match(/^import os\b/gm) ?? []).length
+    expect(importCount).toBe(1)
+  })
+
+  it("does NOT prepend 'import os' when 'from os import environ' is present", () => {
+    const fileContent = [
+      "from os import environ",
+      "",
+      'stripe_key = "sk_live_abc"',
+      "",
+    ].join("\n")
+
+    const result = applySecretExtract({
+      finding: pythonSecretFinding({ lineNumber: 3 }),
+      fileContent,
+      envExampleContent: null,
+    })
+    const codePatch = result.patches.find((p) => p.path === "config/stripe.py")!
+    expect(codePatch.content.match(/^import os\b/gm)).toBeNull()
+  })
+
+  it("creates .env.example entry for Python finding too", () => {
+    const result = applySecretExtract({
+      finding: pythonSecretFinding(),
+      fileContent: 'stripe_key = "sk_live_abc"\n',
+      envExampleContent: null,
+    })
+    const envPatch = result.patches.find((p) => p.path === ".env.example")!
+    expect(envPatch.content).toContain("STRIPE_KEY=")
+  })
+
+  it("throws when Python line is not a simple assignment", () => {
+    expect(() =>
+      applySecretExtract({
+        finding: pythonSecretFinding({
+          lineContent: 'call_api("sk_live_abc")',
+        }),
+        fileContent: 'call_api("sk_live_abc")\n',
+        envExampleContent: null,
+      }),
+    ).toThrow(/unsupported|assignment/i)
+  })
+})
