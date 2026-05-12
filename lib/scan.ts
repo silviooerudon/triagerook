@@ -217,6 +217,14 @@ export async function scanRepo(
       // Don't fail the whole scan just because history hit the rate limit.
       historyFindings = []
     } else {
+      // Unknown failure (network, parse error, GitHub 5xx). The rest of the
+      // scan still has value, so we soft-fail history specifically — but we
+      // log because silent failure here violates AGENTS.md ("never silently
+      // swallow GitHub/Supabase errors").
+      console.warn(
+        "[scan] history scan failed, continuing without it:",
+        err instanceof Error ? err.message : String(err),
+      )
       historyFindings = []
     }
   }

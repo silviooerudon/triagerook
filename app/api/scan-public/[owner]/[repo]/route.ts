@@ -1,16 +1,5 @@
-import {
-  scanRepo,
-  GitHubRateLimitError,
-  GitHubRepoNotFoundError,
-  fetchSuppressionsFile,
-} from "@/lib/scan"
-import { scanDependencies } from "@/lib/deps"
-import { scanPythonDependencies } from "@/lib/python-deps"
-import { assessPosture } from "@/lib/posture"
-import { assessIAM } from "@/lib/iam"
-import { assessSupplyChain } from "@/lib/supply-chain"
-import { flattenScan, scoreRepo } from "@/lib/risk"
-import { parseSuppressions, applySuppressions } from "@/lib/suppressions"
+import { GitHubRateLimitError, GitHubRepoNotFoundError } from "@/lib/scan"
+import { runFullScan } from "@/lib/scan-pipeline"
 import { NextResponse } from "next/server"
 
 type RouteParams = {
@@ -37,49 +26,14 @@ export async function POST(
   }
 
   try {
-    const [
-      secretsResult,
-      npmResult,
-      pythonDeps,
+    const {
+      fullResult,
+      assessment,
+      suppressionResult,
       postureResult,
       iamResult,
       supplyChainResult,
-    ] = await Promise.all([
-      scanRepo(null, owner, repo, explicitBranch),
-      scanDependencies(owner, repo, null),
-      scanPythonDependencies(owner, repo, null),
-      assessPosture(owner, repo, null),
-      assessIAM(owner, repo, null),
-      assessSupplyChain(owner, repo, null, explicitBranch),
-    ])
-
-    const fullResult = {
-      ...secretsResult,
-      dependencies: npmResult.vulns,
-      pythonDependencies: pythonDeps,
-      iacFindings: [
-        ...(secretsResult.iacFindings ?? []),
-        ...npmResult.lifecycleIssues,
-      ],
-    }
-
-    const flatFindings = flattenScan(fullResult)
-
-    // Best-effort: anonymous scan (no accessToken). Same race window caveat as
-    // the authenticated route - see app/api/scan/[owner]/[repo]/route.ts for
-    // rationale.
-    const suppressionsContent = await fetchSuppressionsFile(
-      null,
-      owner,
-      repo,
-      explicitBranch,
-    )
-    const parsedSuppressions = suppressionsContent
-      ? parseSuppressions(suppressionsContent)
-      : []
-    const suppressionResult = applySuppressions(flatFindings, parsedSuppressions)
-
-    const assessment = scoreRepo(suppressionResult.kept)
+    } = await runFullScan(null, owner, repo, explicitBranch)
 
     return NextResponse.json({
       ...fullResult,
@@ -114,11 +68,4 @@ export async function POST(
     const message = error instanceof Error ? error.message : "Unknown error"
     return NextResponse.json({ error: `Scan failed: ${message}` }, { status: 500 })
   }
-}
-
-export async function GET(
-  request: Request,
-  routeCtx: RouteParams,
-) {
-  return POST(request, routeCtx)
 }

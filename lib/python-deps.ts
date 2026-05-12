@@ -1,5 +1,6 @@
 import type { DependencyFinding } from "./types"
 import { GitHubRateLimitError, parseGitHubRateLimit } from "./scan"
+import { normalizeSeverity } from "./severity"
 
 type OsvVulnerability = {
   id: string
@@ -165,16 +166,12 @@ function mapOsvSeverity(
 ): { severity: DependencyFinding["severity"]; cvss: number | null } {
   const cvssStr = vuln.severity?.find((s) => s.type.startsWith("CVSS"))?.score
   const cvss = cvssStr ? extractCvssScore(cvssStr) : null
-  const dbSev = vuln.database_specific?.severity?.toLowerCase()
-  let severity: DependencyFinding["severity"] = "moderate"
-  if (dbSev === "critical") severity = "critical"
-  else if (dbSev === "high") severity = "high"
-  else if (dbSev === "moderate" || dbSev === "medium") severity = "moderate"
-  else if (dbSev === "low") severity = "low"
-  else if (cvss !== null) {
+  const dbSev = vuln.database_specific?.severity
+  let severity: DependencyFinding["severity"] = normalizeSeverity(dbSev)
+  if (!dbSev && cvss !== null) {
     if (cvss >= 9) severity = "critical"
     else if (cvss >= 7) severity = "high"
-    else if (cvss >= 4) severity = "moderate"
+    else if (cvss >= 4) severity = "medium"
     else severity = "low"
   }
   return { severity, cvss }

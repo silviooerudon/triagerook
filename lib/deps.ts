@@ -1,5 +1,6 @@
 import type { DependencyFinding, IaCFinding } from "./types"
 import { GitHubRateLimitError, parseGitHubRateLimit } from "./scan"
+import { normalizeSeverity } from "./severity"
 
 type PackageJson = {
   name?: string
@@ -234,7 +235,7 @@ async function queryNpmAudit(refs: PkgRef[]): Promise<DependencyFinding[]> {
           package: pkgName,
           version,
           ecosystem: "npm",
-          severity: adv.severity as DependencyFinding["severity"],
+          severity: normalizeSeverity(adv.severity),
           title: adv.title,
           ghsa: ghsaMatch ? ghsaMatch[0] : null,
           vulnerable_versions: adv.vulnerable_versions,
