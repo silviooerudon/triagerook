@@ -1,4 +1,5 @@
 import { SECRET_PATTERNS } from "./secret-patterns"
+import { buildGitHubHeaders } from "./github-fetch"
 import { findSensitiveFiles } from "./sensitive-files"
 import { findEntropySecrets } from "./entropy"
 import { findCodeVulns } from "./code-vulns"
@@ -478,13 +479,3 @@ function maskLine(line: string, matchedText: string): string {
   return replaced.length > 200 ? replaced.slice(0, 197) + "..." : replaced.trim()
 }
 
-function buildGitHubHeaders(accessToken: string | null): HeadersInit {
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-  }
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`
-  }
-  return headers
-}

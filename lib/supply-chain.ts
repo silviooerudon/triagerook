@@ -10,6 +10,7 @@
 import { detectTyposquatting } from "./supply-chain-typo";
 import { detectPostInstallNpm } from "./supply-chain-pi-npm";
 import { detectPostInstallPython } from "./supply-chain-pi-py";
+import { buildGitHubHeaders } from "./github-fetch";
 
 export type SupplyChainSeverity = "HIGH" | "MEDIUM" | "LOW";
 
@@ -170,13 +171,9 @@ async function fetchContent(
   branch: string | undefined,
 ): Promise<string | null> {
   const headers: Record<string, string> = {
-    Accept: "application/vnd.github.raw",
+    ...buildGitHubHeaders(accessToken, "application/vnd.github.raw"),
     "User-Agent": "RepoGuard-SupplyChain",
-    "X-GitHub-Api-Version": "2022-11-28",
   };
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
   const refQuery = branch ? `?ref=${encodeURIComponent(branch)}` : "";
   const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path}${refQuery}`;
 

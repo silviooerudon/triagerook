@@ -1,5 +1,6 @@
 import { GitHubRateLimitError, parseGitHubRateLimit } from "./scan"
 import type { RulesetBypassFinding } from "./types"
+import { buildGitHubHeaders } from "./github-fetch"
 
 // Reads GitHub repository rulesets to surface branch protection signals the
 // classic /repos/.../branches/.../protection endpoint misses. Repos that
@@ -47,12 +48,6 @@ export type RulesetSignals = {
   bypassFindings: RulesetBypassFinding[]
 }
 
-function buildHeaders(token: string | null): HeadersInit {
-  const h: Record<string, string> = { Accept: "application/vnd.github+json" }
-  if (token) h.Authorization = `Bearer ${token}`
-  return h
-}
-
 async function fetchRulesForBranch(
   owner: string,
   repo: string,
@@ -61,7 +56,7 @@ async function fetchRulesForBranch(
 ): Promise<RuleEntry[] | null> {
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/rules/branches/${branch}`,
-    { headers: buildHeaders(token), cache: "no-store" },
+    { headers: buildGitHubHeaders(token), cache: "no-store" },
   )
   if (res.status === 404) return null
   if (!res.ok) {
@@ -90,7 +85,7 @@ async function fetchRulesetDetails(
   } else {
     url = `https://api.github.com/repos/${owner}/${repo}/rulesets/${rulesetId}`
   }
-  const res = await fetch(url, { headers: buildHeaders(token), cache: "no-store" })
+  const res = await fetch(url, { headers: buildGitHubHeaders(token), cache: "no-store" })
   if (res.status === 404 || res.status === 403) return null
   if (!res.ok) {
     const retry = parseGitHubRateLimit(res)

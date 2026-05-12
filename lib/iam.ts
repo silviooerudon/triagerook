@@ -1,6 +1,7 @@
 import { GitHubRateLimitError, parseGitHubRateLimit } from "./scan"
 import { detectPrivilegeEscalation } from "./iam-privesc"
 import { detectAdminEquivalents } from "./iam-admin"
+import { buildGitHubHeaders } from "./github-fetch"
 
 export type IAMSeverity = "critical" | "high" | "medium" | "low"
 
@@ -56,14 +57,6 @@ const CATEGORY_LABEL: Record<IAMCategoryId, string> = {
   admin: "Admin equivalents",
 }
 
-// ---------- HTTP helpers (mirrors posture.ts pattern) ----------
-
-function buildGithubHeaders(token: string | null, accept: string): HeadersInit {
-  const h: Record<string, string> = { Accept: accept }
-  if (token) h.Authorization = `Bearer ${token}`
-  return h
-}
-
 type GitHubTreeItem = {
   path: string
   type: "blob" | "tree" | "commit"
@@ -83,7 +76,7 @@ async function fetchRepoTreeIam(
 ): Promise<GitHubTreeResponse> {
   const url = `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`
   const res = await fetch(url, {
-    headers: buildGithubHeaders(token, "application/vnd.github+json"),
+    headers: buildGitHubHeaders(token, "application/vnd.github+json"),
     cache: "no-store",
   })
   if (!res.ok) {
@@ -102,7 +95,7 @@ async function fetchDefaultBranch(
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}`,
     {
-      headers: buildGithubHeaders(token, "application/vnd.github+json"),
+      headers: buildGitHubHeaders(token, "application/vnd.github+json"),
       cache: "no-store",
     },
   )
@@ -125,7 +118,7 @@ async function fetchFileRaw(
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
     {
-      headers: buildGithubHeaders(token, "application/vnd.github.v3.raw"),
+      headers: buildGitHubHeaders(token, "application/vnd.github.v3.raw"),
       cache: "no-store",
     },
   )
