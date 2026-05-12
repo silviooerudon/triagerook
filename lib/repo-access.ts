@@ -1,3 +1,5 @@
+import { buildGitHubHeaders } from "./github-fetch"
+
 // Verifies that the GitHub user behind `userAccessToken` has at least
 // push access to a given repo. Used as a gate inside the auto-fix
 // endpoints so a logged-in RepoGuard user cannot trigger a PR (under
@@ -39,11 +41,7 @@ export async function userHasPushAccess(
   let response: Response
   try {
     response = await fetchImpl(`https://api.github.com/repos/${owner}/${repo}`, {
-      headers: {
-        Authorization: `Bearer ${userAccessToken}`,
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
+      headers: buildGitHubHeaders(userAccessToken),
       cache: "no-store",
     })
   } catch (err) {

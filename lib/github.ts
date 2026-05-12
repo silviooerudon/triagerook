@@ -15,15 +15,13 @@ export type GitHubRepo = {
   }
 }
 
+import { buildGitHubHeaders } from "./github-fetch"
+
 export async function fetchUserRepos(accessToken: string): Promise<GitHubRepo[]> {
   const response = await fetch(
     "https://api.github.com/user/repos?per_page=30&sort=updated&affiliation=owner&visibility=public",
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
+      headers: buildGitHubHeaders(accessToken),
       // Não cachear — queremos dados frescos
       cache: "no-store",
     }

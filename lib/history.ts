@@ -1,6 +1,7 @@
 import { SECRET_PATTERNS } from "./secret-patterns"
 import { GitHubRateLimitError, parseGitHubRateLimit } from "./scan"
 import type { SecretFinding } from "./types"
+import { buildGitHubHeaders } from "./github-fetch"
 
 type CommitListItem = {
   sha: string
@@ -30,14 +31,6 @@ const HISTORY_PARALLEL = 5
 const MAX_PATCH_SIZE = 200_000 // 200KB per patch — bail on huge diffs
 const HISTORY_BUDGET_MS = 20_000
 
-function buildHeaders(token: string | null): HeadersInit {
-  const h: Record<string, string> = {
-    Accept: "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-  }
-  if (token) h.Authorization = `Bearer ${token}`
-  return h
-}
 
 async function listCommits(
   token: string | null,
@@ -48,7 +41,7 @@ async function listCommits(
   const url = `https://api.github.com/repos/${owner}/${repo}/commits?sha=${encodeURIComponent(
     branch,
   )}&per_page=${HISTORY_COMMIT_LIMIT}`
-  const res = await fetch(url, { headers: buildHeaders(token), cache: "no-store" })
+  const res = await fetch(url, { headers: buildGitHubHeaders(token), cache: "no-store" })
   if (!res.ok) {
     const retry = parseGitHubRateLimit(res)
     if (retry !== null) throw new GitHubRateLimitError(retry)
@@ -65,7 +58,7 @@ async function fetchCommit(
 ): Promise<CommitDetail | null> {
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/commits/${sha}`,
-    { headers: buildHeaders(token), cache: "no-store" },
+    { headers: buildGitHubHeaders(token), cache: "no-store" },
   )
   if (!res.ok) {
     const retry = parseGitHubRateLimit(res)

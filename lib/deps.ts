@@ -1,6 +1,7 @@
 import type { DependencyFinding, IaCFinding } from "./types"
 import { GitHubRateLimitError, parseGitHubRateLimit } from "./scan"
 import { normalizeSeverity } from "./severity"
+import { buildGitHubHeaders } from "./github-fetch"
 
 type PackageJson = {
   name?: string
@@ -88,12 +89,6 @@ const LIFECYCLE_KEYS = [
   "prepack",
 ]
 
-function buildGithubHeaders(token: string | null): HeadersInit {
-  const h: Record<string, string> = { Accept: "application/vnd.github.v3.raw" }
-  if (token) h.Authorization = `Bearer ${token}`
-  return h
-}
-
 async function fetchRepoFile(
   owner: string,
   repo: string,
@@ -102,7 +97,7 @@ async function fetchRepoFile(
 ): Promise<string | null> {
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
-    { headers: buildGithubHeaders(token), cache: "no-store" },
+    { headers: buildGitHubHeaders(token, "application/vnd.github.v3.raw"), cache: "no-store" },
   )
   if (res.status === 404) return null
   if (!res.ok) {

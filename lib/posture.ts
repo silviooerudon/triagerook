@@ -3,6 +3,7 @@ import {
   assessRulesetSignals,
   type RulesetSignals,
 } from "./posture-rulesets"
+import { buildGitHubHeaders } from "./github-fetch"
 import type { RulesetBypassFinding } from "./types"
 
 export type PostureGrade = "A" | "B" | "C" | "D" | "F"
@@ -114,12 +115,6 @@ const QUICK_WIN_COPY: Record<string, string> = {
   "mfa-org": "Enable two-factor enforcement on the organization",
 }
 
-function buildGithubHeaders(token: string | null, accept: string): HeadersInit {
-  const h: Record<string, string> = { Accept: accept }
-  if (token) h.Authorization = `Bearer ${token}`
-  return h
-}
-
 async function fetchRepoFile(
   owner: string,
   repo: string,
@@ -129,7 +124,7 @@ async function fetchRepoFile(
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
     {
-      headers: buildGithubHeaders(token, "application/vnd.github.v3.raw"),
+      headers: buildGitHubHeaders(token, "application/vnd.github.v3.raw"),
       cache: "no-store",
     },
   )
@@ -151,7 +146,7 @@ async function repoPathExists(
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
     {
-      headers: buildGithubHeaders(token, "application/vnd.github.v3.json"),
+      headers: buildGitHubHeaders(token, "application/vnd.github.v3.json"),
       cache: "no-store",
     },
   )
@@ -171,7 +166,7 @@ async function fetchBranch(
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/branches/${branch}`,
     {
-      headers: buildGithubHeaders(token, "application/vnd.github+json"),
+      headers: buildGitHubHeaders(token, "application/vnd.github+json"),
       cache: "no-store",
     },
   )
@@ -198,7 +193,7 @@ async function fetchBranchProtection(
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/branches/${branch}/protection`,
     {
-      headers: buildGithubHeaders(token, "application/vnd.github+json"),
+      headers: buildGitHubHeaders(token, "application/vnd.github+json"),
       cache: "no-store",
     },
   )
@@ -231,7 +226,7 @@ async function fetchSignedCommitsRatio(
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/commits?per_page=30`,
     {
-      headers: buildGithubHeaders(token, "application/vnd.github+json"),
+      headers: buildGitHubHeaders(token, "application/vnd.github+json"),
       cache: "no-store",
     },
   )
@@ -262,7 +257,7 @@ async function fetchMfaState(
   const repoRes = await fetch(
     `https://api.github.com/repos/${owner}/${repo}`,
     {
-      headers: buildGithubHeaders(token, "application/vnd.github+json"),
+      headers: buildGitHubHeaders(token, "application/vnd.github+json"),
       cache: "no-store",
     },
   )
@@ -280,7 +275,7 @@ async function fetchMfaState(
   if (ownerType !== "Organization" || !ownerLogin) return "unknown"
 
   const orgRes = await fetch(`https://api.github.com/orgs/${ownerLogin}`, {
-    headers: buildGithubHeaders(token, "application/vnd.github+json"),
+    headers: buildGitHubHeaders(token, "application/vnd.github+json"),
     cache: "no-store",
   })
   if (!orgRes.ok) {

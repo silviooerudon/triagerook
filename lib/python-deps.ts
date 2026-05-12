@@ -1,6 +1,7 @@
 import type { DependencyFinding } from "./types"
 import { GitHubRateLimitError, parseGitHubRateLimit } from "./scan"
 import { normalizeSeverity } from "./severity"
+import { buildGitHubHeaders } from "./github-fetch"
 
 type OsvVulnerability = {
   id: string
@@ -144,13 +145,12 @@ async function fetchRepoFile(
   path: string,
   token: string | null,
 ): Promise<string | null> {
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github.v3.raw",
-  }
-  if (token) headers.Authorization = `Bearer ${token}`
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
-    { headers, cache: "no-store" },
+    {
+      headers: buildGitHubHeaders(token, "application/vnd.github.v3.raw"),
+      cache: "no-store",
+    },
   )
   if (res.status === 404) return null
   if (!res.ok) {

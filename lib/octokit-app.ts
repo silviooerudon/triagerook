@@ -1,4 +1,5 @@
 import { createAppAuth } from "@octokit/auth-app"
+import { buildGitHubHeaders } from "./github-fetch"
 
 export type GitHubAppCredentials = {
   appId: string
@@ -49,9 +50,7 @@ export async function ghFetch<T>(
   const response = await fetch(url, {
     method: options.method ?? "GET",
     headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
+      ...buildGitHubHeaders(token),
       ...(options.body ? { "Content-Type": "application/json" } : {}),
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
