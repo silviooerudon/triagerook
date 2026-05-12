@@ -41,6 +41,35 @@ type FetchOptions = {
   body?: unknown
 }
 
+// Thrown by ghFetch on any non-2xx response. Callers (specifically
+// prepareFixContext) want to distinguish "App not installed in this repo"
+// (404 / 403 + 'Not Accessible by Integration' body) from generic failures
+// to give the UI a chance to offer the install link.
+export class GitHubAppFetchError extends Error {
+  readonly status: number
+  readonly path: string
+  readonly responseBody: string
+
+  constructor(status: number, statusText: string, path: string, body: string) {
+    super(`GitHub API ${path} failed: ${status} ${statusText} ${body}`)
+    this.name = "GitHubAppFetchError"
+    this.status = status
+    this.path = path
+    this.responseBody = body
+  }
+
+  // True for the failure modes that look like "App is missing on the repo":
+  // 404 typically (repo not visible to the installation), 403 with the
+  // "Not Accessible by Integration" body for installations that have the
+  // App but on a different repo set.
+  appNotInstalled(): boolean {
+    if (this.status === 404) return true
+    if (this.status === 403 && /not\s+accessible\s+by\s+integration/i.test(this.responseBody))
+      return true
+    return false
+  }
+}
+
 export async function ghFetch<T>(
   token: string,
   path: string,
@@ -59,9 +88,7 @@ export async function ghFetch<T>(
 
   if (!response.ok) {
     const text = await response.text().catch(() => "")
-    throw new Error(
-      `GitHub API ${options.method ?? "GET"} ${path} failed: ${response.status} ${response.statusText} ${text}`
-    )
+    throw new GitHubAppFetchError(response.status, response.statusText, path, text)
   }
 
   return (await response.json()) as T

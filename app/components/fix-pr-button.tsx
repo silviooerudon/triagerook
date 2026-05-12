@@ -20,10 +20,26 @@ type CreatedPrResponse = {
   branch: string
 }
 
+type ApiError = {
+  message: string
+  code: string | null
+}
+
+const APP_INSTALL_URL =
+  "https://github.com/apps/repoguard-security/installations/new"
+
 type Props = {
   owner: string
   repo: string
   finding: PrioritizedFinding
+}
+
+async function readApiError(resp: Response, fallback: string): Promise<ApiError> {
+  const body = (await resp.json().catch(() => ({}))) as { error?: string; code?: string }
+  return {
+    message: body.error ?? `${fallback} (${resp.status})`,
+    code: body.code ?? null,
+  }
 }
 
 export function FixPrButton({ owner, repo, finding }: Props) {
@@ -31,7 +47,7 @@ export function FixPrButton({ owner, repo, finding }: Props) {
   const [preview, setPreview] = useState<PreviewResponse | null>(null)
   const [createdPr, setCreatedPr] = useState<CreatedPrResponse | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<ApiError | null>(null)
 
   async function openModal() {
     setOpen(true)
@@ -46,13 +62,16 @@ export function FixPrButton({ owner, repo, finding }: Props) {
         body: JSON.stringify({ owner, repo, finding }),
       })
       if (!resp.ok) {
-        const body = await resp.json().catch(() => ({}))
-        throw new Error(body.error ?? `Preview failed (${resp.status})`)
+        setError(await readApiError(resp, "Preview failed"))
+        return
       }
       const data: PreviewResponse = await resp.json()
       setPreview(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Preview failed")
+      setError({
+        message: err instanceof Error ? err.message : "Preview failed",
+        code: null,
+      })
     } finally {
       setLoading(false)
     }
@@ -72,13 +91,16 @@ export function FixPrButton({ owner, repo, finding }: Props) {
         body: JSON.stringify({ owner, repo, finding }),
       })
       if (!resp.ok) {
-        const body = await resp.json().catch(() => ({}))
-        throw new Error(body.error ?? `PR creation failed (${resp.status})`)
+        setError(await readApiError(resp, "PR creation failed"))
+        return
       }
       const data: CreatedPrResponse = await resp.json()
       setCreatedPr(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "PR creation failed")
+      setError({
+        message: err instanceof Error ? err.message : "PR creation failed",
+        code: null,
+      })
     } finally {
       setLoading(false)
     }
@@ -116,7 +138,7 @@ function FixModal({
   onConfirm,
 }: {
   loading: boolean
-  error: string | null
+  error: ApiError | null
   preview: PreviewResponse | null
   createdPr: CreatedPrResponse | null
   onClose: () => void
@@ -158,9 +180,30 @@ function FixModal({
             </p>
           )}
 
-          {error && (
+          {error && error.code === "app_not_installed" && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-2">
+              <p className="text-amber-300 text-sm font-semibold">
+                RepoGuard Security App not installed on this repo
+              </p>
+              <p className="text-amber-200/80 text-sm">
+                The App needs to be granted access to this repository before
+                RepoGuard can open a pull request. You stay in control of which
+                repos are exposed — the App only sees what you select.
+              </p>
+              <a
+                href={APP_INSTALL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block text-sm text-amber-200 hover:underline"
+              >
+                Configure repository access →
+              </a>
+            </div>
+          )}
+
+          {error && error.code !== "app_not_installed" && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-              <p className="text-red-300 text-sm">{error}</p>
+              <p className="text-red-300 text-sm">{error.message}</p>
             </div>
           )}
 

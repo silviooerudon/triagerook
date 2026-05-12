@@ -35,7 +35,10 @@ export async function POST(request: Request) {
 
   const outcome = await prepareFixContext(session, body, "fix")
   if (!outcome.ok) {
-    return NextResponse.json({ error: outcome.error }, { status: outcome.status })
+    return NextResponse.json(
+      { error: outcome.error, code: outcome.code },
+      { status: outcome.status },
+    )
   }
 
   const { token, owner, repo, finding, defaultBranch, engineResult } = outcome.ctx
