@@ -1,19 +1,8 @@
 import { auth } from "@/auth"
 import { getUserId } from "@/lib/auth-utils"
-import {
-  scanRepo,
-  GitHubRateLimitError,
-  GitHubRepoNotFoundError,
-  fetchSuppressionsFile,
-} from "@/lib/scan"
-import { scanDependencies } from "@/lib/deps"
-import { scanPythonDependencies } from "@/lib/python-deps"
-import { assessPosture } from "@/lib/posture"
-import { assessIAM } from "@/lib/iam"
-import { assessSupplyChain } from "@/lib/supply-chain"
+import { GitHubRateLimitError, GitHubRepoNotFoundError } from "@/lib/scan"
 import { supabase } from "@/lib/supabase"
-import { flattenScan, scoreRepo } from "@/lib/risk"
-import { parseSuppressions, applySuppressions } from "@/lib/suppressions"
+import { runFullScan } from "@/lib/scan-pipeline"
 import { NextResponse } from "next/server"
 
 type RouteParams = {
@@ -54,61 +43,26 @@ export async function POST(
   }
 
   try {
-    const [
-      secretsResult,
-      npmResult,
-      pythonDeps,
+    const {
+      fullResult,
+      assessment,
+      suppressionResult,
       postureResult,
       iamResult,
       supplyChainResult,
-    ] = await Promise.all([
-      scanRepo(accessToken, owner, repo, explicitBranch),
-      scanDependencies(owner, repo, accessToken),
-      scanPythonDependencies(owner, repo, accessToken),
-      assessPosture(owner, repo, accessToken),
-      assessIAM(owner, repo, accessToken),
-      assessSupplyChain(owner, repo, accessToken, explicitBranch),
-    ])
-
-    const fullResult = {
-      ...secretsResult,
-      dependencies: npmResult.vulns,
-      pythonDependencies: pythonDeps,
-      iacFindings: [
-        ...(secretsResult.iacFindings ?? []),
-        ...npmResult.lifecycleIssues,
-      ],
-    }
-
-    const flatFindings = flattenScan(fullResult)
-
-    // Best-effort: if explicitBranch is undefined, GitHub Contents API resolves
-    // to default branch independently of scanRepo's resolution. Tiny race window
-    // is acceptable for MVP - worst case is suppressions from a slightly different
-    // commit, which only affects which findings get filtered (no security risk).
-    // Backlog: thread commit SHA through ScanResult to eliminate the race.
-    const suppressionsContent = await fetchSuppressionsFile(
-      accessToken,
-      owner,
-      repo,
-      explicitBranch,
-    )
-    const parsedSuppressions = suppressionsContent
-      ? parseSuppressions(suppressionsContent)
-      : []
-    const suppressionResult = applySuppressions(flatFindings, parsedSuppressions)
-
-    const assessment = scoreRepo(suppressionResult.kept)
+      npmVulnsCount,
+      pythonVulnsCount,
+    } = await runFullScan(accessToken, owner, repo, explicitBranch)
 
     const { error: dbError } = await supabase.from("scans").insert({
       user_id: userId,
       owner,
       repo,
       result: fullResult,
-      duration_ms: secretsResult.durationMs,
-      files_scanned: secretsResult.filesScanned,
-      secrets_count: secretsResult.findings.length,
-      deps_count: npmResult.vulns.length + pythonDeps.length,
+      duration_ms: fullResult.durationMs,
+      files_scanned: fullResult.filesScanned,
+      secrets_count: fullResult.findings.length,
+      deps_count: npmVulnsCount + pythonVulnsCount,
       risk_score: assessment.score,
       // Persisted from migration 006 to lock the user-visible breakdown +
       // prioritized list against future rule changes and to make scan-diff
@@ -169,11 +123,4 @@ export async function POST(
     const message = error instanceof Error ? error.message : "Unknown error"
     return NextResponse.json({ error: `Scan failed: ${message}` }, { status: 500 })
   }
-}
-
-export async function GET(
-  request: Request,
-  routeCtx: RouteParams,
-) {
-  return POST(request, routeCtx)
 }

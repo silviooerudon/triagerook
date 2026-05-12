@@ -98,7 +98,11 @@ export type DependencyFinding = {
   package: string
   version: string
   ecosystem?: DependencyEcosystem
-  severity: "critical" | "high" | "moderate" | "low"
+  // "medium" is the canonical RepoGuard severity emitted by the dep
+  // detectors via normalizeSeverity. "moderate" remains valid in the
+  // type so old scans persisted with that string still parse — see
+  // lib/severity.ts for the full story.
+  severity: Severity | "moderate"
   title: string
   ghsa: string | null
   vulnerable_versions: string

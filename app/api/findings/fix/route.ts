@@ -1,25 +1,10 @@
 import { auth } from "@/auth"
 import { NextResponse } from "next/server"
 import type { PrioritizedFinding } from "@/lib/risk"
-import { findingSupportsFix, runFixEngine } from "@/lib/fix-engines"
-import {
-  getInstallationToken,
-  getFileContent,
-  getRepoDefaultBranch,
-  createPullRequestFromPatches,
-} from "@/lib/octokit-app"
-import { isSafeRepoFilePath } from "@/lib/path-validation"
-import { userHasPushAccess } from "@/lib/repo-access"
-
-const SAFE_OWNER_REPO = /^[A-Za-z0-9._-]+$/
+import { createPullRequestFromPatches } from "@/lib/octokit-app"
+import { prepareFixContext, type FixContextRequestBody } from "@/lib/fix-context"
 
 export const dynamic = "force-dynamic"
-
-type RequestBody = {
-  owner: string
-  repo: string
-  finding: PrioritizedFinding
-}
 
 function slugify(input: string): string {
   return input
@@ -41,112 +26,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  let body: RequestBody
+  let body: FixContextRequestBody
   try {
-    body = (await request.json()) as RequestBody
+    body = (await request.json()) as FixContextRequestBody
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
   }
 
-  const { owner, repo, finding } = body
-  if (!owner || !repo || !finding) {
-    return NextResponse.json(
-      { error: "Missing required fields: owner, repo, finding" },
-      { status: 400 }
-    )
-  }
-  if (!SAFE_OWNER_REPO.test(owner) || !SAFE_OWNER_REPO.test(repo)) {
-    return NextResponse.json({ error: "Invalid owner or repo format" }, { status: 400 })
+  const outcome = await prepareFixContext(session, body, "fix")
+  if (!outcome.ok) {
+    return NextResponse.json({ error: outcome.error }, { status: outcome.status })
   }
 
-  // Auth gate: caller must have push access to the target repo (proven
-  // via their own GitHub access token) before we open a PR under the
-  // GitHub App identity. Without this check, any logged-in RepoGuard
-  // user could open PRs on any repo where the App happens to be
-  // installed.
-  const userToken = session.accessToken
-  if (!userToken) {
-    return NextResponse.json({ error: "No access token in session" }, { status: 401 })
-  }
-  if (!(await userHasPushAccess(userToken, owner, repo))) {
-    return NextResponse.json(
-      { error: "You do not have push access to this repository" },
-      { status: 403 }
-    )
-  }
-
-  const supportedKind = findingSupportsFix(finding)
-  if (!supportedKind) {
-    return NextResponse.json(
-      { error: "This finding is not supported for auto-fix in v1" },
-      { status: 422 }
-    )
-  }
-
-  let token: string
-  try {
-    token = await getInstallationToken()
-  } catch (err) {
-    console.error("[fix] Failed to get installation token:", err)
-    return NextResponse.json(
-      { error: "GitHub App auth failed (is the app installed on this repo?)" },
-      { status: 500 }
-    )
-  }
-
-  const targetPath = resolveTargetPath(finding)
-  if (!targetPath) {
-    return NextResponse.json(
-      { error: "Cannot resolve target file path from finding" },
-      { status: 422 }
-    )
-  }
-  // Defence-in-depth: even though the finding came from our own scan,
-  // it arrives via the request body and could be tampered with.
-  if (!isSafeRepoFilePath(targetPath)) {
-    return NextResponse.json(
-      { error: "Refusing finding with unsafe file path" },
-      { status: 400 }
-    )
-  }
-
-  let defaultBranch: string
-  let fileContent: string
-  let envExampleContent: string | null = null
-
-  try {
-    defaultBranch = await getRepoDefaultBranch(token, owner, repo)
-    fileContent = await getFileContent(token, owner, repo, targetPath, defaultBranch)
-  } catch (err) {
-    console.error("[fix] Failed to fetch repo state:", err)
-    return NextResponse.json(
-      { error: "Could not fetch repository state via the GitHub App" },
-      { status: 502 }
-    )
-  }
-
-  if (supportedKind === "secret-extract") {
-    try {
-      envExampleContent = await getFileContent(token, owner, repo, ".env.example", defaultBranch)
-    } catch {
-      envExampleContent = null
-    }
-  }
-
-  let engineResult
-  try {
-    engineResult = runFixEngine({ finding, fileContent, envExampleContent })
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Engine failed"
-    return NextResponse.json({ error: message }, { status: 422 })
-  }
+  const { token, owner, repo, finding, defaultBranch, engineResult } = outcome.ctx
 
   const slug = slugify(engineResult.summary)
-  const branchName = `repoguard/${supportedKind}-${slug}-${timeSuffix()}`
+  const branchName = `repoguard/${engineResult.kind}-${slug}-${timeSuffix()}`
 
   const commitMessage = engineResult.summary
   const prTitle = engineResult.summary
-  const prBody = buildPrBody(supportedKind, finding, engineResult.summary)
+  const prBody = buildPrBody(engineResult.kind, finding, engineResult.summary)
 
   try {
     const pr = await createPullRequestFromPatches(token, {
@@ -172,16 +71,6 @@ export async function POST(request: Request) {
     const message = err instanceof Error ? err.message : "PR creation failed"
     return NextResponse.json({ error: message }, { status: 502 })
   }
-}
-
-function resolveTargetPath(finding: PrioritizedFinding): string | null {
-  if (finding.kind === "dependency") {
-    return finding.data.source ?? null
-  }
-  if (finding.kind === "secret" || finding.kind === "code") {
-    return finding.data.filePath
-  }
-  return null
 }
 
 function buildPrBody(
