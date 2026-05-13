@@ -40,26 +40,23 @@ export default function HistoryPage() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white px-6 py-12">
+    <main className="px-6 py-12">
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-10">
-          <Link
-            href="/dashboard"
-            className="text-slate-400 hover:text-white text-sm flex items-center gap-1 transition"
-          >
-            ← Back to repositories
-          </Link>
-        </div>
-
-        <h1 className="text-3xl font-bold mb-2">Scan history</h1>
+        <h1 className="text-3xl font-semibold tracking-tight mb-2">Scan history</h1>
         <p className="text-slate-400 text-sm mb-8">
-          Your {scans.length > 0 ? `last ${scans.length}` : "recent"} scans.
+          {scans.length === 0
+            ? "No scans yet."
+            : `${scans.length} ${scans.length === 1 ? "scan" : "scans"}, most recent first.`}
         </p>
 
         {status === "loading" && (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
-            <div className="inline-block w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4" />
-            <p className="text-slate-300">Loading history…</p>
+          <div className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="bg-slate-900 border border-slate-800 rounded-xl p-5 h-[92px] animate-pulse"
+              />
+            ))}
           </div>
         )}
 

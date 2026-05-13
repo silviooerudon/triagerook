@@ -224,7 +224,7 @@ function DependencyFindingCard({ data }: { data: DependencyFinding }) {
           href={data.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-block text-blue-400 hover:underline mt-1"
+          className="inline-block text-amber-400 hover:underline mt-1"
         >
           View advisory →
         </a>

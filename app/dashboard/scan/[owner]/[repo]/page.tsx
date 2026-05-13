@@ -86,26 +86,17 @@ export default function ScanPage({ params, searchParams }: PageProps) {
   }, [owner, repo, branch])
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white px-6 py-12">
+    <main className="px-6 py-12">
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-10">
-          <a
-            href="/dashboard"
-            className="text-slate-400 hover:text-white text-sm flex items-center gap-1 transition"
-          >
-            ← Back to repositories
-          </a>
-        </div>
-
-        <h1 className="text-3xl font-bold mb-2">
-          Scanning{" "}
-          <span className="text-blue-400">
+        <h1 className="text-3xl font-semibold tracking-tight mb-2">
+          <span className="text-slate-400">scanning</span>{" "}
+          <span className="font-mono text-amber-400">
             {owner}/{repo}
           </span>
         </h1>
         <p className="text-slate-400 text-sm mb-8">
           Secrets, dependencies, code vulnerabilities, CI/IaC configuration and
-          git history{branch ? ` (branch ${branch})` : ""}.
+          git history{branch ? ` on ${branch}` : ""}.
         </p>
 
         {status === "running" && <ScanProgress />}

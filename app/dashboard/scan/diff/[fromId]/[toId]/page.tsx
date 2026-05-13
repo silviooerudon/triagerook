@@ -48,21 +48,26 @@ export default function ScanDiffPage({ params }: PageProps) {
   }, [fromId, toId])
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white px-6 py-12">
+    <main className="px-6 py-12">
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-10">
-          <Link
-            href="/dashboard/history"
-            className="text-slate-400 hover:text-white text-sm flex items-center gap-1 transition"
-          >
-            ← Back to history
-          </Link>
-        </div>
+        <Link
+          href="/dashboard/history"
+          className="inline-flex items-center gap-1 text-xs font-mono text-slate-500 hover:text-amber-400 transition mb-8"
+        >
+          ← history
+        </Link>
 
         {status === "loading" && (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
-            <div className="inline-block w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4" />
-            <p className="text-slate-300">Computing diff…</p>
+          <div className="space-y-3">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 h-[140px] animate-pulse" />
+            <div className="grid sm:grid-cols-3 gap-3">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="bg-slate-900 border border-slate-800 rounded-xl p-5 h-[88px] animate-pulse"
+                />
+              ))}
+            </div>
           </div>
         )}
 
