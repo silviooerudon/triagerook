@@ -9,8 +9,14 @@ import { assessPosture, type PostureResult } from "./posture"
 import { assessIAM, type IAMResult } from "./iam"
 import { assessSupplyChain, type SupplyChainResult } from "./supply-chain"
 import { flattenScan, scoreRepo, type RiskAssessment } from "./risk"
-import { parseSuppressions, applySuppressions, type SuppressionResult } from "./suppressions"
+import {
+  parseSuppressions,
+  applySuppressions,
+  type Suppression,
+  type SuppressionResult,
+} from "./suppressions"
 import type { DependencyFinding } from "./types"
+import { listSuppressions, toRuntimeSuppression } from "./db-suppressions"
 
 // Output shape that's intentionally a superset: callers pick what they need.
 // Authenticated route persists most of it to DB; public route returns it
@@ -41,11 +47,19 @@ export type FullScanResult = {
 // Throws GitHubRateLimitError and GitHubRepoNotFoundError up to the
 // caller so the caller can choose error copy (authenticated vs anonymous
 // rate-limit messaging differs).
+export type RunFullScanOptions = {
+  // When provided, dashboard-created (DB) suppressions for this user
+  // are loaded and unioned with the in-repo .repoguardignore. The public
+  // scan path passes null and only consumes the file source.
+  userIdForDbSuppressions?: string | null
+}
+
 export async function runFullScan(
   accessToken: string | null,
   owner: string,
   repo: string,
   explicitBranch?: string,
+  options: RunFullScanOptions = {},
 ): Promise<FullScanResult> {
   const [
     secretsResult,
@@ -81,15 +95,25 @@ export async function runFullScan(
   // from a slightly different commit, which only affects which findings
   // get filtered (no security risk). Backlog: thread commit SHA through
   // ScanResult to eliminate the race.
-  const suppressionsContent = await fetchSuppressionsFile(
-    accessToken,
-    owner,
-    repo,
-    explicitBranch,
-  )
-  const parsedSuppressions = suppressionsContent
+  const [suppressionsContent, dbSuppressions] = await Promise.all([
+    fetchSuppressionsFile(accessToken, owner, repo, explicitBranch),
+    options.userIdForDbSuppressions
+      ? listSuppressions(options.userIdForDbSuppressions, owner, repo).catch((err) => {
+          console.warn(
+            "[scan-pipeline] listSuppressions failed; proceeding without DB suppressions:",
+            err instanceof Error ? err.message : String(err),
+          )
+          return []
+        })
+      : Promise.resolve([]),
+  ])
+  const fileSuppressions = suppressionsContent
     ? parseSuppressions(suppressionsContent)
     : []
+  const runtimeDbSuppressions: Suppression[] = dbSuppressions.map((row, i) =>
+    toRuntimeSuppression(row, i),
+  )
+  const parsedSuppressions = [...fileSuppressions, ...runtimeDbSuppressions]
   const suppressionResult = applySuppressions(flatFindings, parsedSuppressions)
 
   const assessment = scoreRepo(suppressionResult.kept)

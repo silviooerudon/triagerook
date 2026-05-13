@@ -52,7 +52,9 @@ export async function POST(
       supplyChainResult,
       npmVulnsCount,
       pythonVulnsCount,
-    } = await runFullScan(accessToken, owner, repo, explicitBranch)
+    } = await runFullScan(accessToken, owner, repo, explicitBranch, {
+      userIdForDbSuppressions: userId,
+    })
 
     const { error: dbError } = await supabase.from("scans").insert({
       user_id: userId,
