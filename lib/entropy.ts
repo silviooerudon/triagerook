@@ -157,9 +157,15 @@ export function findEntropySecrets(
     if (seen.has(fingerprint)) continue
     seen.add(fingerprint)
 
+    // Mask BEFORE truncating — if `value` extends past the 200-char window,
+    // truncate-first would leave a partial copy of the literal secret in
+    // `lineContent` (persisted to the DB and surfaced via API). Splitting on
+    // the value lets us replace every occurrence safely (regex-special chars
+    // in the value cannot break the replacement).
     const masked = maskValue(value)
-    const displayLine = raw.length > 200 ? raw.slice(0, 200) + "…" : raw
-    const safeLine = displayLine.replace(value, masked)
+    const fullSafeLine = raw.split(value).join(masked)
+    const safeLine =
+      fullSafeLine.length > 200 ? fullSafeLine.slice(0, 200) + "…" : fullSafeLine
 
     findings.push({
       patternId: "entropy-high-secret",

@@ -1,4 +1,4 @@
-import { auth, signOut } from "@/auth"
+import { auth, getAccessToken, signOut } from "@/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { fetchUserRepos, type GitHubRepo } from "@/lib/github"
@@ -12,7 +12,7 @@ export default async function Dashboard() {
     redirect("/")
   }
 
-  const accessToken = session.accessToken
+  const accessToken = await getAccessToken()
 
   let repos: GitHubRepo[] = []
   let fetchError: string | null = null

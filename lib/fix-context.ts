@@ -1,4 +1,3 @@
-import type { Session } from "next-auth"
 import type { PrioritizedFinding } from "@/lib/risk"
 import { findingSupportsFix, runFixEngine, type RunFixResult } from "@/lib/fix-engines"
 import {
@@ -7,7 +6,7 @@ import {
   getRepoDefaultBranch,
   GitHubAppFetchError,
 } from "@/lib/octokit-app"
-import { isSafeRepoFilePath } from "@/lib/path-validation"
+import { isSafeOwnerRepo, isSafeRepoFilePath } from "@/lib/path-validation"
 import { userHasPushAccess } from "@/lib/repo-access"
 
 // Stable error codes the UI can switch on. Keep the set small — every new
@@ -30,8 +29,6 @@ export type FixContextErrorCode =
 // supported kind + installation token + safe target path + file fetch +
 // engine execution) before they diverge — fix-preview returns the engine
 // result, fix goes on to open a PR with it.
-
-const SAFE_OWNER_REPO = /^[A-Za-z0-9._-]+$/
 
 export type FixContextRequestBody = {
   owner: string
@@ -59,7 +56,7 @@ function resolveTargetPath(finding: PrioritizedFinding): string | null {
 }
 
 export async function prepareFixContext(
-  session: Session,
+  userAccessToken: string | undefined,
   body: FixContextRequestBody,
   logPrefix: string,
 ): Promise<FixContextOutcome> {
@@ -72,7 +69,7 @@ export async function prepareFixContext(
       code: "invalid_body",
     }
   }
-  if (!SAFE_OWNER_REPO.test(owner) || !SAFE_OWNER_REPO.test(repo)) {
+  if (!isSafeOwnerRepo(owner) || !isSafeOwnerRepo(repo)) {
     return {
       ok: false,
       status: 400,
@@ -81,8 +78,7 @@ export async function prepareFixContext(
     }
   }
 
-  const userToken = session.accessToken
-  if (!userToken) {
+  if (!userAccessToken) {
     return {
       ok: false,
       status: 401,
@@ -90,7 +86,7 @@ export async function prepareFixContext(
       code: "missing_access_token",
     }
   }
-  if (!(await userHasPushAccess(userToken, owner, repo))) {
+  if (!(await userHasPushAccess(userAccessToken, owner, repo))) {
     return {
       ok: false,
       status: 403,

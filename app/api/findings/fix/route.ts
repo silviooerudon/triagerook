@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { auth, getAccessToken } from "@/auth"
 import { NextResponse } from "next/server"
 import type { PrioritizedFinding } from "@/lib/risk"
 import { createPullRequestFromPatches } from "@/lib/octokit-app"
@@ -33,7 +33,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
   }
 
-  const outcome = await prepareFixContext(session, body, "fix")
+  const userAccessToken = await getAccessToken(request)
+  const outcome = await prepareFixContext(userAccessToken, body, "fix")
   if (!outcome.ok) {
     return NextResponse.json(
       { error: outcome.error, code: outcome.code },

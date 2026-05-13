@@ -1,4 +1,5 @@
 import { buildGitHubHeaders } from "./github-fetch"
+import { isSafeOwnerRepo } from "./path-validation"
 
 // Verifies that the GitHub user behind `userAccessToken` has at least
 // push access to a given repo. Used as a gate inside the auto-fix
@@ -9,8 +10,6 @@ import { buildGitHubHeaders } from "./github-fetch"
 // GitHub's GET /repos/{owner}/{repo} response includes a `permissions`
 // object only when called with a user-scoped token; we treat
 // permissions.push or permissions.admin as authorisation to act.
-
-const SAFE_OWNER_REPO = /^[A-Za-z0-9._-]+$/
 
 type FetchImpl = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
 
@@ -33,8 +32,8 @@ export async function userHasPushAccess(
   options: AccessCheckOptions = {},
 ): Promise<boolean> {
   if (!userAccessToken) return false
-  if (!SAFE_OWNER_REPO.test(owner)) return false
-  if (!SAFE_OWNER_REPO.test(repo)) return false
+  if (!isSafeOwnerRepo(owner)) return false
+  if (!isSafeOwnerRepo(repo)) return false
 
   const fetchImpl = options.fetchImpl ?? fetch
 

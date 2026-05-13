@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { isSafeRepoFilePath } from "@/lib/path-validation"
+import { isSafeOwnerRepo, isSafeRepoFilePath } from "@/lib/path-validation"
 
 describe("isSafeRepoFilePath", () => {
   it("accepts a normal nested path", () => {
@@ -70,5 +70,41 @@ describe("isSafeRepoFilePath", () => {
   it("rejects paths that are only dots", () => {
     expect(isSafeRepoFilePath(".")).toBe(false)
     expect(isSafeRepoFilePath("./")).toBe(false)
+  })
+})
+
+describe("isSafeOwnerRepo", () => {
+  it("accepts typical GitHub owner/repo names", () => {
+    expect(isSafeOwnerRepo("silviooerudon")).toBe(true)
+    expect(isSafeOwnerRepo("repoguard")).toBe(true)
+    expect(isSafeOwnerRepo("next.js")).toBe(true)
+    expect(isSafeOwnerRepo("vercel")).toBe(true)
+    expect(isSafeOwnerRepo("user-name")).toBe(true)
+    expect(isSafeOwnerRepo("name_with_underscore")).toBe(true)
+  })
+
+  it("rejects empty and over-long names", () => {
+    expect(isSafeOwnerRepo("")).toBe(false)
+    expect(isSafeOwnerRepo("a".repeat(101))).toBe(false)
+  })
+
+  it("rejects non-string inputs", () => {
+    expect(isSafeOwnerRepo(null)).toBe(false)
+    expect(isSafeOwnerRepo(undefined)).toBe(false)
+    expect(isSafeOwnerRepo(123)).toBe(false)
+  })
+
+  it("rejects path-traversal and URL-shaping characters", () => {
+    // These are the actual exploit shapes that motivated this guard —
+    // any of them concatenated into a GitHub API URL would reshape the path.
+    expect(isSafeOwnerRepo("evil/path")).toBe(false)
+    expect(isSafeOwnerRepo("..")).toBe(false)
+    expect(isSafeOwnerRepo("a..b")).toBe(true) // dots in the middle are fine
+    expect(isSafeOwnerRepo("a/b")).toBe(false)
+    expect(isSafeOwnerRepo("a?b")).toBe(false)
+    expect(isSafeOwnerRepo("a#b")).toBe(false)
+    expect(isSafeOwnerRepo("a b")).toBe(false)
+    expect(isSafeOwnerRepo("a\nb")).toBe(false)
+    expect(isSafeOwnerRepo("a%2fb")).toBe(false)
   })
 })

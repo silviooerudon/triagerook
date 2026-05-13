@@ -460,9 +460,20 @@ function detectLanguage(filePath: string): Language | null {
   return null
 }
 
-function maskLineForDisplay(line: string): string {
-  const trimmed = line.trim()
-  return trimmed.length > 200 ? trimmed.slice(0, 200) + "…" : trimmed
+// Quoted string literal of 8+ chars between matching single/double/backtick
+// quotes. Used by maskLineForDisplay below to redact literal credentials
+// captured by hardcoded-creds rules — e.g. `process.env.X || "sk_live_..."`
+// must NOT leave the literal in `lineContent` (persisted to DB, returned
+// via API). 8 chars is short enough to catch real tokens but skips common
+// short strings like "prod" or "true".
+const QUOTED_LITERAL = /(["'`])([^"'`\n]{8,})\1/g
+
+function maskLineForDisplay(line: string, category: CodeRule["category"]): string {
+  let safe = line.trim()
+  if (category === "hardcoded-creds") {
+    safe = safe.replace(QUOTED_LITERAL, (_m, quote) => `${quote}***REDACTED***${quote}`)
+  }
+  return safe.length > 200 ? safe.slice(0, 200) + "…" : safe
 }
 
 /**
@@ -508,7 +519,7 @@ export function findCodeVulns(
         cwe: rule.cwe,
         filePath,
         lineNumber: i + 1,
-        lineContent: maskLineForDisplay(line),
+        lineContent: maskLineForDisplay(line, rule.category),
         likelyTestFixture,
       })
     }

@@ -136,4 +136,28 @@ describe("findCodeVulns — AI-typical insecure patterns", () => {
     const findings = findCodeVulns(code, "lib/db.ts", false)
     expect(findings.find((f) => f.ruleId === "js-next-public-secret-name")).toBeUndefined()
   })
+
+  it("redacts the literal credential in lineContent for hardcoded-creds findings", () => {
+    // Regression: a tool that detects hardcoded secrets must not persist
+    // the literal credential it found to the database. The js-env-fallback
+    // -secret rule matches `process.env.X || "real-token"` — the quoted
+    // literal must be redacted before it ends up in `lineContent`.
+    const sk = "sk" + "-abcdefghijklmnopqrstuvwxyz123456"
+    const code = `const apiKey = process.env.OPENAI_API_KEY || "${sk}"`
+    const findings = findCodeVulns(code, "src/openai.ts", false)
+    const match = findings.find((f) => f.ruleId === "js-env-fallback-secret")
+    expect(match).toBeDefined()
+    expect(match!.lineContent).not.toContain(sk)
+    expect(match!.lineContent).toContain("***REDACTED***")
+  })
+
+  it("does NOT redact short string literals in non-credential findings", () => {
+    // Sanity: only hardcoded-creds rules should redact. Other rules
+    // surface the line as-is so users can recognise the pattern.
+    const code = `bcrypt.hash(pw, 4)`
+    const findings = findCodeVulns(code, "src/auth.ts", false)
+    const match = findings.find((f) => f.ruleId === "js-bcrypt-low-rounds")
+    expect(match).toBeDefined()
+    expect(match!.lineContent).toContain("bcrypt.hash(pw, 4)")
+  })
 })

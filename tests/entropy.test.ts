@@ -55,4 +55,17 @@ describe("findEntropySecrets", () => {
     const findings = findEntropySecrets(content, ".env", true)
     expect(findings[0].likelyTestFixture).toBe(true)
   })
+
+  it("never leaks the literal secret in lineContent even when the line exceeds the display cap", () => {
+    // Regression for mask-after-truncate bug: a >200-char line with the
+    // secret near the end would be truncated *before* masking, leaving the
+    // truncated tail of the literal value in lineContent.
+    const value = "Zm9vYmFyYmF6cXV4MTIzNDU2Nzg5MGFiY2RlZmdoaWprbA=="
+    const padding = "x".repeat(220)
+    const content = `API_KEY=${value}  # ${padding}`
+    const findings = findEntropySecrets(content, ".env", false)
+    expect(findings).toHaveLength(1)
+    expect(findings[0].lineContent).not.toContain(value)
+    expect(findings[0].lineContent).not.toContain(value.slice(0, 20))
+  })
 })
