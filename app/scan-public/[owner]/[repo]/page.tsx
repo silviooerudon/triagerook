@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState, use } from "react"
-import Link from "next/link"
 import { AlertTriangleIcon } from "@/app/components/icons"
 import type { ScanResult } from "@/lib/scan"
 import type { DependencyFinding } from "@/lib/types"
@@ -98,26 +97,11 @@ export default function PublicScanPage({ params, searchParams }: PageProps) {
   }, [owner, repo, branch])
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white px-6 py-12">
+    <main className="px-6 py-12">
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-10">
-          <Link
-            href="/"
-            className="text-slate-400 hover:text-white text-sm flex items-center gap-1 transition"
-          >
-            ← Back to home
-          </Link>
-          <a
-            href="/signin"
-            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition text-white text-sm font-medium"
-          >
-            Sign in with GitHub
-          </a>
-        </div>
-
-        <h1 className="text-3xl font-bold mb-2">
-          Scanning{" "}
-          <span className="text-blue-400">
+        <h1 className="text-3xl font-semibold tracking-tight mb-2">
+          <span className="text-slate-400">scanning</span>{" "}
+          <span className="font-mono text-amber-400">
             {owner}/{repo}
           </span>
         </h1>
@@ -164,7 +148,7 @@ export default function PublicScanPage({ params, searchParams }: PageProps) {
             <div className="mt-4">
               <a
                 href="/signin"
-                className="inline-block px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition text-white text-sm font-medium"
+                className="inline-block px-4 py-2 rounded-lg bg-amber-400 hover:bg-amber-300 transition text-slate-950 text-sm font-medium"
               >
                 Sign in for unlimited scans
               </a>
@@ -196,15 +180,15 @@ function formatRetryAfter(seconds: number): string {
 
 function SignInCTA() {
   return (
-    <div className="mt-10 bg-blue-500/10 border border-blue-500/20 rounded-xl p-6 text-center">
-      <h2 className="text-xl font-semibold mb-2">Want to track this over time?</h2>
-      <p className="text-slate-400 text-sm mb-4 max-w-md mx-auto">
-        Sign in with GitHub to save scan history, scan more repos, and revisit
-        findings later.
+    <div className="mt-10 bg-slate-900 border border-amber-400/20 rounded-xl p-6 text-center">
+      <h2 className="text-xl font-semibold mb-2">Liked this scan?</h2>
+      <p className="text-slate-400 text-sm mb-5 max-w-md mx-auto">
+        Sign in to scan unlimited repos, save history, diff against previous
+        scans, and unlock the auto-fix PR feature. Free during beta.
       </p>
       <a
         href="/signin"
-        className="inline-block px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 transition text-white font-medium"
+        className="inline-block px-6 py-3 rounded-lg bg-amber-400 hover:bg-amber-300 transition text-slate-950 font-medium"
       >
         Sign in with GitHub
       </a>

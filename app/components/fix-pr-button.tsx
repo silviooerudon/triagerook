@@ -111,7 +111,7 @@ export function FixPrButton({ owner, repo, finding }: Props) {
       <button
         type="button"
         onClick={openModal}
-        className="text-xs px-3 py-1.5 rounded-lg border border-blue-500/40 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 transition"
+        className="text-xs px-3 py-1.5 rounded-lg border border-amber-400/40 bg-amber-400/10 text-amber-300 hover:bg-amber-400/20 transition"
       >
         Open fix PR
       </button>
@@ -175,7 +175,7 @@ function FixModal({
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {loading && (
             <p className="text-slate-300 text-sm flex items-center gap-2">
-              <span className="inline-block w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+              <span className="inline-block w-4 h-4 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
               {createdPr ? "Done." : preview ? "Opening pull request…" : "Loading preview…"}
             </p>
           )}
@@ -217,7 +217,7 @@ function FixModal({
                 href={createdPr.prUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block text-sm text-blue-300 hover:underline"
+                className="inline-block text-sm text-amber-300 hover:underline"
               >
                 Open on GitHub →
               </a>
@@ -260,7 +260,7 @@ function FixModal({
               type="button"
               onClick={onConfirm}
               disabled={loading}
-              className="text-sm px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-sm px-4 py-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Open pull request
             </button>
