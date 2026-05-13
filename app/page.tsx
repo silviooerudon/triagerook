@@ -72,11 +72,11 @@ const FAQ: Array<{ q: string; a: string }> = [
   },
   {
     q: "What permissions does RepoGuard need?",
-    a: "Read-only access to repository contents and metadata. We never request write access, and we cannot modify your code.",
+    a: "Sign-in is via the RepoGuard Security GitHub App and gives us read access to your public repositories. We do not read private code. The optional auto-fix PR feature requires you to install the App on the target repo — that grants Contents: write and Pull requests: write scoped to that single repo, used only to open a PR you then review.",
   },
   {
     q: "Can I scan private repositories?",
-    a: "Not yet. RepoGuard currently requests the public_repo OAuth scope only, so it can't read private code. Private-repo support is on the roadmap.",
+    a: "Not yet. Sign-in today gives RepoGuard read access to your public repositories only. Private-repo support is on the roadmap.",
   },
   {
     q: "How is this different from GitHub secret scanning?",

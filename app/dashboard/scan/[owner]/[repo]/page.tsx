@@ -25,6 +25,7 @@ import { ExpiredSuppressionsBanner } from "@/app/components/expired-suppressions
 import { SuppressedFindingsSection } from "@/app/components/suppressed-findings-section"
 import { PostureCard } from "@/app/components/posture-card"
 import { IamCard } from "@/app/components/iam-card"
+import { ScanProgress } from "@/app/components/scan-progress"
 import { SupplyChainCard } from "@/app/components/supply-chain-card"
 import type { SuppressedFinding } from "@/lib/suppressions"
 import type { PostureResult } from "@/lib/posture"
@@ -107,15 +108,7 @@ export default function ScanPage({ params, searchParams }: PageProps) {
           git history{branch ? ` (branch ${branch})` : ""}.
         </p>
 
-        {status === "running" && (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
-            <div className="inline-block w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4" />
-            <p className="text-slate-300">Scanning repository…</p>
-            <p className="text-slate-500 text-sm mt-2">
-              Nine detectors running in parallel — usually under a minute.
-            </p>
-          </div>
-        )}
+        {status === "running" && <ScanProgress />}
 
         {status === "error" && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6">
