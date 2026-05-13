@@ -8,6 +8,7 @@ import type {
 } from "@/lib/types"
 import { SeverityPill, BadgePill } from "./scan-findings"
 import { FixPrButton } from "./fix-pr-button"
+import { SuppressButton } from "./suppress-button"
 import { findingSupportsFix } from "@/lib/fix-engines"
 
 type FixContext = { owner: string; repo: string }
@@ -257,17 +258,24 @@ export function FindingCard({
     }
   })()
 
-  if (!showFixButton) return card
+  if (!fixContext) return card
 
   return (
     <div className="space-y-2">
       {card}
-      <div className="flex justify-end">
-        <FixPrButton
-          owner={fixContext!.owner}
-          repo={fixContext!.repo}
+      <div className="flex justify-end gap-2">
+        <SuppressButton
+          owner={fixContext.owner}
+          repo={fixContext.repo}
           finding={finding}
         />
+        {showFixButton && (
+          <FixPrButton
+            owner={fixContext.owner}
+            repo={fixContext.repo}
+            finding={finding}
+          />
+        )}
       </div>
     </div>
   )
