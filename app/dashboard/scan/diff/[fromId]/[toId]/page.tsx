@@ -144,33 +144,39 @@ function DiffView({ data }: { data: DiffResponse }) {
 }
 
 function ScoreCard({ diff }: { diff: ScanDiff }) {
-  const delta = diff.scoreDelta
+  // Display health (100 - penalty), not raw penalty, so this card reads the
+  // same direction as the RiskGauge on every other page (higher = better).
+  // scoreDelta in the data model is penalty change; invert sign for health.
+  const fromHealth = diff.from.riskScore === null ? null : 100 - diff.from.riskScore
+  const toHealth = diff.to.riskScore === null ? null : 100 - diff.to.riskScore
+  const healthDelta = diff.scoreDelta === null ? null : -diff.scoreDelta
+
   const deltaLabel =
-    delta === null
+    healthDelta === null
       ? "—"
-      : delta === 0
+      : healthDelta === 0
         ? "no change"
-        : delta > 0
-          ? `+${delta} (worse)`
-          : `${delta} (better)`
+        : healthDelta > 0
+          ? `+${healthDelta} (better)`
+          : `${healthDelta} (worse)`
   const deltaColor =
-    delta === null
+    healthDelta === null
       ? "text-slate-400"
-      : delta === 0
+      : healthDelta === 0
         ? "text-slate-400"
-        : delta > 0
-          ? "text-red-400"
-          : "text-emerald-400"
+        : healthDelta > 0
+          ? "text-emerald-400"
+          : "text-red-400"
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
       <div className="grid sm:grid-cols-3 gap-6 items-center">
         <div>
           <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">
-            Previous risk
+            Previous health
           </div>
           <div className="text-4xl font-bold font-mono text-slate-300">
-            {diff.from.riskScore ?? "—"}
+            {fromHealth ?? "—"}
             <span className="text-slate-600 text-xl"> /100</span>
           </div>
           <div className="text-xs text-slate-500 mt-1">
@@ -182,13 +188,14 @@ function ScoreCard({ diff }: { diff: ScanDiff }) {
             Change
           </div>
           <div className={`text-3xl font-bold ${deltaColor}`}>{deltaLabel}</div>
+          <div className="text-[10px] text-slate-600 mt-1 font-mono">higher is better</div>
         </div>
         <div className="sm:text-right">
           <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">
-            Current risk
+            Current health
           </div>
           <div className="text-4xl font-bold font-mono text-slate-100">
-            {diff.to.riskScore ?? "—"}
+            {toHealth ?? "—"}
             <span className="text-slate-600 text-xl"> /100</span>
           </div>
           <div className="text-xs text-slate-500 mt-1">
