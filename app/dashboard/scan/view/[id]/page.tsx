@@ -187,16 +187,26 @@ function SavedScanView({ scan }: { scan: SavedScan }) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">
-          <span className="text-blue-400 font-mono">
-            {scan.owner}/{scan.repo}
-          </span>
-        </h1>
-        <p className="text-slate-400 text-sm">
-          Scanned on {dateStr} • {scan.files_scanned} files •{" "}
-          {(scan.duration_ms / 1000).toFixed(2)}s
-        </p>
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">
+            <span className="text-blue-400 font-mono">
+              {scan.owner}/{scan.repo}
+            </span>
+          </h1>
+          <p className="text-slate-400 text-sm">
+            Scanned on {dateStr} • {scan.files_scanned} files •{" "}
+            {(scan.duration_ms / 1000).toFixed(2)}s
+          </p>
+        </div>
+        <a
+          href={`/api/scans/${scan.id}/sarif`}
+          download
+          className="self-start text-xs px-3 py-2 rounded-lg border border-slate-700 bg-slate-800/40 text-slate-200 hover:bg-slate-800 transition inline-flex items-center gap-2"
+          title="Download SARIF 2.1.0 — feed into GitHub Code Scanning or any SARIF-aware tool"
+        >
+          <span aria-hidden>↓</span> Export SARIF
+        </a>
       </div>
 
       {summaryRow}
