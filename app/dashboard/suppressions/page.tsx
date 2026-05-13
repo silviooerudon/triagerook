@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import Link from "next/link"
 
 type Suppression = {
   id: string
@@ -58,19 +57,10 @@ export default function SuppressionsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white px-6 py-12">
+    <main className="px-6 py-12">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <Link
-            href="/dashboard"
-            className="text-slate-400 hover:text-white text-sm flex items-center gap-1"
-          >
-            ← Back to dashboard
-          </Link>
-        </div>
-
         <header>
-          <h1 className="text-3xl font-bold">Suppressions</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Suppressions</h1>
           <p className="text-slate-400 text-sm mt-2">
             Personal, per-repo. Hidden from your scan results until you remove
             them here. Doesn&apos;t affect anyone else who scans the same repo.
@@ -78,8 +68,13 @@ export default function SuppressionsPage() {
         </header>
 
         {status === "loading" && (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
-            <div className="inline-block w-6 h-6 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+          <div className="space-y-3">
+            {[0, 1].map((i) => (
+              <div
+                key={i}
+                className="bg-slate-900 border border-slate-800 rounded-xl p-5 h-[88px] animate-pulse"
+              />
+            ))}
           </div>
         )}
 

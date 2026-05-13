@@ -92,7 +92,7 @@ export default function SecurityPage() {
               href="https://github.com/silviooerudon/repoguard"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-400 hover:underline"
+              className="text-amber-400 hover:underline"
             >
               github.com/silviooerudon/repoguard
             </a>
@@ -132,7 +132,7 @@ export default function SecurityPage() {
               href="https://www.linkedin.com/in/silvio-junior-de-almeida-gazzoli-78453a8a/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-400 hover:underline"
+              className="text-amber-400 hover:underline"
             >
               Silvio directly on LinkedIn
             </a>{" "}
@@ -141,7 +141,7 @@ export default function SecurityPage() {
               href="https://github.com/silviooerudon/repoguard/issues"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-400 hover:underline"
+              className="text-amber-400 hover:underline"
             >
               GitHub
             </a>.

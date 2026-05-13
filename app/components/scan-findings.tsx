@@ -56,7 +56,7 @@ export function BadgePill({
   const cls =
     tone === "warn"
       ? "bg-slate-500/10 border-slate-500/30 text-slate-400"
-      : "bg-blue-500/10 border-blue-500/20 text-blue-300"
+      : "bg-amber-400/10 border-amber-400/20 text-amber-300"
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full border ${cls}`} title={title}>
       {label}
@@ -389,7 +389,7 @@ export function DependenciesSection({
               href={f.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block text-blue-400 hover:underline mt-1"
+              className="inline-block text-amber-400 hover:underline mt-1"
             >
               View advisory →
             </a>
