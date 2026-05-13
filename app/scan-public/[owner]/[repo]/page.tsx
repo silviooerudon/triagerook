@@ -27,6 +27,7 @@ import { RiskBreakdownChart } from "@/app/components/risk-breakdown"
 import { ViewToggleButton } from "@/app/components/view-toggle"
 import { PostureCard } from "@/app/components/posture-card"
 import { IamCard } from "@/app/components/iam-card"
+import { ScanProgress } from "@/app/components/scan-progress"
 import { SupplyChainCard } from "@/app/components/supply-chain-card"
 
 type ScanResultFull = ScanResult & {
@@ -126,15 +127,7 @@ export default function PublicScanPage({ params, searchParams }: PageProps) {
           {branch ? ` on ${branch}` : ""}.
         </p>
 
-        {status === "running" && (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
-            <div className="inline-block w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4" />
-            <p className="text-slate-300">Scanning repository…</p>
-            <p className="text-slate-500 text-sm mt-2">
-              Nine detectors running in parallel — usually under a minute.
-            </p>
-          </div>
-        )}
+        {status === "running" && <ScanProgress />}
 
         {status === "error" && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6">

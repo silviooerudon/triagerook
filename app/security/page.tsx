@@ -29,17 +29,25 @@ export default function SecurityPage() {
 
         <Section title="What we access">
           <p>
-            When you sign in with GitHub, RepoGuard requests the following OAuth scopes:
+            RepoGuard is authenticated through the <strong>RepoGuard Security</strong>{" "}
+            GitHub App (not a legacy OAuth App). When you sign in, RepoGuard reads:
           </p>
           <ul className="list-disc pl-6 space-y-1 mt-3">
-            <li><code className="bg-slate-900 px-1.5 py-0.5 rounded text-sm">read:user</code> — your GitHub username and avatar</li>
-            <li><code className="bg-slate-900 px-1.5 py-0.5 rounded text-sm">user:email</code> — your public email</li>
-            <li><code className="bg-slate-900 px-1.5 py-0.5 rounded text-sm">repo</code> — read access to your repositories, including private ones</li>
+            <li>Your GitHub username, avatar, and public email — for the session</li>
+            <li>Your public repositories — to list them on the dashboard</li>
+            <li>Public file contents of a repository — only during a scan you trigger</li>
           </ul>
           <p className="mt-3">
-            We use <code className="bg-slate-900 px-1.5 py-0.5 rounded text-sm">repo</code> because scanning private code requires it.
-            We <strong>never</strong> write, modify, or push to any repository. Reducing this
-            scope to read-only-only is on our roadmap.
+            We do <strong>not</strong> read private repositories. Private-repo support
+            is on the roadmap; today, signing in scans public code only.
+          </p>
+          <p className="mt-3">
+            For the optional <strong>auto-fix PR</strong> feature, you install the
+            RepoGuard Security GitHub App on the target repository. That install grants
+            the App <code className="bg-slate-900 px-1.5 py-0.5 rounded text-sm">Contents: write</code>{" "}
+            and <code className="bg-slate-900 px-1.5 py-0.5 rounded text-sm">Pull requests: write</code>{" "}
+            <strong>scoped to that repo only</strong>, so we can push a branch and open
+            a PR for your review. Without an install, RepoGuard cannot write to a repo.
           </p>
         </Section>
 
@@ -95,12 +103,25 @@ export default function SecurityPage() {
           <p>
             You can revoke RepoGuard&apos;s access at any time:
           </p>
-          <ol className="list-decimal pl-6 space-y-1 mt-3">
-            <li>Go to <a href="https://github.com/settings/applications" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">GitHub → Settings → Applications</a></li>
-            <li>Find <strong>RepoGuard</strong> and click <strong>Revoke</strong></li>
-          </ol>
+          <ul className="list-disc pl-6 space-y-2 mt-3">
+            <li>
+              <strong>Revoke sign-in:</strong> GitHub →{" "}
+              <a href="https://github.com/settings/applications" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline">
+                Settings → Applications → Authorized GitHub Apps
+              </a>{" "}
+              → find <strong>RepoGuard Security</strong> → <strong>Revoke</strong>.
+            </li>
+            <li>
+              <strong>Uninstall auto-fix:</strong> GitHub →{" "}
+              <a href="https://github.com/settings/installations" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline">
+                Settings → Applications → Installed GitHub Apps
+              </a>{" "}
+              → find <strong>RepoGuard Security</strong> → <strong>Uninstall</strong>{" "}
+              (or remove individual repos).
+            </li>
+          </ul>
           <p className="mt-3">
-            This immediately invalidates our access to your repositories.
+            Revocation is immediate. Any tokens already minted expire within an hour.
           </p>
         </Section>
 
@@ -128,7 +149,7 @@ export default function SecurityPage() {
         </Section>
 
         <p className="text-xs text-slate-500 mt-16 pt-8 border-t border-slate-800/60">
-          Last updated: April 2026. This page is maintained honestly. If anything here
+          Last updated: May 2026. This page is maintained honestly. If anything here
           becomes outdated or inaccurate, please report it.
         </p>
       </article>

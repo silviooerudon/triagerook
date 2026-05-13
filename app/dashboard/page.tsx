@@ -145,12 +145,12 @@ export default async function Dashboard() {
                     </div>
                   </div>
 
-                  <a
+                  <Link
                     href={`/dashboard/scan/${repo.owner.login}/${repo.name}?branch=${encodeURIComponent(repo.default_branch)}`}
                     className="shrink-0 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition text-white text-sm font-medium"
                   >
                     Scan
-                  </a>
+                  </Link>
                 </div>
               </div>
             ))}
