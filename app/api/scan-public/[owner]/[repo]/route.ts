@@ -1,3 +1,4 @@
+import { isSafeOwnerRepo } from "@/lib/path-validation"
 import { GitHubRateLimitError, GitHubRepoNotFoundError } from "@/lib/scan"
 import { runFullScan } from "@/lib/scan-pipeline"
 import { checkAndIncrement, PUBLIC_SCAN_POLICY } from "@/lib/rate-limit"
@@ -26,6 +27,11 @@ export async function POST(
   request: Request,
   { params }: RouteParams
 ) {
+  const { owner, repo } = await params
+  if (!isSafeOwnerRepo(owner) || !isSafeOwnerRepo(repo)) {
+    return NextResponse.json({ error: "Invalid owner or repo format" }, { status: 400 })
+  }
+
   const ip = getCallerIp(request)
   const rl = await checkAndIncrement(ip, PUBLIC_SCAN_POLICY)
   if (!rl.allowed) {
@@ -44,8 +50,6 @@ export async function POST(
       },
     )
   }
-
-  const { owner, repo } = await params
 
   let explicitBranch: string | undefined
   try {

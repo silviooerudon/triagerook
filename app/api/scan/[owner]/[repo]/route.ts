@@ -1,5 +1,6 @@
-import { auth } from "@/auth"
+import { auth, getAccessToken } from "@/auth"
 import { getUserId } from "@/lib/auth-utils"
+import { isSafeOwnerRepo } from "@/lib/path-validation"
 import { GitHubRateLimitError, GitHubRepoNotFoundError } from "@/lib/scan"
 import { supabase } from "@/lib/supabase"
 import { runFullScan } from "@/lib/scan-pipeline"
@@ -22,7 +23,7 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const accessToken = session.accessToken
+  const accessToken = await getAccessToken(request)
   if (!accessToken) {
     return NextResponse.json(
       { error: "No access token available. Please sign in again." },
@@ -31,6 +32,9 @@ export async function POST(
   }
 
   const { owner, repo } = await params
+  if (!isSafeOwnerRepo(owner) || !isSafeOwnerRepo(repo)) {
+    return NextResponse.json({ error: "Invalid owner or repo format" }, { status: 400 })
+  }
 
   let explicitBranch: string | undefined
   try {

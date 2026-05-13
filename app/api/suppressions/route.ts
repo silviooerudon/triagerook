@@ -6,11 +6,10 @@ import {
   createSuppression,
   type DbSuppression,
 } from "@/lib/db-suppressions"
+import { isSafeOwnerRepo } from "@/lib/path-validation"
 import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
-
-const SAFE_OWNER_REPO = /^[A-Za-z0-9._-]+$/
 
 export async function GET(request: Request) {
   const session = await auth()
@@ -26,7 +25,7 @@ export async function GET(request: Request) {
   let rows: DbSuppression[]
   try {
     if (owner && repo) {
-      if (!SAFE_OWNER_REPO.test(owner) || !SAFE_OWNER_REPO.test(repo)) {
+      if (!isSafeOwnerRepo(owner) || !isSafeOwnerRepo(repo)) {
         return NextResponse.json({ error: "Invalid owner or repo" }, { status: 400 })
       }
       rows = await listSuppressions(userId, owner, repo)
@@ -71,7 +70,7 @@ export async function POST(request: Request) {
       { status: 400 },
     )
   }
-  if (!SAFE_OWNER_REPO.test(owner) || !SAFE_OWNER_REPO.test(repo)) {
+  if (!isSafeOwnerRepo(owner) || !isSafeOwnerRepo(repo)) {
     return NextResponse.json({ error: "Invalid owner or repo" }, { status: 400 })
   }
   if (pathGlob.length > 500) {

@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { auth, getAccessToken } from "@/auth"
 import { NextResponse } from "next/server"
 import { prepareFixContext, type FixContextRequestBody } from "@/lib/fix-context"
 
@@ -17,7 +17,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
   }
 
-  const outcome = await prepareFixContext(session, body, "fix-preview")
+  const userAccessToken = await getAccessToken(request)
+  const outcome = await prepareFixContext(userAccessToken, body, "fix-preview")
   if (!outcome.ok) {
     return NextResponse.json(
       { error: outcome.error, code: outcome.code },
