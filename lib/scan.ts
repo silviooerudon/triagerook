@@ -3,6 +3,7 @@ import { buildGitHubHeaders } from "./github-fetch"
 import { findSensitiveFiles } from "./sensitive-files"
 import { findEntropySecrets } from "./entropy"
 import { findCodeVulns } from "./code-vulns"
+import { runAstRules } from "./ast"
 import { scanHistory } from "./history"
 import {
   isActionsWorkflowPath,
@@ -397,6 +398,13 @@ async function scanFile(
     const regexFindings = matchPatterns(content, file.path, likelyTestFixture)
     const entropyFindings = findEntropySecrets(content, file.path, likelyTestFixture)
     const codeFindings = findCodeVulns(content, file.path, likelyTestFixture)
+    // AST-based SAST runs alongside the regex code-vulns layer (not
+    // instead of it). Regex rules catch patterns AST can't cheaply
+    // express (e.g. comments, string-content checks like bcrypt rounds);
+    // AST rules catch patterns regex can't express precisely (e.g. user
+    // input flowing into a SQL/exec call across a few hops). Both emit
+    // CodeFinding[] so downstream consumers don't care about the source.
+    const astFindings = runAstRules(file.path, content, likelyTestFixture)
 
     const iac: IaCFinding[] = []
     if (isDockerfilePath(file.path)) {
@@ -407,7 +415,7 @@ async function scanFile(
 
     return {
       secrets: [...regexFindings, ...entropyFindings],
-      code: codeFindings,
+      code: [...codeFindings, ...astFindings],
       iac,
     }
   } catch {
