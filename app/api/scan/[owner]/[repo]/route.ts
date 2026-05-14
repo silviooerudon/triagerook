@@ -66,6 +66,7 @@ export async function POST(
       supplyChainResult,
       npmVulnsCount,
       pythonVulnsCount,
+      degraded,
     } = await runFullScan(
       accessToken,
       owner,
@@ -121,6 +122,7 @@ export async function POST(
       posture: postureResult,
       iam: iamResult,
       supplyChain: supplyChainResult,
+      degraded,
     })
   } catch (error) {
     if (error instanceof GitHubRateLimitError) {

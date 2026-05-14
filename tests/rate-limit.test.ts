@@ -91,4 +91,25 @@ describe("checkAndIncrement", () => {
     })
     expect(r.allowed).toBe(true)
   })
+
+  it("fails closed when storage throws and failClosed is set", async () => {
+    const storage: RateLimitStorage = {
+      async get() {
+        throw new Error("DB down")
+      },
+      async upsert() {
+        /* unreachable */
+      },
+    }
+    const r = await checkAndIncrement("ip-1", POLICY, {
+      storage,
+      now: new Date(),
+      failClosed: true,
+    })
+    expect(r.allowed).toBe(false)
+    expect(r.remaining).toBe(0)
+    // Retry-After should match the full window so abusive callers
+    // actually back off rather than retrying in seconds.
+    expect(r.retryAfterSeconds).toBe(Math.ceil(POLICY.windowMs / 1000))
+  })
 })

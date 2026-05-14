@@ -1,4 +1,4 @@
-import { Node, SyntaxKind, type SourceFile } from "ts-morph"
+import { SyntaxKind, type SourceFile } from "ts-morph"
 import {
   getCallCalleeName,
   isUserInputExpression,

@@ -7,6 +7,7 @@ import { runAstRules } from "./ast"
 import { scanHistory } from "./history"
 import { prioritizeFilesForScan } from "./scan-priority"
 import { getMaxFilesToScan, getMaxScanTimeMs } from "./scan-budget"
+import { isLikelyScannerSelfReference } from "./scanner-self-reference"
 import {
   isActionsWorkflowPath,
   isDockerfilePath,
@@ -19,6 +20,7 @@ import type {
   CodeFinding,
   IaCFinding,
   DependencyFinding,
+  DetectorHealth,
 } from "./types"
 
 export class GitHubRateLimitError extends Error {
@@ -92,6 +94,9 @@ export type ScanResult = {
   // narrow scan doesn't conclude the whole repo is clean. Persisted
   // scans pre-2026-05-14 don't have this field.
   pathPrefix?: string
+  // Detectors that soft-failed during this scan. UI surfaces these as
+  // a warning banner so "0 findings" isn't mistaken for "actually clean".
+  degraded?: DetectorHealth[]
 }
 
 // File extensions we want to scan (text-based, likely to contain secrets)
@@ -253,22 +258,31 @@ export async function scanRepo(
 
   // 6. Scan recent commit history (best-effort; soft-fails on errors)
   let historyFindings: SecretFinding[] = []
+  const degraded: DetectorHealth[] = []
   try {
     historyFindings = await scanHistory(accessToken, owner, repo, branch, findings)
   } catch (err) {
     if (err instanceof GitHubRateLimitError) {
-      // Don't fail the whole scan just because history hit the rate limit.
+      // Don't fail the whole scan just because history hit the rate limit —
+      // but tell the user we skipped it instead of letting them assume
+      // history is clean.
       historyFindings = []
+      degraded.push({
+        detector: "history",
+        reason: "GitHub API rate limit hit — recent-commit history scan skipped.",
+      })
     } else {
       // Unknown failure (network, parse error, GitHub 5xx). The rest of the
       // scan still has value, so we soft-fail history specifically — but we
       // log because silent failure here violates AGENTS.md ("never silently
       // swallow GitHub/Supabase errors").
-      console.warn(
-        "[scan] history scan failed, continuing without it:",
-        err instanceof Error ? err.message : String(err),
-      )
+      const msg = err instanceof Error ? err.message : String(err)
+      console.warn("[scan] history scan failed, continuing without it:", msg)
       historyFindings = []
+      degraded.push({
+        detector: "history",
+        reason: `History scan failed (${msg.slice(0, 80)}). Recent commits not checked.`,
+      })
     }
   }
 
@@ -288,6 +302,7 @@ export async function scanRepo(
     // make it clear "this is a narrow scan of packages/auth, not the
     // whole repo" — same shape consideration as the truncation banner.
     pathPrefix: normalizedPrefix ?? undefined,
+    degraded: degraded.length > 0 ? degraded : undefined,
   }
 }
 
@@ -499,6 +514,16 @@ function matchPatterns(
       const before = content.slice(0, matchIndex)
       const lineNumber = before.split("\n").length
       const lineContent = lines[lineNumber - 1] ?? ""
+
+      // Skip matches that look like the detector's own definition
+      // (inside a JS regex literal or after a `pattern:`/`regex:`
+      // property marker). See lib/scanner-self-reference.ts.
+      const lineStart = before.lastIndexOf("\n") + 1
+      const matchOffsetInLine = matchIndex - lineStart
+      if (isLikelyScannerSelfReference(lineContent, matchOffsetInLine)) {
+        if (match.index === pattern.regex.lastIndex) pattern.regex.lastIndex++
+        continue
+      }
 
       findings.push({
         patternId: pattern.id,

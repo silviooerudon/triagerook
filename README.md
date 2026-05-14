@@ -4,7 +4,7 @@
 
 > Lightweight GitHub security scanner for solo devs and small teams. Live at **[repoguard-chi.vercel.app](https://repoguard-chi.vercel.app)**.
 
-Scans your GitHub repos across nine detectors in parallel — **60+ secret patterns**, sensitive files, **28 AST-based SAST rules**, npm and PyPI dependencies, supply-chain misconfigurations, IaC checks for Dockerfile and GitHub Actions, and git-history replay — with no CLI, no config, and no pipelines to wire up. Sign in with GitHub or paste a public URL, then get a prioritized list of findings in under a minute. Every finding is one click from a **SARIF 2.1.0 export** ready to upload to GitHub Code Scanning.
+Scans your GitHub repos across nine detector families, run in parallel where independent — **60+ secret patterns**, sensitive files, **28 AST-based SAST rules**, npm and PyPI dependencies, supply-chain misconfigurations, IaC checks for Dockerfile and GitHub Actions, and git-history replay — with no CLI, no config, and no pipelines to wire up. Sign in with GitHub or paste a public URL, then get a prioritized list of findings in under a minute. Every finding is one click from a **SARIF 2.1.0 export** ready to upload to GitHub Code Scanning.
 
 📖 The full rule catalog (170+ rules, every CWE) is published at [`/docs/rules`](https://repoguard-chi.vercel.app/docs/rules). The SARIF integration guide lives at [`/docs/sarif`](https://repoguard-chi.vercel.app/docs/sarif).
 

@@ -1,7 +1,11 @@
 import { isSafeOwnerRepo, isSafeRepoFilePath } from "@/lib/path-validation"
 import { GitHubRateLimitError, GitHubRepoNotFoundError } from "@/lib/scan"
 import { runFullScan } from "@/lib/scan-pipeline"
-import { checkAndIncrement, PUBLIC_SCAN_POLICY } from "@/lib/rate-limit"
+import {
+  checkAndIncrement,
+  PUBLIC_SCAN_POLICY,
+  PUBLIC_SCAN_PER_REPO_POLICY,
+} from "@/lib/rate-limit"
 import { NextResponse } from "next/server"
 
 // Best-effort caller IP for rate limiting. Vercel populates
@@ -32,20 +36,49 @@ export async function POST(
     return NextResponse.json({ error: "Invalid owner or repo format" }, { status: 400 })
   }
 
+  // Two-axis throttle for anonymous scans: per-IP catches the common
+  // "one user clicks too much" case; per-repo stops "rotate the IP to
+  // keep hammering the same target" abuse. Both fail closed: if
+  // Supabase is unreachable, the scan would fail downstream anyway, so
+  // refusing here is the honest behaviour rather than silently
+  // dropping the limit.
   const ip = getCallerIp(request)
-  const rl = await checkAndIncrement(ip, PUBLIC_SCAN_POLICY)
-  if (!rl.allowed) {
+  const ipRl = await checkAndIncrement(ip, PUBLIC_SCAN_POLICY, {
+    failClosed: true,
+  })
+  if (!ipRl.allowed) {
     return NextResponse.json(
       {
-        error: `Too many anonymous scans. Try again in ${rl.retryAfterSeconds}s, or sign in for a higher limit.`,
-        retryAfterSeconds: rl.retryAfterSeconds,
+        error: `Too many anonymous scans. Try again in ${ipRl.retryAfterSeconds}s, or sign in for a higher limit.`,
+        retryAfterSeconds: ipRl.retryAfterSeconds,
       },
       {
         status: 429,
         headers: {
-          "Retry-After": String(rl.retryAfterSeconds),
+          "Retry-After": String(ipRl.retryAfterSeconds),
           "X-RateLimit-Limit": String(PUBLIC_SCAN_POLICY.limit),
-          "X-RateLimit-Remaining": String(rl.remaining),
+          "X-RateLimit-Remaining": String(ipRl.remaining),
+        },
+      },
+    )
+  }
+
+  const repoKey = `repo:${owner.toLowerCase()}/${repo.toLowerCase()}`
+  const repoRl = await checkAndIncrement(repoKey, PUBLIC_SCAN_PER_REPO_POLICY, {
+    failClosed: true,
+  })
+  if (!repoRl.allowed) {
+    return NextResponse.json(
+      {
+        error: `This repo has been scanned too many times this hour. Try again in ${repoRl.retryAfterSeconds}s, or sign in to scan with your own GitHub quota.`,
+        retryAfterSeconds: repoRl.retryAfterSeconds,
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(repoRl.retryAfterSeconds),
+          "X-RateLimit-Limit": String(PUBLIC_SCAN_PER_REPO_POLICY.limit),
+          "X-RateLimit-Remaining": String(repoRl.remaining),
         },
       },
     )
@@ -79,6 +112,7 @@ export async function POST(
       postureResult,
       iamResult,
       supplyChainResult,
+      degraded,
     } = await runFullScan(null, owner, repo, explicitBranch, {}, pathPrefix)
 
     return NextResponse.json({
@@ -91,6 +125,7 @@ export async function POST(
       posture: postureResult,
       iam: iamResult,
       supplyChain: supplyChainResult,
+      degraded,
     })
   } catch (error) {
     if (error instanceof GitHubRateLimitError) {

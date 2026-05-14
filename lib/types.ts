@@ -1,5 +1,22 @@
 export type Severity = "critical" | "high" | "medium" | "low"
 
+// Soft-failure marker. When an external dependency (GitHub, npm
+// registry, OSV.dev) is unavailable or rate-limited, the detector
+// returns an empty result rather than failing the whole scan — but
+// it also pushes a DetectorHealth entry so the UI can surface "we
+// skipped X" instead of letting the user believe the scan was clean.
+//
+// See AGENTS.md ("never silently swallow GitHub/Supabase errors").
+export type DetectorHealth = {
+  detector:
+    | "history"
+    | "npm-audit"
+    | "osv"
+    | "blob-fetch"
+    | "suppressions-file"
+  reason: string
+}
+
 export type SecretFinding = {
   patternId: string
   patternName: string

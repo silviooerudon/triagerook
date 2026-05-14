@@ -69,10 +69,10 @@ export default function PublicScanInput() {
         </button>
       </div>
       {error && (
-        <p className="text-red-400 text-xs font-mono mt-2">// {error}</p>
+        <p className="text-red-400 text-xs font-mono mt-2">{"// "}{error}</p>
       )}
       <p className="text-xs font-mono text-slate-500 mt-3">
-        // no login required · 60 scans/hour shared limit · public repos only
+        {"// no login required · 60 scans/hour shared limit · public repos only"}
       </p>
     </div>
   )

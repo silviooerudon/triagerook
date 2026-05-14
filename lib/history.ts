@@ -2,6 +2,7 @@ import { SECRET_PATTERNS } from "./secret-patterns"
 import { GitHubRateLimitError, parseGitHubRateLimit } from "./scan"
 import type { SecretFinding } from "./types"
 import { buildGitHubHeaders } from "./github-fetch"
+import { isLikelyScannerSelfReference } from "./scanner-self-reference"
 
 type CommitListItem = {
   sha: string
@@ -114,6 +115,14 @@ function scanAddedLinesForSecrets(
       pattern.regex.lastIndex = 0
       let match: RegExpExecArray | null
       while ((match = pattern.regex.exec(text)) !== null) {
+        // Skip matches that are the detector's own regex literal in
+        // an added line — e.g. a commit adding a new SECRET_PATTERNS
+        // entry. The patch line IS the search pattern, not exploit
+        // material. See lib/scanner-self-reference.ts.
+        if (isLikelyScannerSelfReference(text, match.index)) {
+          if (match.index === pattern.regex.lastIndex) pattern.regex.lastIndex++
+          continue
+        }
         findings.push({
           patternId: pattern.id,
           patternName: pattern.name,

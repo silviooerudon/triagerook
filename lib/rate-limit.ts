@@ -9,10 +9,13 @@
 //   - Storage interface is injected so tests can run in-memory without
 //     standing up Supabase. The production export uses the Supabase
 //     `public_scan_rate_limits` table (migration 008).
-//   - Fail-open semantics: if storage.get throws, we let the request
-//     through. A rate limiter that fails closed could take the whole
-//     site down on a Supabase blip; failing open keeps the site up
-//     and just temporarily loses the limit. Logged so we notice.
+//   - Storage failure: defaults to fail-open (allow the request,
+//     log a warning) for backwards compatibility. Callers protecting
+//     abuse-sensitive endpoints should pass `failClosed: true` so a
+//     Supabase outage cannot be used to bypass throttling. /api/scan-public
+//     uses fail-closed because the scan itself depends on Supabase
+//     anyway — if storage is down, the user-visible 503 from rate-limit
+//     is no worse than a downstream failure.
 //   - Race window: two simultaneous requests can both read N-1 and
 //     both decide they're allowed at N. Acceptable for the 10/hr
 //     limit; if abuse warrants it, the get+upsert becomes a single
@@ -42,6 +45,11 @@ export type RateLimitResult = {
 export type CheckOptions = {
   storage?: RateLimitStorage
   now?: Date
+  // When true, deny the request if storage is unavailable. Callers that
+  // protect abuse-sensitive endpoints (anonymous scans) should set this.
+  // Default false preserves the legacy fail-open behavior other callers
+  // may depend on.
+  failClosed?: boolean
 }
 
 export async function checkAndIncrement(
@@ -56,10 +64,18 @@ export async function checkAndIncrement(
   try {
     existing = await storage.get(key)
   } catch (err) {
-    console.warn(
-      "[rate-limit] storage.get failed; failing open:",
-      err instanceof Error ? err.message : String(err),
-    )
+    const msg = err instanceof Error ? err.message : String(err)
+    if (options.failClosed) {
+      console.warn("[rate-limit] storage.get failed; failing CLOSED:", msg)
+      // Retry-After of one window is conservative — the caller surfaces
+      // it as 503 / Retry-After so abusive automation actually backs off.
+      return {
+        allowed: false,
+        remaining: 0,
+        retryAfterSeconds: Math.ceil(policy.windowMs / 1000),
+      }
+    }
+    console.warn("[rate-limit] storage.get failed; failing open:", msg)
     return { allowed: true, remaining: policy.limit - 1, retryAfterSeconds: 0 }
   }
 
@@ -139,5 +155,14 @@ const supabaseStorage: RateLimitStorage = {
 // won't trip it, restrictive enough that automated abuse stops fast.
 export const PUBLIC_SCAN_POLICY: RateLimitPolicy = {
   limit: 10,
+  windowMs: 60 * 60 * 1000,
+}
+
+// Secondary throttle scoped to owner/repo, regardless of caller IP.
+// Stops "rotate the IP to keep scanning the same repo" abuse and
+// caps total GitHub API spend per target. Stricter than the per-IP
+// limit (legitimate users rescanning the same repo 5x/hour is rare).
+export const PUBLIC_SCAN_PER_REPO_POLICY: RateLimitPolicy = {
+  limit: 5,
   windowMs: 60 * 60 * 1000,
 }

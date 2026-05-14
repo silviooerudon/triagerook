@@ -13,12 +13,12 @@ async function main() {
     `npm: ${npmResult.vulns.length} vulnerabilities, ${npmResult.lifecycleIssues.length} suspicious lifecycle scripts`,
   )
 
-  const pyVulns = await scanPythonDependencies(OWNER, REPO, TOKEN)
-  console.log(`PyPI: ${pyVulns.length} vulnerabilities`)
+  const pyResult = await scanPythonDependencies(OWNER, REPO, TOKEN)
+  console.log(`PyPI: ${pyResult.findings.length} vulnerabilities`)
 
   console.log(
     JSON.stringify(
-      { npm: npmResult, python: pyVulns },
+      { npm: npmResult, python: pyResult },
       null,
       2,
     ),
