@@ -2,10 +2,10 @@
   "meta": {
     "ecosystem": "npm",
     "source": "manually curated seed list of top npm packages by download/dependents",
-    "generatedAt": "2026-05-07",
+    "generatedAt": "2026-05-14",
     "expandWith": "Run scripts/refresh-popular-packages.ts to expand to top 5000 from LeoDog896/npm-rank",
-    "count": 100,
-    "note": "SOURCE OF TRUTH for typosquatting detection. Refresh script (scripts/refresh-popular-packages.ts) is best-effort; as of 2026-05 upstream npm-rank URLs return 404. Seed of top 100 covers all historically documented typosquat targets."
+    "count": 119,
+    "note": "SOURCE OF TRUTH for typosquatting detection. Refresh script (scripts/refresh-popular-packages.ts) is best-effort; as of 2026-05 upstream npm-rank URLs return 404. Top 100 covers historically documented typosquat targets; entries 101+ added after the 2026-05-14 dogfood pass exposed false positives where legit popular packages (qs, chai, redis, uid, etc.) were being flagged as typosquats of top-100 neighbours."
   },
   "packages": [
     {
@@ -407,6 +407,82 @@
     {
       "name": "serve-static",
       "rank": 100
+    },
+    {
+      "name": "qs",
+      "rank": 101
+    },
+    {
+      "name": "chai",
+      "rank": 102
+    },
+    {
+      "name": "redis",
+      "rank": 103
+    },
+    {
+      "name": "uid",
+      "rank": 104
+    },
+    {
+      "name": "form-data",
+      "rank": 105
+    },
+    {
+      "name": "got",
+      "rank": 106
+    },
+    {
+      "name": "pino",
+      "rank": 107
+    },
+    {
+      "name": "nodemailer",
+      "rank": 108
+    },
+    {
+      "name": "passport",
+      "rank": 109
+    },
+    {
+      "name": "cheerio",
+      "rank": 110
+    },
+    {
+      "name": "cypress",
+      "rank": 111
+    },
+    {
+      "name": "vitest",
+      "rank": 112
+    },
+    {
+      "name": "swr",
+      "rank": 113
+    },
+    {
+      "name": "react-query",
+      "rank": 114
+    },
+    {
+      "name": "zustand",
+      "rank": 115
+    },
+    {
+      "name": "tsx",
+      "rank": 116
+    },
+    {
+      "name": "turbo",
+      "rank": 117
+    },
+    {
+      "name": "lerna",
+      "rank": 118
+    },
+    {
+      "name": "pnpm",
+      "rank": 119
     }
   ]
 }
