@@ -2,7 +2,7 @@ import type { CodeFinding, CodeVulnCategory, Severity } from "./types"
 
 type Language = "js" | "python" | "any"
 
-type CodeRule = {
+export type CodeRule = {
   id: string
   name: string
   severity: Severity
@@ -21,7 +21,7 @@ type CodeRule = {
  * false positives erode trust faster than false negatives. Each rule ties to
  * a CWE to make output actionable and to integrate later with SARIF export.
  */
-const CODE_RULES: CodeRule[] = [
+export const CODE_RULES: CodeRule[] = [
   // ─────────────────────────  SSRF (Capital One lesson)  ─────────────────────
   {
     id: "js-ssrf-fetch-user-input",

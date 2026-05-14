@@ -34,6 +34,13 @@ export function registerAstRule(rule: AstRule): void {
   RULES.push(rule)
 }
 
+// Read-only view of the registered AST rule set, exposed so the public
+// rule-catalog page can enumerate detectors without pulling the runner
+// into the bundle.
+export function listAstRules(): readonly AstRule[] {
+  return RULES
+}
+
 // Cap on the display line so DB / API responses don't carry 4000-char
 // minified one-liners.
 function clampLineContent(line: string): string {

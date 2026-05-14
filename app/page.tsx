@@ -145,6 +145,12 @@ export default async function Home() {
               >
                 detectors
               </a>
+              <Link
+                href="/docs/rules"
+                className="hidden sm:inline hover:text-slate-100 transition"
+              >
+                rules
+              </Link>
               <a
                 href="#faq"
                 className="hidden sm:inline hover:text-slate-100 transition"

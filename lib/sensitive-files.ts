@@ -1,6 +1,6 @@
 import type { SensitiveFileFinding, SensitiveFileKind, Severity } from "./types"
 
-type FileRule = {
+export type FileRule = {
   kind: SensitiveFileKind
   name: string
   severity: Severity
@@ -22,7 +22,7 @@ function looksLikeMigration(path: string, basename: string): boolean {
   return MIGRATION_PATH_RE.test(path) || MIGRATION_BASENAME_RE.test(basename)
 }
 
-const FILE_RULES: FileRule[] = [
+export const FILE_RULES: FileRule[] = [
   {
     kind: "private-key",
     name: "Private key file",
