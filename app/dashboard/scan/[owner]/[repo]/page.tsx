@@ -23,6 +23,7 @@ import { RiskBreakdownChart } from "@/app/components/risk-breakdown"
 import { ViewToggleButton } from "@/app/components/view-toggle"
 import { ExpiredSuppressionsBanner } from "@/app/components/expired-suppressions-banner"
 import { TruncationBanner } from "@/app/components/truncation-banner"
+import { ScopeControl } from "@/app/components/scope-control"
 import { SuppressedFindingsSection } from "@/app/components/suppressed-findings-section"
 import { PostureCard } from "@/app/components/posture-card"
 import { IamCard } from "@/app/components/iam-card"
@@ -48,12 +49,12 @@ type ScanResultFull = ScanResult & {
 
 type PageProps = {
   params: Promise<{ owner: string; repo: string }>
-  searchParams: Promise<{ branch?: string }>
+  searchParams: Promise<{ branch?: string; path?: string }>
 }
 
 export default function ScanPage({ params, searchParams }: PageProps) {
   const { owner, repo } = use(params)
-  const { branch } = use(searchParams)
+  const { branch, path } = use(searchParams)
 
   const [status, setStatus] = useState<"running" | "done" | "error">("running")
   const [result, setResult] = useState<ScanResultFull | null>(null)
@@ -63,10 +64,13 @@ export default function ScanPage({ params, searchParams }: PageProps) {
     const controller = new AbortController()
     async function runScan() {
       try {
+        const body: Record<string, string> = {}
+        if (branch) body.defaultBranch = branch
+        if (path) body.pathPrefix = path
         const response = await fetch(`/api/scan/${owner}/${repo}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(branch ? { defaultBranch: branch } : {}),
+          body: JSON.stringify(body),
           signal: controller.signal,
         })
         if (!response.ok) {
@@ -84,7 +88,7 @@ export default function ScanPage({ params, searchParams }: PageProps) {
     }
     runScan()
     return () => controller.abort()
-  }, [owner, repo, branch])
+  }, [owner, repo, branch, path])
 
   return (
     <main className="px-6 py-12">
@@ -93,12 +97,18 @@ export default function ScanPage({ params, searchParams }: PageProps) {
           <span className="text-slate-400">scanning</span>{" "}
           <span className="font-mono text-amber-400">
             {owner}/{repo}
+            {path && <span className="text-slate-500">/{path}</span>}
           </span>
         </h1>
-        <p className="text-slate-400 text-sm mb-8">
+        <p className="text-slate-400 text-sm mb-4">
           Secrets, dependencies, code vulnerabilities, CI/IaC configuration and
           git history{branch ? ` on ${branch}` : ""}.
         </p>
+
+        <ScopeControl
+          currentPathPrefix={path}
+          repoFullName={`${owner}/${repo}`}
+        />
 
         {status === "running" && <ScanProgress />}
 

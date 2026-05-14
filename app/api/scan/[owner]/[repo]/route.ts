@@ -1,6 +1,6 @@
 import { auth, getAccessToken } from "@/auth"
 import { getUserId } from "@/lib/auth-utils"
-import { isSafeOwnerRepo } from "@/lib/path-validation"
+import { isSafeOwnerRepo, isSafeRepoFilePath } from "@/lib/path-validation"
 import { GitHubRateLimitError, GitHubRepoNotFoundError } from "@/lib/scan"
 import { supabase } from "@/lib/supabase"
 import { runFullScan } from "@/lib/scan-pipeline"
@@ -37,10 +37,20 @@ export async function POST(
   }
 
   let explicitBranch: string | undefined
+  let pathPrefix: string | undefined
   try {
     const body = await request.json()
     if (typeof body?.defaultBranch === "string" && body.defaultBranch.length > 0) {
       explicitBranch = body.defaultBranch
+    }
+    if (typeof body?.pathPrefix === "string" && body.pathPrefix.length > 0) {
+      if (!isSafeRepoFilePath(body.pathPrefix)) {
+        return NextResponse.json(
+          { error: "Invalid pathPrefix format" },
+          { status: 400 },
+        )
+      }
+      pathPrefix = body.pathPrefix
     }
   } catch {
     // no body - scanRepo auto-detects
@@ -56,9 +66,14 @@ export async function POST(
       supplyChainResult,
       npmVulnsCount,
       pythonVulnsCount,
-    } = await runFullScan(accessToken, owner, repo, explicitBranch, {
-      userIdForDbSuppressions: userId,
-    })
+    } = await runFullScan(
+      accessToken,
+      owner,
+      repo,
+      explicitBranch,
+      { userIdForDbSuppressions: userId },
+      pathPrefix,
+    )
 
     const { error: dbError } = await supabase.from("scans").insert({
       user_id: userId,

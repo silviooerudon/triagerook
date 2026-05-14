@@ -60,6 +60,10 @@ export async function runFullScan(
   repo: string,
   explicitBranch?: string,
   options: RunFullScanOptions = {},
+  // Optional subfolder narrowing. Validated at the API boundary; the
+  // pipeline passes through. Posture/IAM/supply-chain are repo-scoped
+  // signals so they ignore the prefix — only the file scan obeys it.
+  pathPrefix?: string,
 ): Promise<FullScanResult> {
   const [
     secretsResult,
@@ -69,7 +73,7 @@ export async function runFullScan(
     iamResult,
     supplyChainResult,
   ] = await Promise.all([
-    scanRepo(accessToken, owner, repo, explicitBranch),
+    scanRepo(accessToken, owner, repo, explicitBranch, pathPrefix),
     scanDependencies(owner, repo, accessToken),
     scanPythonDependencies(owner, repo, accessToken),
     assessPosture(owner, repo, accessToken),

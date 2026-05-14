@@ -87,6 +87,11 @@ export type ScanResult = {
   iacFindings?: IaCFinding[]
   dependencies?: DependencyFinding[]
   pythonDependencies?: DependencyFinding[]
+  // When set, the scan was narrowed to a subfolder of the repo. UI
+  // shows this in the header so a user looking at "0 findings" for a
+  // narrow scan doesn't conclude the whole repo is clean. Persisted
+  // scans pre-2026-05-14 don't have this field.
+  pathPrefix?: string
 }
 
 // File extensions we want to scan (text-based, likely to contain secrets)
@@ -167,7 +172,14 @@ export async function scanRepo(
   accessToken: string | null,
   owner: string,
   repo: string,
-  defaultBranch?: string
+  defaultBranch?: string,
+  // Optional path prefix to narrow the scan to a subfolder of the repo
+  // (e.g. "packages/auth" inside a monorepo). Trailing slash is
+  // normalised; the value MUST have been validated by
+  // isSafeRepoFilePath() at the API boundary — callers that don't
+  // pre-validate risk feeding GitHub's tree filter a directory
+  // traversal segment.
+  pathPrefix?: string
 ): Promise<ScanResult> {
   const startedAt = Date.now()
   const repoFullName = `${owner}/${repo}`
@@ -184,16 +196,33 @@ export async function scanRepo(
   // 3. Filter to scannable files, then prioritize source paths over
   //    tests/fixtures/docs so the file-cap budget is spent on the slice
   //    most likely to contain real findings. See lib/scan-priority.ts
-  //    for the tier table.
+  //    for the tier table. If a pathPrefix was supplied, restrict the
+  //    tree to that subfolder first — useful for huge monorepos where
+  //    the user wants to focus on `packages/auth` without burning the
+  //    file-cap budget on unrelated packages.
+  const normalizedPrefix = pathPrefix ? pathPrefix.replace(/\/+$/, "") : undefined
   const allBlobs = tree.tree.filter((item) => item.type === "blob")
-  const scannable = allBlobs.filter((item) => isScannable(item))
+  const blobsInScope = normalizedPrefix
+    ? allBlobs.filter(
+        (item) =>
+          item.path === normalizedPrefix ||
+          item.path.startsWith(`${normalizedPrefix}/`),
+      )
+    : allBlobs
+  const scannable = blobsInScope.filter((item) => isScannable(item))
   const prioritized = prioritizeFilesForScan(scannable)
 
   const filesToScan = prioritized.slice(0, maxFilesToScan)
-  const filesSkipped = allBlobs.length - filesToScan.length
+  // Skipped count is computed against the IN-SCOPE blob count when a
+  // prefix narrows the scan — otherwise a narrow scan would always
+  // appear "truncated" because thousands of files outside the prefix
+  // count as skipped, which is wrong (they were intentionally excluded).
+  const filesSkipped = blobsInScope.length - filesToScan.length
 
-  // 4. Flag sensitive files by name (no blob fetch needed)
-  const sensitiveFiles = findSensitiveFiles(allBlobs.map((b) => b.path))
+  // 4. Flag sensitive files by name (no blob fetch needed). Honor the
+  //    same prefix scope so a narrow scan doesn't surface findings in
+  //    sibling subfolders.
+  const sensitiveFiles = findSensitiveFiles(blobsInScope.map((b) => b.path))
 
   // 5. Scan files in parallel batches
   const findings: SecretFinding[] = []
@@ -255,6 +284,10 @@ export async function scanRepo(
     iacFindings,
     durationMs: Date.now() - startedAt,
     truncated: tree.truncated || timeLimitHit || scannable.length > maxFilesToScan,
+    // Echoes back what subfolder (if any) was scanned. UI uses this to
+    // make it clear "this is a narrow scan of packages/auth, not the
+    // whole repo" — same shape consideration as the truncation banner.
+    pathPrefix: normalizedPrefix ?? undefined,
   }
 }
 
