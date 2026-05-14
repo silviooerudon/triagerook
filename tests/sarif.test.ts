@@ -45,6 +45,12 @@ describe("scanToSarif - envelope", () => {
     expect(driver.informationUri).toContain("repoguard")
   })
 
+  it("uses the version from package.json (not a stale hardcoded string)", async () => {
+    const pkg = await import("../package.json")
+    const out = scanToSarif(baseScan())
+    expect(out.runs[0].tool.driver.version).toBe(pkg.version)
+  })
+
   it("attaches scan metadata to run.properties", () => {
     const out = scanToSarif(baseScan({ riskScore: 42 }))
     const props = out.runs[0].properties
