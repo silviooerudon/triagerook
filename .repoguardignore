@@ -27,6 +27,21 @@ lib/code-vulns.ts [rule=code/*] [reason="Detector self-reference: SAST rule desc
 # calls match the Python eval/exec rule erroneously.
 scripts/patch-iam-d3-1-heredoc.py [rule=code/*] [reason="JS-in-Python-heredoc false match for Python exec()"]
 
+# Marketing copy on the landing page enumerates the patterns the SAST
+# detector flags (rejectUnauthorized: false, httpOnly: false, bcrypt
+# rounds below 10, etc). The detector then matches its own FAQ text.
+app/page.tsx [rule=code/*] [reason="Landing page FAQ describes SAST patterns the detector flags"]
+
+# The security page describes how each scanner family works. Same
+# self-reference dynamic as the landing page.
+app/security/page.tsx [rule=code/*] [reason="Security page copy describes detector behaviour"]
+
+# Per-rule documentation pages at /docs/rules/[ruleId] render the
+# detector catalog. By construction every page contains the exact
+# pattern its rule looks for.
+app/docs/** [rule=code/*] [reason="Rule docs catalogue contains the patterns by design"]
+app/docs/** [rule=secret/*] [reason="Rule docs catalogue contains the patterns by design"]
+
 # scripts/test-suppressions.ts is the test fixture for this very suppression
 # system. It contains intentional vuln patterns to verify suppression
 # logic works end-to-end.

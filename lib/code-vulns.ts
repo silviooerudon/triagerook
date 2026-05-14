@@ -1,4 +1,5 @@
 import type { CodeFinding, CodeVulnCategory, Severity } from "./types"
+import { isLikelyScannerSelfReference } from "./scanner-self-reference"
 
 type Language = "js" | "python" | "any"
 
@@ -508,8 +509,13 @@ export function findCodeVulns(
         continue
       }
       rule.regex.lastIndex = 0
-      if (!rule.regex.test(line)) continue
+      const m = rule.regex.exec(line)
+      if (!m) continue
       if (rule.suppress?.(line)) continue
+      // Skip matches that are the detector's own pattern literal —
+      // e.g. a regex definition or a `pattern:` property in a rule
+      // file. See lib/scanner-self-reference.ts for the heuristic.
+      if (isLikelyScannerSelfReference(line, m.index)) continue
       findings.push({
         ruleId: rule.id,
         ruleName: rule.name,

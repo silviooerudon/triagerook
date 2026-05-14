@@ -7,6 +7,7 @@ import { runAstRules } from "./ast"
 import { scanHistory } from "./history"
 import { prioritizeFilesForScan } from "./scan-priority"
 import { getMaxFilesToScan, getMaxScanTimeMs } from "./scan-budget"
+import { isLikelyScannerSelfReference } from "./scanner-self-reference"
 import {
   isActionsWorkflowPath,
   isDockerfilePath,
@@ -513,6 +514,16 @@ function matchPatterns(
       const before = content.slice(0, matchIndex)
       const lineNumber = before.split("\n").length
       const lineContent = lines[lineNumber - 1] ?? ""
+
+      // Skip matches that look like the detector's own definition
+      // (inside a JS regex literal or after a `pattern:`/`regex:`
+      // property marker). See lib/scanner-self-reference.ts.
+      const lineStart = before.lastIndexOf("\n") + 1
+      const matchOffsetInLine = matchIndex - lineStart
+      if (isLikelyScannerSelfReference(lineContent, matchOffsetInLine)) {
+        if (match.index === pattern.regex.lastIndex) pattern.regex.lastIndex++
+        continue
+      }
 
       findings.push({
         patternId: pattern.id,
