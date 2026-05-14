@@ -36,7 +36,7 @@ const DETECTORS: Array<{
   {
     id: "05",
     name: "code-sast",
-    desc: "AST-based via the TypeScript Compiler API plus targeted regex. 25 SAST rules: SSRF, SQLi, command injection, reflected XSS, prototype pollution, ReDoS, NoSQL / SSTI injection, weak crypto, JWT misuse, hardcoded creds — plus AI-typical mistakes (TLS verify off, NEXT_PUBLIC_ secrets, bcrypt rounds < 10).",
+    desc: "AST-based via the TypeScript Compiler API plus targeted regex. 28 AST rules covering most of the OWASP Top 10 — SSRF, SQLi, command injection, reflected XSS, prototype pollution, ReDoS, NoSQL / SSTI injection, XXE, weak crypto, JWT misuse, hardcoded creds — plus AI-typical mistakes (TLS verify off, NEXT_PUBLIC_ secrets, bcrypt rounds < 10). Every rule CWE-tagged.",
     refs: "AST + regex · CWE-tagged",
   },
   {
@@ -60,7 +60,7 @@ const DETECTORS: Array<{
   {
     id: "09",
     name: "posture + iam",
-    desc: "A+ to F grade for repo hygiene (branch protection, CODEOWNERS, signed commits, Dependabot) and IAM risk (org MFA, outside-collaborator scopes, admin-equivalent privilege paths).",
+    desc: "Repo posture (A+ to F grade — branch protection, CODEOWNERS, signed commits, Dependabot) plus an IAM-risk lens built by a 10-year IAM/IGA specialist: org MFA enforcement, outside-collaborator permission levels, admin-equivalent privilege paths, stale-owner authorship signals. The slice of enterprise IAM tooling solo devs have never had.",
     refs: "IAM-grade",
   },
 ];
@@ -95,6 +95,10 @@ const FAQ: Array<{ q: string; a: string }> = [
     a: "All scan metadata is stored in Supabase, EU region. The app runs on Vercel. Both providers are SOC 2 compliant. See /security for details.",
   },
   {
+    q: "What if a finding is a false positive?",
+    a: "Suppress it. From the findings view you can silence a single finding (by fingerprint), a rule on a path glob, or an entire rule for the repo. Suppressions are user-scoped, persisted in Supabase, and survive across scans — no need to commit a config file. If you prefer to version-control them, a .repoguardignore at the repo root is also honored.",
+  },
+  {
     q: "Can I push RepoGuard findings into GitHub Code Scanning?",
     a: "Yes. Every saved scan is one click from a SARIF 2.1.0 export — drop it into github/codeql-action/upload-sarif and the findings show up in your repo's Security → Code scanning tab next to CodeQL and Dependabot. Each result deep-links back to the matching rule documentation on RepoGuard. Full setup at /docs/sarif.",
   },
@@ -102,7 +106,7 @@ const FAQ: Array<{ q: string; a: string }> = [
 
 const STAT_BAR: Array<{ value: string; label: string }> = [
   { value: "9", label: "detectors" },
-  { value: "170+", label: "rules" },
+  { value: "172", label: "rules" },
   { value: "SARIF 2.1", label: "code scanning export" },
   { value: "<60s", label: "scan time" },
   { value: "EU", label: "data region" },
@@ -318,6 +322,48 @@ export default async function Home() {
           </div>
         </section>
 
+        {/* BEYOND DETECTION */}
+        <section className="border-t border-slate-800/60">
+          <div className="max-w-6xl mx-auto px-6 py-24">
+            <div className="grid md:grid-cols-12 gap-10 mb-12">
+              <div className="md:col-span-5">
+                <div className="font-mono text-xs text-amber-400 mb-3">
+                  // beyond detection
+                </div>
+                <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight leading-tight">
+                  detect, then
+                  <br />
+                  actually fix it.
+                </h2>
+              </div>
+              <div className="md:col-span-7 flex items-end">
+                <p className="text-slate-400 leading-relaxed">
+                  A finding you can&apos;t act on is just noise. Every scan ships
+                  with the rails to move from &quot;here&apos;s what&apos;s wrong&quot;
+                  to &quot;here&apos;s the PR that fixes it&quot; — or, when it&apos;s a
+                  false positive, to make it stop nagging you.
+                </p>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-3 gap-px bg-slate-800/40 border border-slate-800/40 rounded-lg overflow-hidden">
+              <BeyondCard
+                title="sarif 2.1 export"
+                desc="Every saved scan is one click from a SARIF 2.1.0 export — drop it into github/codeql-action/upload-sarif and findings show up in your repo's Security → Code scanning tab next to CodeQL and Dependabot. Each rule deep-links back to its docs."
+                cta={{ label: "→ setup guide", href: "/docs/sarif" }}
+              />
+              <BeyondCard
+                title="auto-fix prs"
+                desc="For findings with a clean fix (dependency bumps, secret extraction to process.env / os.environ), RepoGuard opens a PR against your repo directly. Per-finding opt-in, isolated branch, preview before submit. You review before merging."
+                cta={{ label: "→ how it works", href: "/security" }}
+              />
+              <BeyondCard
+                title="suppressions"
+                desc="False positives happen. Suppress a single finding (by fingerprint), a rule on a path (by glob), or a whole rule for the repo — all from the findings view. User-scoped, synced via Supabase, survives across scans. .repoguardignore in your repo also honored."
+              />
+            </div>
+          </div>
+        </section>
+
         {/* WHY */}
         <section className="border-t border-slate-800/60 bg-slate-900/20">
           <div className="max-w-6xl mx-auto px-6 py-24">
@@ -469,6 +515,33 @@ function WhyCard({ title, desc }: { title: string; desc: string }) {
         ## {title}
       </div>
       <p className="text-slate-300 leading-relaxed">{desc}</p>
+    </div>
+  );
+}
+
+function BeyondCard({
+  title,
+  desc,
+  cta,
+}: {
+  title: string;
+  desc: string;
+  cta?: { label: string; href: string };
+}) {
+  return (
+    <div className="bg-slate-950 p-7 flex flex-col">
+      <div className="font-mono text-amber-400 text-xs mb-3 tracking-wider">
+        ## {title}
+      </div>
+      <p className="text-slate-300 leading-relaxed text-sm flex-1">{desc}</p>
+      {cta && (
+        <Link
+          href={cta.href}
+          className="mt-5 font-mono text-xs text-slate-400 hover:text-amber-400 transition border-b border-dashed border-slate-700 hover:border-amber-400 self-start"
+        >
+          {cta.label}
+        </Link>
+      )}
     </div>
   );
 }
