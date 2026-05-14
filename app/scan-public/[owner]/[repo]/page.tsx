@@ -5,7 +5,7 @@ import PublicScanContent from "./public-scan-content"
 
 type PageProps = {
   params: Promise<{ owner: string; repo: string }>
-  searchParams: Promise<{ branch?: string }>
+  searchParams: Promise<{ branch?: string; path?: string }>
 }
 
 // Server wrapper around the public-scan client component. If the visitor
@@ -27,9 +27,12 @@ export default async function PublicScanPage({
   if (session) {
     const { owner, repo } = await params
     if (isSafeOwnerRepo(owner) && isSafeOwnerRepo(repo)) {
-      const { branch } = await searchParams
-      const qs = branch ? `?branch=${encodeURIComponent(branch)}` : ""
-      redirect(`/dashboard/scan/${owner}/${repo}${qs}`)
+      const { branch, path } = await searchParams
+      const params = new URLSearchParams()
+      if (branch) params.set("branch", branch)
+      if (path) params.set("path", path)
+      const qs = params.toString()
+      redirect(`/dashboard/scan/${owner}/${repo}${qs ? `?${qs}` : ""}`)
     }
     // Falls through to the anonymous flow if owner/repo fail the safety
     // gate — let the client component / API handler emit the proper

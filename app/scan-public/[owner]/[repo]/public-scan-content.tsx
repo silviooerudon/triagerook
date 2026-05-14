@@ -30,6 +30,7 @@ import { IamCard } from "@/app/components/iam-card"
 import { ScanProgress } from "@/app/components/scan-progress"
 import { SupplyChainCard } from "@/app/components/supply-chain-card"
 import { TruncationBanner } from "@/app/components/truncation-banner"
+import { ScopeControl } from "@/app/components/scope-control"
 
 type ScanResultFull = ScanResult & {
   dependencies?: DependencyFinding[]
@@ -44,12 +45,12 @@ type ScanResultFull = ScanResult & {
 
 type PageProps = {
   params: Promise<{ owner: string; repo: string }>
-  searchParams: Promise<{ branch?: string }>
+  searchParams: Promise<{ branch?: string; path?: string }>
 }
 
 export default function PublicScanContent({ params, searchParams }: PageProps) {
   const { owner, repo } = use(params)
-  const { branch } = use(searchParams)
+  const { branch, path } = use(searchParams)
 
   const [status, setStatus] = useState<"running" | "done" | "error" | "rate-limited">("running")
   const [result, setResult] = useState<ScanResultFull | null>(null)
@@ -61,10 +62,13 @@ export default function PublicScanContent({ params, searchParams }: PageProps) {
 
     async function runScan() {
       try {
+        const body: Record<string, string> = {}
+        if (branch) body.defaultBranch = branch
+        if (path) body.pathPrefix = path
         const response = await fetch(`/api/scan-public/${owner}/${repo}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(branch ? { defaultBranch: branch } : {}),
+          body: JSON.stringify(body),
           signal: controller.signal,
         })
 
@@ -96,7 +100,7 @@ export default function PublicScanContent({ params, searchParams }: PageProps) {
 
     runScan()
     return () => controller.abort()
-  }, [owner, repo, branch])
+  }, [owner, repo, branch, path])
 
   return (
     <main className="px-6 py-12">
@@ -105,13 +109,19 @@ export default function PublicScanContent({ params, searchParams }: PageProps) {
           <span className="text-slate-400">scanning</span>{" "}
           <span className="font-mono text-amber-400">
             {owner}/{repo}
+            {path && <span className="text-slate-500">/{path}</span>}
           </span>
         </h1>
-        <p className="text-slate-400 text-sm mb-8">
+        <p className="text-slate-400 text-sm mb-4">
           Public scan — no login required. Secrets, dependencies, code
           vulnerabilities, CI/IaC configuration and git history
           {branch ? ` on ${branch}` : ""}.
         </p>
+
+        <ScopeControl
+          currentPathPrefix={path}
+          repoFullName={`${owner}/${repo}`}
+        />
 
         {status === "running" && <ScanProgress />}
 
