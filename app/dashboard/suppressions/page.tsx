@@ -37,6 +37,7 @@ export default function SuppressionsPage() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load-on-mount pattern; setStatus("loading") inside load() is intentional.
     load()
   }, [load])
 

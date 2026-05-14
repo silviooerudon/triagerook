@@ -1,4 +1,4 @@
-import type { DependencyFinding } from "./types"
+import type { DependencyFinding, DetectorHealth } from "./types"
 import { GitHubRateLimitError, parseGitHubRateLimit } from "./scan"
 import { normalizeSeverity } from "./severity"
 import { buildGitHubHeaders } from "./github-fetch"
@@ -228,11 +228,16 @@ async function fetchOsvDetails(id: string): Promise<OsvVulnerability | null> {
   }
 }
 
+export type PythonDepsScanResult = {
+  findings: DependencyFinding[]
+  degraded: DetectorHealth | null
+}
+
 export async function scanPythonDependencies(
   owner: string,
   repo: string,
   token: string | null,
-): Promise<DependencyFinding[]> {
+): Promise<PythonDepsScanResult> {
   const [req, pyproject, pipfile] = await Promise.all([
     fetchRepoFile(owner, repo, "requirements.txt", token),
     fetchRepoFile(owner, repo, "pyproject.toml", token),
@@ -244,7 +249,7 @@ export async function scanPythonDependencies(
   if (pyproject) parsed.push(...parsePyprojectToml(pyproject))
   if (pipfile) parsed.push(...parsePipfile(pipfile))
 
-  if (parsed.length === 0) return []
+  if (parsed.length === 0) return { findings: [], degraded: null }
 
   // De-dupe: (name, version) pair, prefer first encountered (requirements.txt
   // is most specific usually)
@@ -266,13 +271,34 @@ export async function scanPythonDependencies(
     })),
   }
 
-  const batchRes = await fetch(OSV_BATCH_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(batchBody),
-    cache: "no-store",
-  })
-  if (!batchRes.ok) return []
+  let batchRes: Response
+  try {
+    batchRes = await fetch(OSV_BATCH_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(batchBody),
+      cache: "no-store",
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.warn("[python-deps] OSV batch fetch failed:", msg)
+    return {
+      findings: [],
+      degraded: {
+        detector: "osv",
+        reason: `OSV.dev unreachable (${msg.slice(0, 80)}). Python vulnerability scan skipped.`,
+      },
+    }
+  }
+  if (!batchRes.ok) {
+    return {
+      findings: [],
+      degraded: {
+        detector: "osv",
+        reason: `OSV.dev API returned ${batchRes.status}. Python vulnerability scan skipped.`,
+      },
+    }
+  }
   const batchJson = (await batchRes.json()) as OsvBatchResponse
 
   // 2. Collect unique vuln IDs to fetch full details (batch only returns IDs)
@@ -286,7 +312,7 @@ export async function scanPythonDependencies(
     }
   })
 
-  if (idToPackages.size === 0) return []
+  if (idToPackages.size === 0) return { findings: [], degraded: null }
 
   // Cap details fetch at 100 to keep latency bounded
   const ids = Array.from(idToPackages.keys()).slice(0, 100)
@@ -313,5 +339,5 @@ export async function scanPythonDependencies(
     }
   })
 
-  return findings
+  return { findings, degraded: null }
 }

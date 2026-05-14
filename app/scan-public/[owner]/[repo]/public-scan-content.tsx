@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react"
 import { AlertTriangleIcon } from "@/app/components/icons"
 import type { ScanResult } from "@/lib/scan"
-import type { DependencyFinding } from "@/lib/types"
+import type { DependencyFinding, DetectorHealth } from "@/lib/types"
 import { flattenScan, type PrioritizedFinding, type RiskBreakdown } from "@/lib/risk"
 import { scanToSarif } from "@/lib/sarif"
 import type { PostureResult } from "@/lib/posture"
@@ -30,6 +30,7 @@ import { IamCard } from "@/app/components/iam-card"
 import { ScanProgress } from "@/app/components/scan-progress"
 import { SupplyChainCard } from "@/app/components/supply-chain-card"
 import { TruncationBanner } from "@/app/components/truncation-banner"
+import { DegradedBanner } from "@/app/components/degraded-banner"
 import { ScopeControl } from "@/app/components/scope-control"
 import { EmptyScopeBanner } from "@/app/components/empty-scope-banner"
 
@@ -42,6 +43,10 @@ type ScanResultFull = ScanResult & {
   posture?: PostureResult
   iam?: IAMResult
   supplyChain?: SupplyChainResult
+  // Top-level aggregate from scan-pipeline. Distinct from
+  // ScanResult.degraded (file-scan-only); this is the union across
+  // every detector family.
+  degraded?: DetectorHealth[]
 }
 
 type PageProps = {
@@ -326,6 +331,7 @@ function ScanResultView({
   if (isEmptyScope) {
     return (
       <div className="space-y-6">
+        <DegradedBanner degraded={result.degraded} />
         <EmptyScopeBanner
           pathPrefix={result.pathPrefix!}
           repoFullName={`${owner}/${repo}`}
@@ -343,6 +349,7 @@ function ScanResultView({
   if (!hasRisk) {
     return (
       <div className="space-y-6">
+        <DegradedBanner degraded={result.degraded} />
         <TruncationBanner
           truncated={result.truncated}
           filesScanned={result.filesScanned}
@@ -357,6 +364,7 @@ function ScanResultView({
 
   return (
     <div className="space-y-6">
+      <DegradedBanner degraded={result.degraded} />
       <TruncationBanner
         truncated={result.truncated}
         filesScanned={result.filesScanned}

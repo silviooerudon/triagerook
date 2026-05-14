@@ -15,7 +15,7 @@ import {
   type Suppression,
   type SuppressionResult,
 } from "./suppressions"
-import type { DependencyFinding } from "./types"
+import type { DependencyFinding, DetectorHealth } from "./types"
 import { listSuppressions, toRuntimeSuppression } from "./db-suppressions"
 
 // Output shape that's intentionally a superset: callers pick what they need.
@@ -33,6 +33,11 @@ export type FullScanResult = {
   supplyChainResult: SupplyChainResult
   npmVulnsCount: number
   pythonVulnsCount: number
+  // Aggregated soft-failure markers from every detector that returned an
+  // empty result for a known reason (rate limit, registry outage). The
+  // UI renders a yellow banner so "0 findings" doesn't look like
+  // "actually clean" when half the detectors couldn't run.
+  degraded?: DetectorHealth[]
 }
 
 // The shared scan orchestration. Used by both:
@@ -68,7 +73,7 @@ export async function runFullScan(
   const [
     secretsResult,
     npmResult,
-    pythonDeps,
+    pythonResult,
     postureResult,
     iamResult,
     supplyChainResult,
@@ -84,12 +89,21 @@ export async function runFullScan(
   const fullResult = {
     ...secretsResult,
     dependencies: npmResult.vulns,
-    pythonDependencies: pythonDeps,
+    pythonDependencies: pythonResult.findings,
     iacFindings: [
       ...(secretsResult.iacFindings ?? []),
       ...npmResult.lifecycleIssues,
     ],
   }
+
+  // Roll up soft-failure markers from every detector layer so the UI
+  // can render a single banner instead of N silent gaps. Order matches
+  // how the UI lists detectors in the prioritized view.
+  const aggregateDegraded: DetectorHealth[] = [
+    ...(secretsResult.degraded ?? []),
+    ...(npmResult.degraded ?? []),
+    ...(pythonResult.degraded ? [pythonResult.degraded] : []),
+  ]
 
   const flatFindings = flattenScan(fullResult)
 
@@ -130,6 +144,7 @@ export async function runFullScan(
     iamResult,
     supplyChainResult,
     npmVulnsCount: npmResult.vulns.length,
-    pythonVulnsCount: pythonDeps.length,
+    pythonVulnsCount: pythonResult.findings.length,
+    degraded: aggregateDegraded.length > 0 ? aggregateDegraded : undefined,
   }
 }

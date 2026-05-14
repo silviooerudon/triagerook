@@ -1,4 +1,4 @@
-import type { DependencyFinding, IaCFinding } from "./types"
+import type { DependencyFinding, DetectorHealth, IaCFinding } from "./types"
 import { GitHubRateLimitError, parseGitHubRateLimit } from "./scan"
 import { normalizeSeverity } from "./severity"
 import { buildGitHubHeaders } from "./github-fetch"
@@ -191,8 +191,13 @@ function dedupe(refs: PkgRef[]): PkgRef[] {
   return Array.from(seen.values()).slice(0, MAX_PACKAGES)
 }
 
-async function queryNpmAudit(refs: PkgRef[]): Promise<DependencyFinding[]> {
-  if (refs.length === 0) return []
+type NpmAuditResult = {
+  findings: DependencyFinding[]
+  degraded: DetectorHealth | null
+}
+
+async function queryNpmAudit(refs: PkgRef[]): Promise<NpmAuditResult> {
+  if (refs.length === 0) return { findings: [], degraded: null }
 
   const payload: Record<string, string[]> = {}
   const versionsMap = new Map<string, string[]>()
@@ -205,13 +210,34 @@ async function queryNpmAudit(refs: PkgRef[]): Promise<DependencyFinding[]> {
     versionsMap.set(ref.name, metaList)
   }
 
-  const res = await fetch(NPM_AUDIT_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-    cache: "no-store",
-  })
-  if (!res.ok) return []
+  let res: Response
+  try {
+    res = await fetch(NPM_AUDIT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.warn("[deps] npm audit fetch failed:", msg)
+    return {
+      findings: [],
+      degraded: {
+        detector: "npm-audit",
+        reason: `npm registry unreachable (${msg.slice(0, 80)}). Vulnerable-dependency scan skipped.`,
+      },
+    }
+  }
+  if (!res.ok) {
+    return {
+      findings: [],
+      degraded: {
+        detector: "npm-audit",
+        reason: `npm audit API returned ${res.status}. Vulnerable-dependency scan skipped.`,
+      },
+    }
+  }
 
   const advisories = (await res.json()) as AdvisoryResponse
   const byKey = new Map<string, PkgRef>(refs.map((r) => [`${r.name}@${r.version}`, r]))
@@ -242,12 +268,13 @@ async function queryNpmAudit(refs: PkgRef[]): Promise<DependencyFinding[]> {
       }
     }
   }
-  return findings
+  return { findings, degraded: null }
 }
 
 export type NpmDepsScanResult = {
   vulns: DependencyFinding[]
   lifecycleIssues: IaCFinding[]
+  degraded?: DetectorHealth[]
 }
 
 export function findLifecycleScriptIssues(pkg: PackageJson): IaCFinding[] {
@@ -312,10 +339,14 @@ export async function scanDependencies(
 
   refs = dedupe(refs)
 
-  const [vulns, lifecycleIssues] = await Promise.all([
+  const [auditResult, lifecycleIssues] = await Promise.all([
     queryNpmAudit(refs),
     Promise.resolve(findLifecycleScriptIssues(pkg)),
   ])
 
-  return { vulns, lifecycleIssues }
+  return {
+    vulns: auditResult.findings,
+    lifecycleIssues,
+    degraded: auditResult.degraded ? [auditResult.degraded] : undefined,
+  }
 }

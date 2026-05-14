@@ -74,7 +74,7 @@ function applyPythonExtract(ctx: ExtractContext): SecretExtractResult {
   const envVarName = deriveEnvVarName(identifier)
   const replacementLine = `${indent}${identifier} = os.environ['${envVarName}']${trailing}`
 
-  let result = finalize(ctx, envVarName, replacementLine)
+  const result = finalize(ctx, envVarName, replacementLine)
 
   // Python needs `os` imported to call os.environ[]. Prepend `import os` to
   // the patched file if neither `import os` nor `from os import environ`

@@ -12,6 +12,13 @@
 //
 // Rules are intentionally NOT lazy — the import side-effect is the
 // registration mechanism, and lazy loading would skip them.
+//
+// IMPORTANT — README claims "28 AST rules". That number counts
+// registered rules, NOT files in this barrel. `jwt-issues.ts` registers
+// two rules (JWT_NO_EXPIRES_IN + JWT_HARDCODED_SECRET); every other
+// file registers one. So: 27 files × 1 rule + 1 file × 2 rules = 28.
+// `grep -rEc "^registerAstRule\(" lib/ast/rules/` is the source of
+// truth — keep it in sync with the README.
 
 import "./rules/sql-injection"
 import "./rules/command-injection"

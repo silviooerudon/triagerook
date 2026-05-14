@@ -249,7 +249,7 @@ export default async function Home() {
                 <br />
                 in production
                 <br />
-                <span className="text-amber-400/80">// always growing</span>
+                <span className="text-amber-400/80">{"// always growing"}</span>
               </div>
             </div>
           </div>
@@ -272,7 +272,7 @@ export default async function Home() {
           <div className="grid md:grid-cols-12 gap-10 items-start">
             <div className="md:col-span-4">
               <div className="font-mono text-xs text-amber-400 mb-3">
-                // example output
+                {"// example output"}
               </div>
               <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-5 leading-tight">
                 what a real scan looks like.
@@ -295,7 +295,7 @@ export default async function Home() {
             <div className="grid md:grid-cols-12 gap-10 mb-12">
               <div className="md:col-span-5">
                 <div className="font-mono text-xs text-amber-400 mb-3">
-                  // detectors
+                  {"// detectors"}
                 </div>
                 <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight leading-tight">
                   nine detectors,
@@ -317,7 +317,7 @@ export default async function Home() {
               ))}
             </div>
             <p className="text-center text-xs font-mono text-slate-600 mt-10">
-              // more detectors added based on what users actually leak
+              {"// more detectors added based on what users actually leak"}
             </p>
           </div>
         </section>
@@ -328,7 +328,7 @@ export default async function Home() {
             <div className="grid md:grid-cols-12 gap-10 mb-12">
               <div className="md:col-span-5">
                 <div className="font-mono text-xs text-amber-400 mb-3">
-                  // beyond detection
+                  {"// beyond detection"}
                 </div>
                 <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight leading-tight">
                   detect, then
@@ -368,7 +368,7 @@ export default async function Home() {
         <section className="border-t border-slate-800/60 bg-slate-900/20">
           <div className="max-w-6xl mx-auto px-6 py-24">
             <div className="font-mono text-xs text-amber-400 mb-3">
-              // why repoguard
+              {"// why repoguard"}
             </div>
             <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-12 leading-tight">
               built for the dev who skips snyk.
@@ -393,7 +393,7 @@ export default async function Home() {
         {/* FAQ */}
         <section id="faq" className="border-t border-slate-800/60">
           <div className="max-w-3xl mx-auto px-6 py-24">
-            <div className="font-mono text-xs text-amber-400 mb-3">// faq</div>
+            <div className="font-mono text-xs text-amber-400 mb-3">{"// faq"}</div>
             <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-10 leading-tight">
               asked &amp; answered.
             </h2>
@@ -613,7 +613,7 @@ function Terminal() {
             path=".github/workflows/ci.yml:23"
           />
           <div className="text-slate-600 pt-3">
-            // 5 of 12 findings shown · ranked by risk score
+            {"// 5 of 12 findings shown · ranked by risk score"}
           </div>
         </div>
       </div>

@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react"
 import { AlertTriangleIcon } from "@/app/components/icons"
 import type { ScanResult } from "@/lib/scan"
-import type { DependencyFinding } from "@/lib/types"
+import type { DependencyFinding, DetectorHealth } from "@/lib/types"
 import type { PrioritizedFinding, RiskBreakdown } from "@/lib/risk"
 import {
   AllClear,
@@ -23,6 +23,7 @@ import { RiskBreakdownChart } from "@/app/components/risk-breakdown"
 import { ViewToggleButton } from "@/app/components/view-toggle"
 import { ExpiredSuppressionsBanner } from "@/app/components/expired-suppressions-banner"
 import { TruncationBanner } from "@/app/components/truncation-banner"
+import { DegradedBanner } from "@/app/components/degraded-banner"
 import { ScopeControl } from "@/app/components/scope-control"
 import { EmptyScopeBanner } from "@/app/components/empty-scope-banner"
 import { SuppressedFindingsSection } from "@/app/components/suppressed-findings-section"
@@ -46,6 +47,8 @@ type ScanResultFull = ScanResult & {
   posture?: PostureResult
   iam?: IAMResult
   supplyChain?: SupplyChainResult
+  // Aggregate across detector families — see DegradedBanner.
+  degraded?: DetectorHealth[]
 }
 
 type PageProps = {
@@ -215,6 +218,7 @@ function ScanResultView({
     return (
       <div className="space-y-6">
         <ExpiredSuppressionsBanner count={result.expiredSuppressionsCount ?? 0} />
+        <DegradedBanner degraded={result.degraded} />
         <EmptyScopeBanner
           pathPrefix={result.pathPrefix!}
           repoFullName={`${owner}/${repo}`}
@@ -233,6 +237,7 @@ function ScanResultView({
     return (
       <div className="space-y-6">
         <ExpiredSuppressionsBanner count={result.expiredSuppressionsCount ?? 0} />
+        <DegradedBanner degraded={result.degraded} />
         <TruncationBanner
           truncated={result.truncated}
           filesScanned={result.filesScanned}
@@ -249,6 +254,7 @@ function ScanResultView({
   return (
     <div className="space-y-6">
       <ExpiredSuppressionsBanner count={result.expiredSuppressionsCount ?? 0} />
+      <DegradedBanner degraded={result.degraded} />
       <TruncationBanner
         truncated={result.truncated}
         filesScanned={result.filesScanned}
