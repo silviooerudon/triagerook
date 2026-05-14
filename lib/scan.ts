@@ -135,8 +135,18 @@ const SKIP_PATH_PATTERNS = [
 ]
 
 const MAX_FILE_SIZE = 1_000_000 // 1MB
-const MAX_FILES_TO_SCAN = 300 // safety limit to avoid huge repos hanging
-const MAX_SCAN_TIME_MS = 45_000 // 45s hard cap
+// Bumped 300 → 1000 on 2026-05-14 after dogfooding large repos (supabase
+// had 15,122 files; we were sampling 2%). 1000 files in batches of 10
+// = ~100 GitHub blob fetches at ~250ms each ≈ 25s, comfortably within
+// MAX_SCAN_TIME_MS. Watch this number when adding new detectors — if
+// per-file work grows, the time cap can be reached before the file cap
+// and users see false "truncation" banners.
+const MAX_FILES_TO_SCAN = 1000
+// Bumped 45 → 55s alongside the file-cap bump. Vercel hobby tier
+// function timeout is 60s; pro is 300s. Staying at 55s keeps us safe on
+// hobby while leaving slack for history scan + posture/IAM checks that
+// run after the file loop.
+const MAX_SCAN_TIME_MS = 55_000
 
 type GitHubTreeItem = {
   path: string

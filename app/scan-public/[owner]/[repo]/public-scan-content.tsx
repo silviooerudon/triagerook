@@ -29,6 +29,7 @@ import { PostureCard } from "@/app/components/posture-card"
 import { IamCard } from "@/app/components/iam-card"
 import { ScanProgress } from "@/app/components/scan-progress"
 import { SupplyChainCard } from "@/app/components/supply-chain-card"
+import { TruncationBanner } from "@/app/components/truncation-banner"
 
 type ScanResultFull = ScanResult & {
   dependencies?: DependencyFinding[]
@@ -305,6 +306,11 @@ function ScanResultView({ result }: { result: ScanResultFull }) {
   if (!hasRisk) {
     return (
       <div className="space-y-6">
+        <TruncationBanner
+          truncated={result.truncated}
+          filesScanned={result.filesScanned}
+          filesSkipped={result.filesSkipped}
+        />
         {summaryRow}
         {meta}
         {legacySections}
@@ -314,6 +320,11 @@ function ScanResultView({ result }: { result: ScanResultFull }) {
 
   return (
     <div className="space-y-6">
+      <TruncationBanner
+        truncated={result.truncated}
+        filesScanned={result.filesScanned}
+        filesSkipped={result.filesSkipped}
+      />
       {summaryRow}
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center md:items-stretch">
