@@ -24,6 +24,7 @@ import { ViewToggleButton } from "@/app/components/view-toggle"
 import { ExpiredSuppressionsBanner } from "@/app/components/expired-suppressions-banner"
 import { TruncationBanner } from "@/app/components/truncation-banner"
 import { ScopeControl } from "@/app/components/scope-control"
+import { EmptyScopeBanner } from "@/app/components/empty-scope-banner"
 import { SuppressedFindingsSection } from "@/app/components/suppressed-findings-section"
 import { PostureCard } from "@/app/components/posture-card"
 import { IamCard } from "@/app/components/iam-card"
@@ -159,6 +160,10 @@ function ScanResultView({
     typeof result.riskScore === "number" &&
     !!result.riskBreakdown &&
     !!result.prioritized
+  // Narrow scope matched 0 files = the user probably typed a path
+  // that doesn't exist in the repo. Don't render the misleading
+  // "100/100 EXCELLENT" score or the empty severity cards.
+  const isEmptyScope = !!result.pathPrefix && result.filesScanned === 0
 
   const summaryRow = (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -205,6 +210,24 @@ function ScanResultView({
       <SecretsSection findings={all.historySecrets} sourceLabel="history" />
     </>
   )
+
+  if (isEmptyScope) {
+    return (
+      <div className="space-y-6">
+        <ExpiredSuppressionsBanner count={result.expiredSuppressionsCount ?? 0} />
+        <EmptyScopeBanner
+          pathPrefix={result.pathPrefix!}
+          repoFullName={`${owner}/${repo}`}
+        />
+        {result.posture && <PostureCard posture={result.posture} />}
+        {result.iam && <IamCard iam={result.iam} />}
+        {result.supplyChain && (
+          <SupplyChainCard supplyChain={result.supplyChain} />
+        )}
+        {meta}
+      </div>
+    )
+  }
 
   if (!hasRisk) {
     return (

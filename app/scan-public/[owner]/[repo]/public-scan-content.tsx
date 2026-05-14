@@ -31,6 +31,7 @@ import { ScanProgress } from "@/app/components/scan-progress"
 import { SupplyChainCard } from "@/app/components/supply-chain-card"
 import { TruncationBanner } from "@/app/components/truncation-banner"
 import { ScopeControl } from "@/app/components/scope-control"
+import { EmptyScopeBanner } from "@/app/components/empty-scope-banner"
 
 type ScanResultFull = ScanResult & {
   dependencies?: DependencyFinding[]
@@ -180,7 +181,7 @@ export default function PublicScanContent({ params, searchParams }: PageProps) {
                 <span aria-hidden>↓</span> Export SARIF
               </button>
             </div>
-            <ScanResultView result={result} />
+            <ScanResultView result={result} owner={owner} repo={repo} />
             <SignInCTA />
           </>
         )}
@@ -245,7 +246,15 @@ function SignInCTA() {
   )
 }
 
-function ScanResultView({ result }: { result: ScanResultFull }) {
+function ScanResultView({
+  result,
+  owner,
+  repo,
+}: {
+  result: ScanResultFull
+  owner: string
+  repo: string
+}) {
   const [view, setView] = useState<"prioritized" | "by-detector">("prioritized")
 
   const all: AllFindings = {
@@ -266,6 +275,7 @@ function ScanResultView({ result }: { result: ScanResultFull }) {
     typeof result.riskScore === "number" &&
     !!result.riskBreakdown &&
     !!result.prioritized
+  const isEmptyScope = !!result.pathPrefix && result.filesScanned === 0
 
   const summaryRow = (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -312,6 +322,23 @@ function ScanResultView({ result }: { result: ScanResultFull }) {
       <SecretsSection findings={all.historySecrets} sourceLabel="history" />
     </>
   )
+
+  if (isEmptyScope) {
+    return (
+      <div className="space-y-6">
+        <EmptyScopeBanner
+          pathPrefix={result.pathPrefix!}
+          repoFullName={`${owner}/${repo}`}
+        />
+        {result.posture && <PostureCard posture={result.posture} />}
+        {result.iam && <IamCard iam={result.iam} />}
+        {result.supplyChain && (
+          <SupplyChainCard supplyChain={result.supplyChain} />
+        )}
+        {meta}
+      </div>
+    )
+  }
 
   if (!hasRisk) {
     return (
