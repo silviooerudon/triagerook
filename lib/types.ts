@@ -35,6 +35,7 @@ export type CodeVulnCategory =
   | "denial-of-service"
   | "weak-session"
   | "timing-attack"
+  | "xxe"
 
 export type CodeFinding = {
   ruleId: string
