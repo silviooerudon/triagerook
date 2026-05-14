@@ -44,6 +44,36 @@ export const TRANSITIVE_DEP_MULTIPLIER = 0.5
 export const HISTORY_SECRET_MULTIPLIER = 0.5
 export const REPO_SCORE_CAP = 100
 
+// Score (== penalty) is compressed through log10 so large repos don't
+// all saturate at the same "100/100 CRITICAL" reading. Without this,
+// every repo with > 2 criticals or > 7 highs landed at the cap and the
+// dashboard couldn't tell vercel/next.js (1360 critical points) apart
+// from a hobby project with 4 criticals (160 points) — both displayed
+// as 0/100 health.
+//
+// Formula:   penalty = clamp(0, 100, round(SCORE_LOG_MULTIPLIER * log10(1 + raw)))
+//
+// SCORE_LOG_MULTIPLIER = 25 was chosen by sampling the dogfood pass on
+// 2026-05-14:
+//   raw=0     → penalty 0      (clean repo, health 100, EXCELLENT)
+//   raw=25    → penalty 35     (small repo, 1 high + 2 medium, health 65)
+//   raw=100   → penalty 50     (mid-sized repo, several issues, health 50)
+//   raw=500   → penalty 67     (large repo with active issues, health 33)
+//   raw=1000  → penalty 75     (huge mono-repo, health 25)
+//   raw≥10000 → penalty 100    (only the very worst cases saturate)
+//
+// The breakdown chart still shows raw points (`critical: 1360`) so the
+// information isn't lost — only the score gauge is compressed.
+export const SCORE_LOG_MULTIPLIER = 25
+
+export function compressScore(rawTotal: number): number {
+  if (rawTotal <= 0) return 0
+  const compressed = Math.round(
+    SCORE_LOG_MULTIPLIER * Math.log10(1 + rawTotal),
+  )
+  return Math.min(REPO_SCORE_CAP, compressed)
+}
+
 export function scoreFinding(finding: AnyFinding): number {
   const sev = finding.data.severity as keyof typeof SEVERITY_BASE_POINTS
   let points = SEVERITY_BASE_POINTS[sev] ?? 0
@@ -95,7 +125,7 @@ export function scoreRepo(findings: AnyFinding[]): RiskAssessment {
     breakdown.low + breakdown.fixture
 
   return {
-    score: Math.min(REPO_SCORE_CAP, Math.round(total)),
+    score: compressScore(total),
     breakdown,
     prioritized,
   }

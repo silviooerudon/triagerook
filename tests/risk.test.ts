@@ -3,11 +3,13 @@ import {
   scoreFinding,
   prioritize,
   scoreRepo,
+  compressScore,
   SEVERITY_BASE_POINTS,
   TEST_FIXTURE_MULTIPLIER,
   HISTORY_SECRET_MULTIPLIER,
   TRANSITIVE_DEP_MULTIPLIER,
   REPO_SCORE_CAP,
+  SCORE_LOG_MULTIPLIER,
   type AnyFinding,
 } from "@/lib/risk"
 
@@ -119,5 +121,63 @@ describe("scoreRepo", () => {
     const result = scoreRepo([secret("critical", { likelyTestFixture: true })])
     expect(result.breakdown.critical).toBe(0)
     expect(result.breakdown.fixture).toBeGreaterThan(0)
+  })
+})
+
+describe("compressScore — log-scale (no more saturation at 0)", () => {
+  // Regression coverage for the 2026-05-14 dogfood saturation finding.
+  // Before the log compression, any repo with > 2 criticals (≥ 80
+  // points raw) saturated at penalty=100 and the gauge read "0/100
+  // CRITICAL". After the change, large repos still get distinguishing
+  // scores until the deduction sum is genuinely huge.
+  it("returns 0 for zero raw total", () => {
+    expect(compressScore(0)).toBe(0)
+  })
+
+  it("returns 0 for negative input (defensive)", () => {
+    expect(compressScore(-5)).toBe(0)
+  })
+
+  it("is monotonically non-decreasing in raw total", () => {
+    let prev = compressScore(0)
+    for (const raw of [10, 25, 50, 100, 250, 500, 1000, 2500, 10000]) {
+      const curr = compressScore(raw)
+      expect(curr).toBeGreaterThanOrEqual(prev)
+      prev = curr
+    }
+  })
+
+  it("keeps small repos with a few findings well below the cap", () => {
+    expect(compressScore(25)).toBeLessThan(50)
+    expect(compressScore(100)).toBeLessThan(70)
+  })
+
+  it("distinguishes a mid-sized busy repo from a saturated mega-repo", () => {
+    // Real numbers from the dogfood pass: nestjs ≈ 223, supabase ≈ 1670.
+    // Before this change they both displayed identically. After, they
+    // sit in different score bands.
+    const nest = compressScore(223)
+    const supabase = compressScore(1670)
+    expect(nest).toBeLessThan(supabase)
+    expect(supabase - nest).toBeGreaterThanOrEqual(15)
+  })
+
+  it("caps at REPO_SCORE_CAP for catastrophic deduction sums", () => {
+    expect(compressScore(100_000)).toBe(REPO_SCORE_CAP)
+  })
+
+  it("uses SCORE_LOG_MULTIPLIER (sanity for future tuning)", () => {
+    // raw=9 → log10(10)=1 → penalty == SCORE_LOG_MULTIPLIER
+    expect(compressScore(9)).toBe(SCORE_LOG_MULTIPLIER)
+  })
+
+  it("scoreRepo plumbing — many criticals no longer all saturate", () => {
+    // Before the log compression this returned the cap (100). After,
+    // small differences in critical count produce distinguishable
+    // scores.
+    const five = scoreRepo(Array.from({ length: 5 }, () => secret("critical")))
+    const fifty = scoreRepo(Array.from({ length: 50 }, () => secret("critical")))
+    expect(five.score).toBeLessThan(fifty.score)
+    expect(fifty.score).toBeLessThanOrEqual(REPO_SCORE_CAP)
   })
 })
