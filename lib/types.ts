@@ -30,6 +30,8 @@ export type CodeVulnCategory =
   | "tls-verification"
   | "insecure-cookie"
   | "hardcoded-creds"
+  | "prototype-pollution"
+  | "logging"
 
 export type CodeFinding = {
   ruleId: string

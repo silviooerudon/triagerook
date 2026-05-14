@@ -60,3 +60,9 @@ docs/handoff-*.md
 docs/plan-*.md
 docs/session-*.md
 skills-lock.json
+
+# Transient files used by the assistant to feed multi-line commit / PR
+# bodies to gh+git on Windows (heredoc + here-string have edge cases).
+# These should never be tracked.
+.commit-msg.txt
+.pr-body.txt
