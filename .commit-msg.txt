@@ -1,0 +1,56 @@
+feat: FASE A batch 3 - 4 more AST rules (A02 weak crypto + A07 JWT + A10 dynamic eval)
+
+Batch 3 of the AST SAST layer. Brings the rule count to 9 and closes
+OWASP A02, A07, and the precision-improved A10 dynamic-code-execution
+slot. Each rule emits a CodeFinding through the same runner registered
+in PR #45.
+
+**A02 weak crypto — ast/weak-crypto-hash-for-secrets (CWE-327, high)**
+crypto.createHash with a broken algorithm (md5 / sha1 / md4 / md2 /
+sha-224) where the value being hashed has a security-shaped name
+(password / passwd / pwd / secret / token / credential / auth /
+session / otp / api_key). The chain walker handles both the inline
+form (createHash('md5').update(password).digest('hex')) and broken-up
+calls within the same expression. Skips when the hashed value is a
+non-security name (cache key, file hash) so the rule doesn't drown
+out real findings on legitimate uses.
+
+**A07 JWT — ast/jwt-sign-no-expires-in (CWE-613, high)**
+jwt.sign / jsonwebtoken.sign without an `expiresIn` option (or no
+options arg). Tokens with no expiry stay valid until the secret
+rotates — compromise has no natural decay. Handles both `{ expiresIn:
+'15m' }` and the shorthand `{ expiresIn }` property assignment forms.
+
+**A07 JWT — ast/jwt-sign-hardcoded-secret (CWE-798, critical)**
+jwt.sign with a string-literal secret. Skips empty strings (test
+placeholder) and process.env loads. The existing secret-detector regex
+layer can catch some of these but the AST version is anchored on the
+actual sign() call site, which is more precise.
+
+**A10 dynamic eval — ast/eval-user-input (CWE-95, critical)**
+eval(...) or new Function(...) with user input as argument (template
+literal interpolation, `+` concat, direct property access). The regex
+in lib/code-vulns.ts already catches naked eval(userInput); the AST
+version distinguishes the language-level eval from a method named
+`eval` on an unrelated object (`regex.eval(...)`), which were FP-ing
+in the regex layer.
+
+**Tests**
+
+- tests/ast/weak-crypto.test.ts — 8 tests
+- tests/ast/jwt-issues.test.ts — 13 tests (covers both jwt rules)
+- tests/ast/dynamic-eval.test.ts — 10 tests
+
+Suite 326 -> 357 (+31). Build verde local.
+
+**OWASP coverage so far (9 AST rules)**
+- A01: path-traversal-fs ✓
+- A02: weak-crypto-hash-for-secrets ✓
+- A03: sql-injection-template ✓, command-injection-user-input ✓,
+       react-dangerously-set-inner-html ✓, ssrf-http-user-url ✓,
+       eval-user-input ✓
+- A07: jwt-sign-no-expires-in ✓, jwt-sign-hardcoded-secret ✓
+- A04 / A05 / A06 / A08 / A09 / A10-other: not yet — handled in future
+  batches.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
