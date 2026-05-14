@@ -200,6 +200,38 @@ describe("scanToSarif - sensitive-file findings", () => {
   })
 })
 
+describe("scanToSarif - helpUri injection", () => {
+  it("populates helpUri on each rule entry when getHelpUri is provided", () => {
+    const out = scanToSarif(
+      baseScan({
+        findings: [secretFinding({ patternId: "aws-access-key" })],
+        getHelpUri: (id) =>
+          id === "secret/aws-access-key"
+            ? "https://example.com/docs/rules/secret.aws-access-key"
+            : undefined,
+      }),
+    )
+    expect(out.runs[0].tool.driver.rules[0].helpUri).toBe(
+      "https://example.com/docs/rules/secret.aws-access-key",
+    )
+  })
+
+  it("omits helpUri when getHelpUri returns undefined for an id", () => {
+    const out = scanToSarif(
+      baseScan({
+        findings: [secretFinding({ patternId: "aws-access-key" })],
+        getHelpUri: () => undefined,
+      }),
+    )
+    expect(out.runs[0].tool.driver.rules[0].helpUri).toBeUndefined()
+  })
+
+  it("omits helpUri entirely when getHelpUri is not provided (client SARIF path)", () => {
+    const out = scanToSarif(baseScan({ findings: [secretFinding()] }))
+    expect(out.runs[0].tool.driver.rules[0].helpUri).toBeUndefined()
+  })
+})
+
 describe("scanToSarif - iac findings", () => {
   it("locates an iac finding at file:line when both present", () => {
     const iac: AnyFinding = {

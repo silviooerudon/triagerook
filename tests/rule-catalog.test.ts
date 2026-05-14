@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest"
 import {
   findCatalogEntry,
   getRuleCatalog,
+  resolveCatalogEntry,
   ruleIdToSlug,
   slugToRuleId,
 } from "@/lib/rule-catalog"
@@ -68,5 +69,46 @@ describe("rule catalog", () => {
 
   it("memoises the catalog (same array reference across calls)", () => {
     expect(getRuleCatalog()).toBe(getRuleCatalog())
+  })
+})
+
+describe("resolveCatalogEntry — SARIF id aliasing", () => {
+  it("returns the entry directly when ids already match", () => {
+    expect(resolveCatalogEntry("ast/sql-injection-template")?.layer).toBe("ast")
+  })
+
+  it("maps SARIF code/<id> to an AST entry when no regex rule with that id exists", () => {
+    // SARIF emits `code/sql-injection-template` for AST findings (they
+    // ride on the CodeFinding kind), but the catalog stores them under
+    // `ast/`. The resolver bridges the two.
+    const entry = resolveCatalogEntry("code/sql-injection-template")
+    expect(entry).toBeDefined()
+    expect(entry?.layer).toBe("ast")
+    expect(entry?.id).toBe("ast/sql-injection-template")
+  })
+
+  it("keeps SARIF code/<id> pointing at the regex-code entry when one exists", () => {
+    const entry = resolveCatalogEntry("code/js-tls-verify-disabled")
+    expect(entry?.layer).toBe("regex-code")
+  })
+
+  it("maps SARIF iac/<id> to the dockerfile catalog entry when one exists", () => {
+    const dockerfileRule = getRuleCatalog().find((e) => e.layer === "iac-dockerfile")
+    expect(dockerfileRule).toBeDefined()
+    if (!dockerfileRule) return
+    const tail = dockerfileRule.id.replace(/^iac\/dockerfile\//, "")
+    const entry = resolveCatalogEntry(`iac/${tail}`)
+    expect(entry?.id).toBe(dockerfileRule.id)
+  })
+
+  it("returns undefined for dependency findings (no catalog page)", () => {
+    expect(resolveCatalogEntry("dependency/lodash")).toBeUndefined()
+    expect(resolveCatalogEntry("dependency/GHSA-x-y-z")).toBeUndefined()
+  })
+
+  it("returns undefined for unknown ids that don't match any aliasing rule", () => {
+    expect(resolveCatalogEntry("nonsense/whatever")).toBeUndefined()
+    expect(resolveCatalogEntry("code/does-not-exist")).toBeUndefined()
+    expect(resolveCatalogEntry("plain-no-slash")).toBeUndefined()
   })
 })

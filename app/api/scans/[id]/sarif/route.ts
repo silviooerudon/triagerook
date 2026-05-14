@@ -2,7 +2,8 @@ import { auth } from "@/auth"
 import { supabase } from "@/lib/supabase"
 import { getUserId } from "@/lib/auth-utils"
 import { flattenScan, type AnyFinding, type PrioritizedFinding } from "@/lib/risk"
-import { scanToSarif } from "@/lib/sarif"
+import { scanToSarif, REPOGUARD_INFO_URI } from "@/lib/sarif"
+import { resolveCatalogEntry, ruleIdToSlug } from "@/lib/rule-catalog"
 import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
@@ -65,6 +66,11 @@ export async function GET(_request: Request, { params }: RouteParams) {
     scannedAt: data.scanned_at,
     riskScore: data.risk_score,
     findings,
+    getHelpUri: (sarifRuleId) => {
+      const entry = resolveCatalogEntry(sarifRuleId)
+      if (!entry) return undefined
+      return `${REPOGUARD_INFO_URI}/docs/rules/${ruleIdToSlug(entry.id)}`
+    },
   })
 
   // Friendly default filename for browser download via the button: SARIF

@@ -36,6 +36,13 @@ export type ScanForSarif = {
   scannedAt: string
   riskScore: number | null
   findings: AnyFinding[]
+  // Optional callback to compute a helpUri for each SARIF rule entry,
+  // typically the public /docs/rules/<slug> page so SARIF consumers
+  // (GitHub Code Scanning especially) surface a clickable link from the
+  // finding back to RepoGuard's rule documentation. Returns undefined to
+  // omit helpUri for that rule. Pure-function shape so this module
+  // stays bundleable client-side without pulling rule-catalog imports.
+  getHelpUri?: (sarifRuleId: string) => string | undefined
 }
 
 export type SarifLevel = "error" | "warning" | "note" | "none"
@@ -70,6 +77,10 @@ export type SarifRule = {
   shortDescription: { text: string }
   fullDescription?: { text: string }
   defaultConfiguration?: { level: SarifLevel }
+  // GitHub Code Scanning renders this as a "View documentation" link in
+  // the alert details panel, so populating it turns each finding into a
+  // clickable jump to the matching /docs/rules/<slug> page.
+  helpUri?: string
 }
 
 export type SarifResult = {
@@ -195,7 +206,11 @@ function toSarifResult(shape: FindingShape): SarifResult {
   }
 }
 
-function toSarifRule(shape: FindingShape): SarifRule {
+function toSarifRule(
+  shape: FindingShape,
+  getHelpUri?: (sarifRuleId: string) => string | undefined,
+): SarifRule {
+  const helpUri = getHelpUri?.(shape.ruleId)
   return {
     id: shape.ruleId,
     name: shape.ruleName,
@@ -204,6 +219,7 @@ function toSarifRule(shape: FindingShape): SarifRule {
       ? { text: shape.ruleDescription }
       : undefined,
     defaultConfiguration: { level: shape.level },
+    helpUri,
   }
 }
 
@@ -218,7 +234,9 @@ export function scanToSarif(scan: ScanForSarif): SarifLog {
 
   const rulesByid = new Map<string, SarifRule>()
   for (const s of shapes) {
-    if (!rulesByid.has(s.ruleId)) rulesByid.set(s.ruleId, toSarifRule(s))
+    if (!rulesByid.has(s.ruleId)) {
+      rulesByid.set(s.ruleId, toSarifRule(s, scan.getHelpUri))
+    }
   }
   const rules = Array.from(rulesByid.values())
 

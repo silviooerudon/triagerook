@@ -3,9 +3,9 @@ import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 import { PublicNav } from "@/app/components/public-nav"
 import {
-  findCatalogEntry,
   getRuleCatalog,
   LAYER_LABELS,
+  resolveCatalogEntry,
   ruleIdToSlug,
   slugToRuleId,
 } from "@/lib/rule-catalog"
@@ -23,7 +23,7 @@ const SEV_STYLES: Record<string, string> = {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { ruleId: slug } = await params
-  const entry = findCatalogEntry(slugToRuleId(slug))
+  const entry = resolveCatalogEntry(slugToRuleId(slug))
   if (!entry) return { title: "Rule not found" }
   return {
     title: entry.name,
@@ -40,8 +40,7 @@ export async function generateStaticParams(): Promise<{ ruleId: string }[]> {
 
 export default async function RulePage({ params }: PageProps) {
   const { ruleId: slug } = await params
-  const id = slugToRuleId(slug)
-  const entry = findCatalogEntry(id)
+  const entry = resolveCatalogEntry(slugToRuleId(slug))
   if (!entry) notFound()
 
   const cweUrl = entry.cwe
