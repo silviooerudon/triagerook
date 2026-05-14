@@ -32,6 +32,9 @@ export type CodeVulnCategory =
   | "hardcoded-creds"
   | "prototype-pollution"
   | "logging"
+  | "denial-of-service"
+  | "weak-session"
+  | "timing-attack"
 
 export type CodeFinding = {
   ruleId: string
