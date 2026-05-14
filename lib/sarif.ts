@@ -1,4 +1,5 @@
 import type { AnyFinding } from "./risk"
+import { version as PACKAGE_VERSION } from "../package.json"
 
 // SARIF 2.1.0 export. Reference: https://docs.oasis-open.org/sarif/sarif/v2.1.0/
 //
@@ -27,7 +28,12 @@ import type { AnyFinding } from "./risk"
 export const SARIF_VERSION = "2.1.0"
 export const SARIF_SCHEMA =
   "https://json.schemastore.org/sarif-2.1.0.json"
-export const REPOGUARD_TOOL_VERSION = "1.0.0"
+// Sourced from package.json so SARIF stays honest about the running
+// version. Previously hardcoded as "1.0.0" while package.json was at
+// "0.1.0" — a tool driver version that mismatches the actual deploy is
+// the kind of thing that erodes trust with SARIF consumers like
+// GitHub Code Scanning, which dedupes alerts by (toolName, version).
+export const REPOGUARD_TOOL_VERSION = PACKAGE_VERSION
 export const REPOGUARD_INFO_URI = "https://repoguard-chi.vercel.app"
 
 export type ScanForSarif = {
