@@ -4,7 +4,9 @@
 
 > Lightweight GitHub security scanner for solo devs and small teams. Live at **[repoguard-chi.vercel.app](https://repoguard-chi.vercel.app)**.
 
-Scans your GitHub repos across nine detectors in parallel — secrets, sensitive files, code-level vulnerabilities, npm and PyPI dependencies, supply-chain misconfigurations, and git history — with no CLI, no config, and no pipelines to wire up. Sign in with GitHub or paste a public URL, then get a prioritized list of findings in under a minute.
+Scans your GitHub repos across nine detectors in parallel — **60+ secret patterns**, sensitive files, **28 AST-based SAST rules**, npm and PyPI dependencies, supply-chain misconfigurations, IaC checks for Dockerfile and GitHub Actions, and git-history replay — with no CLI, no config, and no pipelines to wire up. Sign in with GitHub or paste a public URL, then get a prioritized list of findings in under a minute. Every finding is one click from a **SARIF 2.1.0 export** ready to upload to GitHub Code Scanning.
+
+📖 The full rule catalog (170+ rules, every CWE) is published at [`/docs/rules`](https://repoguard-chi.vercel.app/docs/rules). The SARIF integration guide lives at [`/docs/sarif`](https://repoguard-chi.vercel.app/docs/sarif).
 
 ## Why I built this
 
@@ -34,26 +36,28 @@ Even a rotated secret is still a compromised secret if it lives in a past commit
 
 ### 5. Code-level vulnerabilities (SAST)
 
-Conservative pattern rules over your JavaScript/TypeScript and Python code, each tied to a CWE identifier so findings are actionable:
+Two layers run side-by-side:
 
-- **SSRF (CWE-918)** — `fetch`/`axios`/`requests`/`httpx`/`urllib` called with `req.body`/`req.params`/`request.args`
-- **SQL injection (CWE-89)** — string concatenation and template-literal/f-string interpolation inside `query`/`execute`/`raw`
-- **Command injection (CWE-78)** — `child_process.exec`, `subprocess(shell=True)`, `os.system` with user data
-- **XSS (CWE-79)** — `innerHTML`, `dangerouslySetInnerHTML`, `document.write` with non-constant values
-- **Dynamic code execution (CWE-95)** — `eval`, `new Function`, Python `eval`/`exec`
-- **Path traversal (CWE-22)** — `fs.readFile`/`open()` fed with request-derived paths
-- **Weak crypto (CWE-327/338)** — MD5/SHA1 for passwords or tokens, `Math.random()`/`random.*` for session IDs, nonces, OTPs
-- **JWT misuse (CWE-347)** — `jwt.verify(..., algorithms: ['none'])`, `jwt.decode` used where `verify` was meant
-- **Insecure deserialization (CWE-502)** — `pickle.loads`, `yaml.load` without `SafeLoader`
-- **CORS misconfiguration (CWE-942)** — wildcard origin combined with `credentials: true`
-- **Open redirect (CWE-601)** — `res.redirect` with request-derived URL
-- **TLS verification disabled (CWE-295)** — `rejectUnauthorized: false` in JS, `verify=False` in Python `requests`/`httpx`
-- **Insecure cookies (CWE-1004 / CWE-614)** — auth/session cookies with `httpOnly: false` or `secure: false`
-- **Weak bcrypt cost (CWE-916)** — `bcrypt.hash(..., N)` with N below 10
-- **Hardcoded credentials (CWE-798)** — `process.env.X || "sk-…"` style fallbacks where the literal is a real-shaped credential
-- **Client-side secret exposure (CWE-200)** — `NEXT_PUBLIC_*SECRET*` / `*SERVICE_ROLE*` env reads (Next.js inlines these into the client bundle)
+- **AST analysis** via the TypeScript Compiler API (`ts-morph`) — 28 rules over JS/TS that track user input flowing into dangerous sinks across property hops the regex layer can't follow.
+- **Conservative regex rules** over JS/TS and Python where AST parsing would be overkill — TLS verify disabled, weak bcrypt cost, NEXT_PUBLIC_ secret reads, Python `yaml.load` without `SafeLoader`, etc.
 
-The last five catch patterns AI coding assistants commonly generate when scaffolding auth, HTTP clients, or Next.js apps.
+Every rule is tied to a CWE identifier so findings are actionable. Headline coverage (full list at [`/docs/rules`](https://repoguard-chi.vercel.app/docs/rules)):
+
+- **Injection** — SQL (CWE-89), command (CWE-78), NoSQL (`$where` user input, CWE-943), SSTI (CWE-1336), prototype pollution (CWE-1321), XXE (CWE-611)
+- **Cross-site scripting** — React `dangerouslySetInnerHTML` (CWE-79), reflected XSS via `res.send`
+- **SSRF / Open redirect** — `fetch`/`axios` with `req.body` / `req.params` (CWE-918), `res.redirect` with request-derived URL (CWE-601)
+- **Authentication / authorization** — JWT signed without `expiresIn` (CWE-613), JWT with hardcoded string secret (CWE-798), JWT decoded without verifying signature (CWE-347), hardcoded admin credentials, timing-unsafe credential compare (CWE-208)
+- **Crypto** — MD5/SHA1 for password or secret hashing (CWE-327), weak cipher mode (ECB / deprecated `createCipher`), hardcoded encryption key, `Math.random()` for session IDs, OTPs, tokens (CWE-338), insecure-randomness `uuid.v1()`
+- **Path / file** — path traversal via `fs.readFile`/`open()` with request-derived paths (CWE-22)
+- **Dynamic code / execution** — `eval`, `new Function`, `setTimeout(string)`, Python `eval`/`exec` (CWE-95)
+- **Denial of service** — ReDoS via dynamic `RegExp` constructed from user input (CWE-1333)
+- **Network / transport** — TLS verification disabled (CWE-295), WebSocket opened over cleartext `ws://` (CWE-319), wildcard CORS via `setHeader('Access-Control-Allow-Origin', '*')` with credentials, CORS `credentials: true` with `origin: '*'` (CWE-942)
+- **Session / cookie hygiene** — insecure-cookie `httpOnly: false` / `secure: false` (CWE-1004 / CWE-614), insecure session config (`resave: true`, `saveUninitialized: true`, weak secret), weak bcrypt cost (CWE-916)
+- **Insecure deserialization** — Python `pickle.loads`, `yaml.load` without `SafeLoader` (CWE-502)
+- **Information disclosure** — `console.log` of `password` / `apiKey` / `token` / `secret`-named locals (CWE-532), Next.js `NEXT_PUBLIC_*SECRET*` env reads that inline into the client bundle (CWE-200)
+- **Misc AI-typical mistakes** — `process.env.X || "sk-…"` fallback literals, `bcrypt.hash(..., N)` with N below 10
+
+Detection runs over JavaScript / TypeScript primarily. Python coverage extends to the regex layer for SAST and the dependency layer for vulnerabilities.
 
 ### 6. Vulnerable dependencies (npm and PyPI)
 
@@ -75,6 +79,20 @@ Beyond looking for specific findings, RepoGuard grades how the repo is set up: g
 
 The angle a 10+ year IAM/IGA specialist actually cares about: identity and access risk at org and repo level. RepoGuard surfaces org-level MFA enforcement (when `read:org` scope is granted), outside-collaborator permission levels, repo-level secret scoping, and authorship patterns that signal stale ownership. When a signal requires permissions the token does not have, RepoGuard skips it and labels it as such rather than guessing. This is the slice of enterprise IAM tooling that solo devs and small teams have historically had no access to.
 
+## Beyond detection
+
+### SARIF 2.1.0 export + GitHub Code Scanning
+
+Every saved scan is one click from a SARIF 2.1.0 export. Drop the file into `github/codeql-action/upload-sarif` and findings show up in your repo's `Security → Code scanning` tab next to CodeQL and Dependabot — with each result deep-linked back to its rule documentation. Anonymous scans at `/scan-public/<owner>/<repo>` can also export SARIF (generated client-side from the in-flight result). Full setup guide with copy-pasteable workflow YAML at [`/docs/sarif`](https://repoguard-chi.vercel.app/docs/sarif).
+
+### Auto-fix pull requests
+
+For findings that have a clean fix (secret rotation via `.env.example` updates, dependency bumps to a non-vulnerable version), RepoGuard can open a PR against your repo directly. Requires installing the **RepoGuard Security** GitHub App on the target repo so the PR can be authored — installation is scoped to the single repo and grants only `Contents: write` and `Pull requests: write`. You review the PR before merging.
+
+### Per-repo suppressions
+
+False positives happen. From the findings view you can suppress a single finding (by fingerprint), a rule on a path (by glob), or a whole rule for the repo. Suppressions are user-scoped and synced via Supabase — they survive across scans without committing a `.repoguardignore` to the repo (though that file is also honored at scan time).
+
 ## Privacy
 
 We **never** store:
@@ -89,9 +107,10 @@ Data lives in Supabase (EU region) and Vercel. You can revoke access anytime via
 ## Tech stack
 
 - **Framework:** Next.js 16 (App Router) + TypeScript + Tailwind
-- **Auth:** NextAuth v5 (GitHub OAuth, `public_repo` scope)
-- **Database:** Supabase (Postgres + JSONB)
+- **Auth:** NextAuth v5 backed by the **RepoGuard Security GitHub App** (user OAuth gives read access to public repositories; installing the App on a target repo grants the scoped write needed for auto-fix PRs)
+- **Database:** Supabase (Postgres + JSONB, EU region) with RLS policies as a defense-in-depth layer
 - **Hosting:** Vercel
+- **Static analysis:** `ts-morph` (TypeScript Compiler API wrapper) for the AST layer
 - **APIs:** GitHub REST v3, npm audit bulk, OSV.dev
 
 ## Run locally
@@ -126,12 +145,14 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Built in public. Rough order of what's next, depending on user feedback:
 
+- [x] SARIF 2.1.0 export and GitHub Code Scanning integration — [`/docs/sarif`](https://repoguard-chi.vercel.app/docs/sarif)
+- [x] Ignore rules / per-finding suppressions (user-scoped, synced via Supabase)
+- [x] Auto-fix pull requests (requires GitHub App install on the target repo)
 - [ ] Go and Ruby dependency scanning (OSV.dev covers both)
 - [ ] Terraform + CloudFormation IaC rules (public S3 buckets, open security groups, etc.)
-- [ ] SARIF export and GitHub Code Scanning integration
-- [ ] Continuous scanning via GitHub webhooks (requires GitHub App migration)
+- [ ] Continuous scanning via GitHub webhooks
 - [ ] Team accounts and shared scan history
-- [ ] Ignore rules / per-finding suppressions
+- [ ] Private-repo support (read scope expansion)
 
 If something here matters to you, [open an issue](https://github.com/silviooerudon/repoguard/issues) — feedback shapes priorities.
 
