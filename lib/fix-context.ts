@@ -1,7 +1,7 @@
 import type { PrioritizedFinding } from "@/lib/risk"
 import { findingSupportsFix, runFixEngine, type RunFixResult } from "@/lib/fix-engines"
 import {
-  getInstallationToken,
+  getInstallationTokenForRepo,
   getFileContent,
   getRepoDefaultBranch,
   GitHubAppFetchError,
@@ -107,8 +107,18 @@ export async function prepareFixContext(
 
   let token: string
   try {
-    token = await getInstallationToken()
+    token = await getInstallationTokenForRepo(owner, repo)
   } catch (err) {
+    if (err instanceof GitHubAppFetchError && err.appNotInstalled()) {
+      // Surface the install link UI early — we don't need to attempt the
+      // file fetch to know the App isn't installed on this repo.
+      return {
+        ok: false,
+        status: 403,
+        error: "The RepoGuard Security GitHub App is not installed on this repository",
+        code: "app_not_installed",
+      }
+    }
     console.error(`[${logPrefix}] Failed to get installation token:`, err)
     return {
       ok: false,
