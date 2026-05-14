@@ -22,6 +22,7 @@ import { RiskGauge } from "@/app/components/risk-gauge"
 import { RiskBreakdownChart } from "@/app/components/risk-breakdown"
 import { ViewToggleButton } from "@/app/components/view-toggle"
 import { ExpiredSuppressionsBanner } from "@/app/components/expired-suppressions-banner"
+import { TruncationBanner } from "@/app/components/truncation-banner"
 import { SuppressedFindingsSection } from "@/app/components/suppressed-findings-section"
 import { PostureCard } from "@/app/components/posture-card"
 import { IamCard } from "@/app/components/iam-card"
@@ -199,6 +200,11 @@ function ScanResultView({
     return (
       <div className="space-y-6">
         <ExpiredSuppressionsBanner count={result.expiredSuppressionsCount ?? 0} />
+        <TruncationBanner
+          truncated={result.truncated}
+          filesScanned={result.filesScanned}
+          filesSkipped={result.filesSkipped}
+        />
         {summaryRow}
         {meta}
         {legacySections}
@@ -210,6 +216,11 @@ function ScanResultView({
   return (
     <div className="space-y-6">
       <ExpiredSuppressionsBanner count={result.expiredSuppressionsCount ?? 0} />
+      <TruncationBanner
+        truncated={result.truncated}
+        filesScanned={result.filesScanned}
+        filesSkipped={result.filesSkipped}
+      />
       {summaryRow}
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center md:items-stretch">
