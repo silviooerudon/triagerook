@@ -79,7 +79,7 @@ export default function RulesIndexPage() {
             grouping below to see how each finding gets to your dashboard.
           </p>
 
-          <div className="font-mono text-xs text-slate-500 mb-12 flex flex-wrap gap-x-5 gap-y-1">
+          <div className="font-mono text-xs text-slate-500 mb-3 flex flex-wrap gap-x-5 gap-y-1">
             <span>
               <span className="text-amber-400">{totalCount}</span> rules total
             </span>
@@ -93,6 +93,18 @@ export default function RulesIndexPage() {
               + dependency CVE lookup via npm + OSV (not listed; dynamic)
             </span>
           </div>
+
+          <p className="font-mono text-xs text-slate-500 mb-12">
+            <Link
+              href="/docs/sarif"
+              className="text-amber-400 hover:underline"
+            >
+              SARIF export →
+            </Link>{" "}
+            <span className="text-slate-600">
+              upload findings to GitHub Code Scanning
+            </span>
+          </p>
 
           {LAYER_ORDER.map((layer) => {
             const entries = byLayer.get(layer)

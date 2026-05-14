@@ -4,7 +4,8 @@ import { useEffect, useState, use } from "react"
 import { AlertTriangleIcon } from "@/app/components/icons"
 import type { ScanResult } from "@/lib/scan"
 import type { DependencyFinding } from "@/lib/types"
-import type { PrioritizedFinding, RiskBreakdown } from "@/lib/risk"
+import { flattenScan, type PrioritizedFinding, type RiskBreakdown } from "@/lib/risk"
+import { scanToSarif } from "@/lib/sarif"
 import type { PostureResult } from "@/lib/posture"
 import type { IAMResult } from "@/lib/iam"
 import type { SupplyChainResult } from "@/lib/supply-chain"
@@ -158,6 +159,16 @@ export default function PublicScanPage({ params, searchParams }: PageProps) {
 
         {status === "done" && result && (
           <>
+            <div className="flex justify-end mb-4">
+              <button
+                type="button"
+                onClick={() => downloadSarif(owner, repo, result)}
+                className="text-xs px-3 py-2 rounded-lg border border-slate-700 bg-slate-800/40 text-slate-200 hover:bg-slate-800 transition inline-flex items-center gap-2"
+                title="Download SARIF 2.1.0 — feed into GitHub Code Scanning or any SARIF-aware tool"
+              >
+                <span aria-hidden>↓</span> Export SARIF
+              </button>
+            </div>
             <ScanResultView result={result} />
             <SignInCTA />
           </>
@@ -165,6 +176,33 @@ export default function PublicScanPage({ params, searchParams }: PageProps) {
       </div>
     </main>
   )
+}
+
+// Public-scan SARIF export is generated in the browser from the
+// in-flight scan result, so there's no DB id to namespace the file. The
+// server-side download includes a `helpUri` per rule pointing at
+// /docs/rules; this client path omits it (no catalog resolver in the
+// browser bundle) which is acceptable — the SARIF schema is the same.
+function downloadSarif(owner: string, repo: string, result: ScanResultFull): void {
+  const findings = flattenScan(result)
+  const sarif = scanToSarif({
+    owner,
+    repo,
+    scannedAt: new Date().toISOString(),
+    riskScore: typeof result.riskScore === "number" ? result.riskScore : null,
+    findings,
+  })
+  const blob = new Blob([JSON.stringify(sarif, null, 2)], {
+    type: "application/sarif+json",
+  })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `repoguard-${owner}-${repo}.sarif.json`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
 
 function formatRetryAfter(seconds: number): string {

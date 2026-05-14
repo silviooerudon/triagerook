@@ -147,6 +147,35 @@ export function findCatalogEntry(id: string): CatalogEntry | undefined {
   return getRuleCatalog().find((e) => e.id === id)
 }
 
+// SARIF emits rule ids using the runtime finding kind (always `code/<id>`
+// for both AST and regex code rules, always `iac/<id>` without
+// dockerfile/actions discrimination). The catalog uses more specific
+// prefixes. This resolver bridges the two so a SARIF helpUri pointing at
+// `/docs/rules/code.sql-injection-template` still lands on the matching
+// rule page (which lives at `ast/sql-injection-template` in the catalog).
+//
+// Returns the canonical catalog entry, or undefined when no rule matches
+// (e.g. dependency findings have no catalog page since the rules are
+// dynamically sourced from npm-audit / OSV).
+export function resolveCatalogEntry(id: string): CatalogEntry | undefined {
+  const direct = findCatalogEntry(id)
+  if (direct) return direct
+
+  const slashAt = id.indexOf("/")
+  if (slashAt < 0) return undefined
+  const prefix = id.slice(0, slashAt)
+  const rest = id.slice(slashAt + 1)
+
+  if (prefix === "code") {
+    return findCatalogEntry(`ast/${rest}`)
+  }
+  if (prefix === "iac") {
+    return findCatalogEntry(`iac/dockerfile/${rest}`)
+      ?? findCatalogEntry(`iac/actions/${rest}`)
+  }
+  return undefined
+}
+
 // Encode a rule id into a URL-safe slug for the [ruleId] dynamic route.
 // Rule ids contain '/' (e.g. "ast/sql-injection-template") which would
 // otherwise break Next's path parsing. We swap '/' for '.' so the URL
