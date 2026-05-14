@@ -15,6 +15,9 @@
 
 import "./rules/sql-injection"
 import "./rules/command-injection"
+import "./rules/path-traversal"
+import "./rules/react-xss"
+import "./rules/ssrf"
 
 export { runAstRules } from "./runner"
 export type { AstRule, AstRuleHit } from "./runner"
