@@ -36,8 +36,8 @@ const DETECTORS: Array<{
   {
     id: "05",
     name: "code-sast",
-    desc: "SSRF, SQLi, command injection, XSS, weak crypto, JWT misuse, plus AI-typical mistakes (TLS verify off, NEXT_PUBLIC_ secrets, bcrypt rounds < 10).",
-    refs: "CWE-tagged",
+    desc: "AST-based via the TypeScript Compiler API plus targeted regex. 25 SAST rules: SSRF, SQLi, command injection, reflected XSS, prototype pollution, ReDoS, NoSQL / SSTI injection, weak crypto, JWT misuse, hardcoded creds — plus AI-typical mistakes (TLS verify off, NEXT_PUBLIC_ secrets, bcrypt rounds < 10).",
+    refs: "AST + regex · CWE-tagged",
   },
   {
     id: "06",
@@ -94,15 +94,19 @@ const FAQ: Array<{ q: string; a: string }> = [
     q: "Where does my data live?",
     a: "All scan metadata is stored in Supabase, EU region. The app runs on Vercel. Both providers are SOC 2 compliant. See /security for details.",
   },
+  {
+    q: "Can I push RepoGuard findings into GitHub Code Scanning?",
+    a: "Yes. Every saved scan is one click from a SARIF 2.1.0 export — drop it into github/codeql-action/upload-sarif and the findings show up in your repo's Security → Code scanning tab next to CodeQL and Dependabot. Each result deep-links back to the matching rule documentation on RepoGuard. Full setup at /docs/sarif.",
+  },
 ];
 
 const STAT_BAR: Array<{ value: string; label: string }> = [
   { value: "9", label: "detectors" },
-  { value: "60+", label: "secret patterns" },
+  { value: "170+", label: "rules" },
+  { value: "SARIF 2.1", label: "code scanning export" },
   { value: "<60s", label: "scan time" },
   { value: "EU", label: "data region" },
   { value: "MIT", label: "license" },
-  { value: "$0", label: "during beta" },
 ];
 
 const EXAMPLE_REPOS = [
