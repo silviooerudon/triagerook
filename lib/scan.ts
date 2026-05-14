@@ -5,6 +5,7 @@ import { findEntropySecrets } from "./entropy"
 import { findCodeVulns } from "./code-vulns"
 import { runAstRules } from "./ast"
 import { scanHistory } from "./history"
+import { prioritizeFilesForScan } from "./scan-priority"
 import {
   isActionsWorkflowPath,
   isDockerfilePath,
@@ -183,11 +184,15 @@ export async function scanRepo(
   // 2. Get the full file tree
   const tree = await fetchRepoTree(accessToken, owner, repo, branch)
 
-  // 3. Filter to scannable files
+  // 3. Filter to scannable files, then prioritize source paths over
+  //    tests/fixtures/docs so the file-cap budget is spent on the slice
+  //    most likely to contain real findings. See lib/scan-priority.ts
+  //    for the tier table.
   const allBlobs = tree.tree.filter((item) => item.type === "blob")
   const scannable = allBlobs.filter((item) => isScannable(item))
+  const prioritized = prioritizeFilesForScan(scannable)
 
-  const filesToScan = scannable.slice(0, MAX_FILES_TO_SCAN)
+  const filesToScan = prioritized.slice(0, MAX_FILES_TO_SCAN)
   const filesSkipped = allBlobs.length - filesToScan.length
 
   // 4. Flag sensitive files by name (no blob fetch needed)
