@@ -6,6 +6,7 @@ import { findCodeVulns } from "./code-vulns"
 import { runAstRules } from "./ast"
 import { scanHistory } from "./history"
 import { prioritizeFilesForScan } from "./scan-priority"
+import { getMaxFilesToScan, getMaxScanTimeMs } from "./scan-budget"
 import {
   isActionsWorkflowPath,
   isDockerfilePath,
@@ -136,18 +137,12 @@ const SKIP_PATH_PATTERNS = [
 ]
 
 const MAX_FILE_SIZE = 1_000_000 // 1MB
-// Bumped 300 → 1000 on 2026-05-14 after dogfooding large repos (supabase
-// had 15,122 files; we were sampling 2%). 1000 files in batches of 10
-// = ~100 GitHub blob fetches at ~250ms each ≈ 25s, comfortably within
-// MAX_SCAN_TIME_MS. Watch this number when adding new detectors — if
-// per-file work grows, the time cap can be reached before the file cap
-// and users see false "truncation" banners.
-const MAX_FILES_TO_SCAN = 1000
-// Bumped 45 → 55s alongside the file-cap bump. Vercel hobby tier
-// function timeout is 60s; pro is 300s. Staying at 55s keeps us safe on
-// hobby while leaving slack for history scan + posture/IAM checks that
-// run after the file loop.
-const MAX_SCAN_TIME_MS = 55_000
+// File count and time budget are now configurable via SCAN_MAX_FILES
+// and SCAN_MAX_TIME_MS env vars (see lib/scan-budget.ts). Defaults
+// (1000 files, 55s) are tuned for Vercel Hobby's 60s function timeout.
+// Raise both env vars together when migrating to Vercel Pro (300s) —
+// the file cap is the constraint that lets users actually feel the
+// extra time budget.
 
 type GitHubTreeItem = {
   path: string
@@ -176,6 +171,8 @@ export async function scanRepo(
 ): Promise<ScanResult> {
   const startedAt = Date.now()
   const repoFullName = `${owner}/${repo}`
+  const maxFilesToScan = getMaxFilesToScan()
+  const maxScanTimeMs = getMaxScanTimeMs()
 
   // 1. Resolve branch (use explicit if given, else query repo metadata)
   const branch =
@@ -192,7 +189,7 @@ export async function scanRepo(
   const scannable = allBlobs.filter((item) => isScannable(item))
   const prioritized = prioritizeFilesForScan(scannable)
 
-  const filesToScan = prioritized.slice(0, MAX_FILES_TO_SCAN)
+  const filesToScan = prioritized.slice(0, maxFilesToScan)
   const filesSkipped = allBlobs.length - filesToScan.length
 
   // 4. Flag sensitive files by name (no blob fetch needed)
@@ -207,7 +204,7 @@ export async function scanRepo(
 
   const BATCH_SIZE = 10
   for (let i = 0; i < filesToScan.length; i += BATCH_SIZE) {
-    if (Date.now() - startedAt > MAX_SCAN_TIME_MS) {
+    if (Date.now() - startedAt > maxScanTimeMs) {
       timeLimitHit = true
       break
     }
@@ -257,7 +254,7 @@ export async function scanRepo(
     codeFindings,
     iacFindings,
     durationMs: Date.now() - startedAt,
-    truncated: tree.truncated || timeLimitHit || scannable.length > MAX_FILES_TO_SCAN,
+    truncated: tree.truncated || timeLimitHit || scannable.length > maxFilesToScan,
   }
 }
 
@@ -314,7 +311,7 @@ async function fetchRepoTree(
  * Best-effort fetch of `.repoguardignore` from the repo root via the GitHub
  * Contents API. Soft-fails on any error (404, rate limit, decode error) by
  * returning null — the scan should never fail because the suppressions file
- * is missing or unreadable. Does NOT count against the MAX_FILES_TO_SCAN limit.
+ * is missing or unreadable. Does NOT count against the per-run file cap.
  */
 export async function fetchSuppressionsFile(
   accessToken: string | null,
