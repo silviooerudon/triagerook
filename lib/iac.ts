@@ -1,6 +1,6 @@
 import type { IaCFinding, Severity } from "./types"
 
-type DockerRule = {
+export type DockerRule = {
   id: string
   name: string
   severity: Severity
@@ -10,7 +10,7 @@ type DockerRule = {
   check: (lines: string[]) => number | null
 }
 
-const DOCKER_RULES: DockerRule[] = [
+export const DOCKER_RULES: DockerRule[] = [
   {
     id: "dockerfile-user-root",
     name: "Container runs as root",
@@ -149,7 +149,7 @@ export function scanDockerfile(
  * parser (js-yaml) would be safer but adds 100KB+ to the bundle; since we
  * only need to spot a handful of patterns we scan text directly.
  */
-type ActionsRule = {
+export type ActionsRule = {
   id: string
   name: string
   severity: Severity
@@ -158,7 +158,7 @@ type ActionsRule = {
   scan: (content: string, filePath: string) => IaCFinding[]
 }
 
-const ACTIONS_RULES: ActionsRule[] = [
+export const ACTIONS_RULES: ActionsRule[] = [
   {
     id: "gha-pull-request-target-checkout-head",
     name: "pull_request_target checks out untrusted PR code",
