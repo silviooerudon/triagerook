@@ -32,6 +32,8 @@ import { SupplyChainCard } from "@/app/components/supply-chain-card"
 type ScanResultFull = ScanResult & {
   dependencies?: DependencyFinding[]
   pythonDependencies?: DependencyFinding[]
+  goDependencies?: DependencyFinding[]
+  rubyDependencies?: DependencyFinding[]
 }
 
 type SavedScan = {
@@ -143,6 +145,8 @@ function SavedScanView({ scan }: { scan: SavedScan }) {
     iacFindings: scan.result.iacFindings ?? [],
     npmDependencies: scan.result.dependencies ?? [],
     pythonDependencies: scan.result.pythonDependencies ?? [],
+    goDependencies: scan.result.goDependencies ?? [],
+    rubyDependencies: scan.result.rubyDependencies ?? [],
   }
 
   const counts = countBySeverity(all)
@@ -185,6 +189,8 @@ function SavedScanView({ scan }: { scan: SavedScan }) {
       <CodeFindingsSection findings={all.codeFindings} />
       <DependenciesSection findings={all.npmDependencies} label="npm" />
       <DependenciesSection findings={all.pythonDependencies} label="Python" />
+      <DependenciesSection findings={all.goDependencies} label="Go" />
+      <DependenciesSection findings={all.rubyDependencies} label="Ruby" />
       <IaCFindingsSection findings={all.iacFindings} />
       <SecretsSection findings={all.historySecrets} sourceLabel="history" />
     </>

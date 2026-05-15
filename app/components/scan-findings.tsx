@@ -72,6 +72,8 @@ export type AllFindings = {
   iacFindings: IaCFinding[]
   npmDependencies: DependencyFinding[]
   pythonDependencies: DependencyFinding[]
+  goDependencies: DependencyFinding[]
+  rubyDependencies: DependencyFinding[]
 }
 
 export function countBySeverity(all: AllFindings) {
@@ -87,6 +89,8 @@ export function countBySeverity(all: AllFindings) {
   for (const f of all.iacFindings) bump(f.severity)
   for (const f of all.npmDependencies) bump(f.severity)
   for (const f of all.pythonDependencies) bump(f.severity)
+  for (const f of all.goDependencies) bump(f.severity)
+  for (const f of all.rubyDependencies) bump(f.severity)
   return buckets
 }
 
@@ -98,7 +102,9 @@ export function totalCount(all: AllFindings) {
     all.codeFindings.filter((f) => !f.likelyTestFixture).length +
     all.iacFindings.length +
     all.npmDependencies.length +
-    all.pythonDependencies.length
+    all.pythonDependencies.length +
+    all.goDependencies.length +
+    all.rubyDependencies.length
   )
 }
 

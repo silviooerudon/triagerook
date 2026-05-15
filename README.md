@@ -4,7 +4,7 @@
 
 > Lightweight GitHub security scanner for solo devs and small teams. Live at **[repoguard-chi.vercel.app](https://repoguard-chi.vercel.app)**.
 
-Scans your GitHub repos across nine detector families, run in parallel where independent — **60+ secret patterns**, sensitive files, **28 AST-based SAST rules**, npm and PyPI dependencies, supply-chain misconfigurations, IaC checks for Dockerfile and GitHub Actions, and git-history replay — with no CLI, no config, and no pipelines to wire up. Sign in with GitHub or paste a public URL, then get a prioritized list of findings in under a minute. Every finding is one click from a **SARIF 2.1.0 export** ready to upload to GitHub Code Scanning.
+Scans your GitHub repos across nine detector families, run in parallel where independent — **60+ secret patterns**, sensitive files, **28 AST-based SAST rules**, dependencies across **npm, PyPI, Go, and RubyGems**, supply-chain misconfigurations, IaC checks for Dockerfile and GitHub Actions, and git-history replay — with no CLI, no config, and no pipelines to wire up. Sign in with GitHub or paste a public URL, then get a prioritized list of findings in under a minute. Every finding is one click from a **SARIF 2.1.0 export** ready to upload to GitHub Code Scanning.
 
 📖 The full rule catalog (170+ rules, every CWE) is published at [`/docs/rules`](https://repoguard-chi.vercel.app/docs/rules). The SARIF integration guide lives at [`/docs/sarif`](https://repoguard-chi.vercel.app/docs/sarif).
 
@@ -59,10 +59,12 @@ Every rule is tied to a CWE identifier so findings are actionable. Headline cove
 
 Detection runs over JavaScript / TypeScript primarily. Python coverage extends to the regex layer for SAST and the dependency layer for vulnerabilities.
 
-### 6. Vulnerable dependencies (npm and PyPI)
+### 6. Vulnerable dependencies (npm, PyPI, Go, RubyGems)
 
 - **npm** — prefers `package-lock.json` to cover the entire dependency tree (direct + transitive), supports lockfile v1, v2, and v3. Queries the npm advisory bulk API and links each finding to its GHSA + CVSS score.
 - **PyPI** — parses `requirements.txt`, `pyproject.toml` (PEP-621 + Poetry), and `Pipfile`. Queries the [OSV.dev](https://osv.dev) batch API and hydrates each vulnerability with severity, affected ranges, and GHSA link.
+- **Go** — parses `go.mod` (direct + indirect requires, strips `+incompatible`). Queries OSV with ecosystem `Go`; advisories link to `pkg.go.dev/vuln/...` for the official Go vulnerability page when available.
+- **RubyGems** — parses `Gemfile.lock` for pinned versions (Gemfile alone is not authoritative because it carries constraints, not concrete versions). Queries OSV with ecosystem `RubyGems`, same advisory coverage `bundler-audit` uses.
 
 ### 7. CI / IaC / supply-chain misconfigurations
 
@@ -83,7 +85,7 @@ The angle a 10+ year IAM/IGA specialist actually cares about: identity and acces
 
 ### SARIF 2.1.0 export + GitHub Code Scanning
 
-Every saved scan is one click from a SARIF 2.1.0 export. Drop the file into `github/codeql-action/upload-sarif` and findings show up in your repo's `Security → Code scanning` tab next to CodeQL and Dependabot — with each result deep-linked back to its rule documentation. Anonymous scans at `/scan-public/<owner>/<repo>` can also export SARIF (generated client-side from the in-flight result). Full setup guide with copy-pasteable workflow YAML at [`/docs/sarif`](https://repoguard-chi.vercel.app/docs/sarif).
+Every saved scan is one click from a SARIF 2.1.0 export. Drop the file into `github/codeql-action/upload-sarif` and findings show up in your repo's `Security → Code scanning` tab next to CodeQL and Dependabot — with each result deep-linked back to its rule documentation. Anonymous scans at `/scan-public/<owner>/<repo>` can also export SARIF (generated client-side from the in-flight result). For public repos, the anonymous scan endpoint accepts `?format=sarif` directly — drop the [ready-made workflow](https://repoguard-chi.vercel.app/workflows/repoguard.yml) at `.github/workflows/repoguard.yml` and every push gets scanned + uploaded with zero auth setup. Full setup guide with copy-pasteable workflow YAML at [`/docs/sarif`](https://repoguard-chi.vercel.app/docs/sarif).
 
 ### Auto-fix pull requests
 
@@ -152,7 +154,7 @@ Built in public. Rough order of what's next, depending on user feedback:
 - [x] SARIF 2.1.0 export and GitHub Code Scanning integration — [`/docs/sarif`](https://repoguard-chi.vercel.app/docs/sarif)
 - [x] Ignore rules / per-finding suppressions (user-scoped, synced via Supabase)
 - [x] Auto-fix pull requests (requires GitHub App install on the target repo)
-- [ ] Go and Ruby dependency scanning (OSV.dev covers both)
+- [x] Go and Ruby dependency scanning (OSV.dev covers both — `go.mod` + `Gemfile.lock`)
 - [ ] Terraform + CloudFormation IaC rules (public S3 buckets, open security groups, etc.)
 - [ ] Continuous scanning via GitHub webhooks
 - [ ] Team accounts and shared scan history

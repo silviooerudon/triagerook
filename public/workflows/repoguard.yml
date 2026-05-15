@@ -1,0 +1,52 @@
+# Drop this file at .github/workflows/repoguard.yml in your repository
+# to push RepoGuard findings into the GitHub "Security → Code scanning"
+# tab on every push and pull request.
+#
+# Public repositories only — RepoGuard's anonymous scan endpoint refuses
+# private repos by design. For private repos, sign in at
+# https://repoguard-chi.vercel.app and use the SARIF download from a
+# saved scan.
+#
+# Rate limit: 5 scans per repo per hour, 10 scans per source IP per
+# hour (GitHub Actions runners share IP pools, so the per-repo limit is
+# usually the one you'll hit first). For repos that push more than 5x
+# an hour, gate on `push` to a single branch or use `pull_request` only.
+
+name: RepoGuard → Code Scanning
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write   # required to upload SARIF
+
+jobs:
+  scan:
+    name: Scan with RepoGuard and upload to Code Scanning
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch SARIF from RepoGuard
+        env:
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+        run: |
+          curl -fSL \
+            -X POST \
+            -H "Content-Type: application/json" \
+            "https://repoguard-chi.vercel.app/api/scan-public/${OWNER}/${REPO}?format=sarif" \
+            -o repoguard.sarif.json
+
+      - name: Upload to Code Scanning
+        # Pinned by SHA — see RepoGuard's IaC rule "gha-unpinned-action".
+        # Comment carries the human-readable version so dependabot can
+        # bump it without losing context.
+        uses: github/codeql-action/upload-sarif@f411752efdf656cb71aa17b755b22c890960da1d # v3.35.5
+        with:
+          sarif_file: repoguard.sarif.json
+          category: repoguard

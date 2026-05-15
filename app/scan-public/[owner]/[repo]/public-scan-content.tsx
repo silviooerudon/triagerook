@@ -37,6 +37,8 @@ import { EmptyScopeBanner } from "@/app/components/empty-scope-banner"
 type ScanResultFull = ScanResult & {
   dependencies?: DependencyFinding[]
   pythonDependencies?: DependencyFinding[]
+  goDependencies?: DependencyFinding[]
+  rubyDependencies?: DependencyFinding[]
   riskScore?: number
   riskBreakdown?: RiskBreakdown
   prioritized?: PrioritizedFinding[]
@@ -272,6 +274,8 @@ function ScanResultView({
     iacFindings: result.iacFindings ?? [],
     npmDependencies: result.dependencies ?? [],
     pythonDependencies: result.pythonDependencies ?? [],
+    goDependencies: result.goDependencies ?? [],
+    rubyDependencies: result.rubyDependencies ?? [],
   }
 
   const counts = countBySeverity(all)
@@ -323,6 +327,8 @@ function ScanResultView({
       <CodeFindingsSection findings={all.codeFindings} />
       <DependenciesSection findings={all.npmDependencies} label="npm" />
       <DependenciesSection findings={all.pythonDependencies} label="Python" />
+      <DependenciesSection findings={all.goDependencies} label="Go" />
+      <DependenciesSection findings={all.rubyDependencies} label="Ruby" />
       <IaCFindingsSection findings={all.iacFindings} />
       <SecretsSection findings={all.historySecrets} sourceLabel="history" />
     </>

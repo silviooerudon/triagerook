@@ -5,6 +5,8 @@ import {
 } from "./scan"
 import { scanDependencies } from "./deps"
 import { scanPythonDependencies } from "./python-deps"
+import { scanGoDependencies } from "./go-deps"
+import { scanRubyDependencies } from "./ruby-deps"
 import { assessPosture, type PostureResult } from "./posture"
 import { assessIAM, type IAMResult } from "./iam"
 import { assessSupplyChain, type SupplyChainResult } from "./supply-chain"
@@ -25,6 +27,13 @@ export type FullScanResult = {
   fullResult: ScanResult & {
     dependencies: DependencyFinding[]
     pythonDependencies: DependencyFinding[]
+    // New ecosystems live on the same shape so the rest of the
+    // pipeline (flattenScan, suppressions, risk) sees a uniform
+    // DependencyFinding[] regardless of source. Persisted scans
+    // pre-2026-05-15 don't carry these fields — readers must treat
+    // them as optional + empty.
+    goDependencies: DependencyFinding[]
+    rubyDependencies: DependencyFinding[]
   }
   assessment: RiskAssessment
   suppressionResult: SuppressionResult
@@ -33,6 +42,8 @@ export type FullScanResult = {
   supplyChainResult: SupplyChainResult
   npmVulnsCount: number
   pythonVulnsCount: number
+  goVulnsCount: number
+  rubyVulnsCount: number
   // Aggregated soft-failure markers from every detector that returned an
   // empty result for a known reason (rate limit, registry outage). The
   // UI renders a yellow banner so "0 findings" doesn't look like
@@ -74,6 +85,8 @@ export async function runFullScan(
     secretsResult,
     npmResult,
     pythonResult,
+    goResult,
+    rubyResult,
     postureResult,
     iamResult,
     supplyChainResult,
@@ -81,6 +94,8 @@ export async function runFullScan(
     scanRepo(accessToken, owner, repo, explicitBranch, pathPrefix),
     scanDependencies(owner, repo, accessToken),
     scanPythonDependencies(owner, repo, accessToken),
+    scanGoDependencies(owner, repo, accessToken),
+    scanRubyDependencies(owner, repo, accessToken),
     assessPosture(owner, repo, accessToken),
     assessIAM(owner, repo, accessToken),
     assessSupplyChain(owner, repo, accessToken, explicitBranch),
@@ -90,6 +105,8 @@ export async function runFullScan(
     ...secretsResult,
     dependencies: npmResult.vulns,
     pythonDependencies: pythonResult.findings,
+    goDependencies: goResult.findings,
+    rubyDependencies: rubyResult.findings,
     iacFindings: [
       ...(secretsResult.iacFindings ?? []),
       ...npmResult.lifecycleIssues,
@@ -103,6 +120,8 @@ export async function runFullScan(
     ...(secretsResult.degraded ?? []),
     ...(npmResult.degraded ?? []),
     ...(pythonResult.degraded ? [pythonResult.degraded] : []),
+    ...(goResult.degraded ? [goResult.degraded] : []),
+    ...(rubyResult.degraded ? [rubyResult.degraded] : []),
   ]
 
   const flatFindings = flattenScan(fullResult)
@@ -145,6 +164,8 @@ export async function runFullScan(
     supplyChainResult,
     npmVulnsCount: npmResult.vulns.length,
     pythonVulnsCount: pythonResult.findings.length,
+    goVulnsCount: goResult.findings.length,
+    rubyVulnsCount: rubyResult.findings.length,
     degraded: aggregateDegraded.length > 0 ? aggregateDegraded : undefined,
   }
 }

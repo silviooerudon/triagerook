@@ -115,7 +115,7 @@ export type IaCFinding = {
   remediation: string
 }
 
-export type DependencyEcosystem = "npm" | "PyPI"
+export type DependencyEcosystem = "npm" | "PyPI" | "Go" | "RubyGems"
 
 export type DependencyFinding = {
   package: string
@@ -131,7 +131,14 @@ export type DependencyFinding = {
   vulnerable_versions: string
   cvss_score: number | null
   url: string
-  source?: "package.json" | "package-lock.json" | "requirements.txt" | "pyproject.toml" | "Pipfile"
+  source?:
+    | "package.json"
+    | "package-lock.json"
+    | "requirements.txt"
+    | "pyproject.toml"
+    | "Pipfile"
+    | "go.mod"
+    | "Gemfile.lock"
   isTransitive?: boolean
 }
 

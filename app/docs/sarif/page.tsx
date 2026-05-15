@@ -147,7 +147,64 @@ jobs:
 
           <section className="mb-10">
             <h2 className="text-sm uppercase tracking-wider text-slate-500 font-mono mb-3">
-              Public scans
+              Zero-auth Code Scanning for public repos
+            </h2>
+            <p className="text-slate-300 leading-relaxed text-sm mb-4">
+              For public repositories you don&apos;t need a session cookie at
+              all. The anonymous scan endpoint accepts{" "}
+              <code className="font-mono text-amber-300">?format=sarif</code>{" "}
+              and returns SARIF directly — drop this workflow at{" "}
+              <code className="font-mono">.github/workflows/repoguard.yml</code>{" "}
+              and every push runs a fresh scan that lands in Code Scanning:
+            </p>
+            <pre className="bg-slate-900/80 border border-slate-800 rounded-lg p-4 text-xs font-mono text-slate-300 overflow-x-auto">
+{`# .github/workflows/repoguard.yml
+name: RepoGuard → Code Scanning
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch SARIF from RepoGuard
+        env:
+          OWNER: \${{ github.repository_owner }}
+          REPO: \${{ github.event.repository.name }}
+        run: |
+          curl -fSL -X POST \\
+            "https://repoguard-chi.vercel.app/api/scan-public/\${OWNER}/\${REPO}?format=sarif" \\
+            -o repoguard.sarif.json
+      - uses: github/codeql-action/upload-sarif@f411752efdf656cb71aa17b755b22c890960da1d # v3.35.5
+        with:
+          sarif_file: repoguard.sarif.json
+          category: repoguard`}
+            </pre>
+            <p className="text-slate-400 leading-relaxed text-sm mt-4">
+              Or download the ready-to-use file from{" "}
+              <a
+                href="/workflows/repoguard.yml"
+                className="text-amber-400 hover:underline font-mono"
+              >
+                /workflows/repoguard.yml
+              </a>
+              . Anonymous scans are rate-limited to 5 per repo per hour and
+              10 per source IP per hour — generous for normal commit cadence,
+              hard cap on abuse. The workflow inherits these limits.
+            </p>
+          </section>
+
+          <section className="mb-10">
+            <h2 className="text-sm uppercase tracking-wider text-slate-500 font-mono mb-3">
+              Browser-only export (no workflow)
             </h2>
             <p className="text-slate-300 leading-relaxed text-sm">
               Anonymous scans at{" "}

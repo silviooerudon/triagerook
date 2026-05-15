@@ -146,6 +146,8 @@ type ScanLikeShape = {
   sensitiveFiles?: SensitiveFileFinding[]
   dependencies?: DependencyFinding[]
   pythonDependencies?: DependencyFinding[]
+  goDependencies?: DependencyFinding[]
+  rubyDependencies?: DependencyFinding[]
 }
 
 export function flattenScan(scan: ScanLikeShape): AnyFinding[] {
@@ -157,5 +159,7 @@ export function flattenScan(scan: ScanLikeShape): AnyFinding[] {
   for (const f of scan.sensitiveFiles ?? []) out.push({ kind: "sensitive-file", data: f })
   for (const d of scan.dependencies ?? []) out.push({ kind: "dependency", data: d })
   for (const d of scan.pythonDependencies ?? []) out.push({ kind: "dependency", data: d })
+  for (const d of scan.goDependencies ?? []) out.push({ kind: "dependency", data: d })
+  for (const d of scan.rubyDependencies ?? []) out.push({ kind: "dependency", data: d })
   return out
 }

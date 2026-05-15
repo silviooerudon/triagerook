@@ -104,6 +104,11 @@ export type ScanResult = {
   iacFindings?: IaCFinding[]
   dependencies?: DependencyFinding[]
   pythonDependencies?: DependencyFinding[]
+  // Go (go.mod) and Ruby (Gemfile.lock) ecosystems are optional on the
+  // type so persisted scans pre-2026-05-15 still parse. New scans
+  // always emit them (possibly empty arrays).
+  goDependencies?: DependencyFinding[]
+  rubyDependencies?: DependencyFinding[]
   // When set, the scan was narrowed to a subfolder of the repo. UI
   // shows this in the header so a user looking at "0 findings" for a
   // narrow scan doesn't conclude the whole repo is clean. Persisted
