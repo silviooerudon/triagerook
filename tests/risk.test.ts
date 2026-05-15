@@ -122,6 +122,35 @@ describe("scoreRepo", () => {
     expect(result.breakdown.critical).toBe(0)
     expect(result.breakdown.fixture).toBeGreaterThan(0)
   })
+
+  it("does NOT count fixture findings toward the score gauge", () => {
+    // Regression for the dogfood pass: scanning repoguard/repoguard
+    // returned score=43 CRITICAL even though every visible finding was
+    // tagged "Test fixture". The breakdown.fixture bucket was leaking
+    // into the score total. The tag promises the user "this doesn't
+    // count" — the gauge must honour it.
+    const fixturesOnly = Array.from({ length: 100 }, () =>
+      secret("critical", { likelyTestFixture: true }),
+    )
+    const result = scoreRepo(fixturesOnly)
+    expect(result.score).toBe(0)
+    expect(result.breakdown.fixture).toBeGreaterThan(0)
+  })
+
+  it("mixes fixtures and real findings — only real findings count", () => {
+    // One real high + a pile of fixture criticals → score reflects the
+    // single high. The fixtures sit in the breakdown for transparency.
+    const findings = [
+      secret("high"),
+      ...Array.from({ length: 50 }, () =>
+        secret("critical", { likelyTestFixture: true }),
+      ),
+    ]
+    const result = scoreRepo(findings)
+    expect(result.score).toBe(compressScore(SEVERITY_BASE_POINTS.high))
+    expect(result.breakdown.high).toBe(SEVERITY_BASE_POINTS.high)
+    expect(result.breakdown.fixture).toBeGreaterThan(0)
+  })
 })
 
 describe("compressScore — log-scale (no more saturation at 0)", () => {
