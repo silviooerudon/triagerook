@@ -200,8 +200,8 @@ function SavedScanView({ scan }: { scan: SavedScan }) {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2 font-mono text-amber-400">
-            {scan.owner}/{scan.repo}
+          <h1 className="font-display text-3xl md:text-4xl font-bold mb-2 text-amber-400">
+            <span className="font-mono">{scan.owner}/{scan.repo}</span>
           </h1>
           <p className="text-slate-400 text-sm">
             Scanned on {dateStr} • {scan.files_scanned} files •{" "}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import type { PrioritizedFinding } from "@/lib/risk"
 import { findRuleIdForFinding, getFindingPath } from "@/lib/suppressions"
 
@@ -64,6 +64,18 @@ export function SuppressButton({ owner, repo, finding, onSuppressed }: Props) {
     setDone(false)
   }
 
+  // Esc closes the modal — keyboard parity with the X button and the
+  // overlay-click handler. Skips registration when the modal is closed
+  // so it does not steal Esc from anything else on the page.
+  useEffect(() => {
+    if (!open) return
+    function handler(e: KeyboardEvent) {
+      if (e.key === "Escape") closeModal()
+    }
+    document.addEventListener("keydown", handler)
+    return () => document.removeEventListener("keydown", handler)
+  }, [open])
+
   return (
     <>
       <button
@@ -76,20 +88,34 @@ export function SuppressButton({ owner, repo, finding, onSuppressed }: Props) {
       </button>
       {open && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="suppress-modal-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
           onClick={closeModal}
         >
           <div
-            className="bg-slate-900 border border-slate-800 rounded-xl shadow-2xl max-w-lg w-full"
+            className="bg-slate-900 border border-amber-400/10 rounded-xl shadow-2xl shadow-amber-400/[0.04] max-w-lg w-full"
             onClick={(e) => e.stopPropagation()}
           >
-            <header className="px-6 py-4 border-b border-slate-800">
-              <h2 className="font-semibold text-white">Suppress finding</h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Adds a personal suppression for{" "}
-                <span className="font-mono text-slate-200">{ruleId}</span>. Only
-                hidden in <span className="font-mono">{owner}/{repo}</span>.
-              </p>
+            <header className="px-6 py-4 border-b border-slate-800/60 flex items-start gap-3">
+              <span aria-hidden className="font-mono text-amber-400 text-sm mt-0.5 select-none">
+                [R/]
+              </span>
+              <div className="flex-1 min-w-0">
+                <h2
+                  id="suppress-modal-title"
+                  className="font-display text-lg font-bold text-white tracking-tight"
+                >
+                  Suppress finding
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Adds a personal suppression for{" "}
+                  <span className="font-mono text-slate-200">{ruleId}</span>.
+                  Only hidden in{" "}
+                  <span className="font-mono">{owner}/{repo}</span>.
+                </p>
+              </div>
             </header>
 
             {done ? (
@@ -184,7 +210,7 @@ export function SuppressButton({ owner, repo, finding, onSuppressed }: Props) {
                     type="button"
                     onClick={submit}
                     disabled={loading}
-                    className="text-sm px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white transition disabled:opacity-50"
+                    className="text-sm px-4 py-2 rounded-lg border border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/20 hover:border-red-500/60 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? "Saving…" : "Suppress"}
                   </button>

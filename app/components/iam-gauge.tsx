@@ -5,6 +5,10 @@ type IamGaugeProps = {
   size?: number
 }
 
+// IAM score follows health semantics (100 = lowest risk, 0 = critical risk),
+// matching RiskGauge / SupplyChainGauge / PostureGauge. The visible label is
+// kept on the same health/quality vocabulary as the others so a user glancing
+// at four gauges side-by-side reads them in one direction.
 function colorForLevel(level: string): string {
   if (level === "low") return "#22c55e"
   if (level === "medium") return "#eab308"
@@ -14,11 +18,11 @@ function colorForLevel(level: string): string {
 }
 
 function levelLabel(level: string): string {
-  if (level === "low") return "LOW RISK"
-  if (level === "medium") return "MEDIUM RISK"
-  if (level === "high") return "HIGH RISK"
-  if (level === "critical") return "CRITICAL"
-  return level.toUpperCase()
+  if (level === "low") return "Excellent"
+  if (level === "medium") return "Needs attention"
+  if (level === "high") return "High risk"
+  if (level === "critical") return "Critical"
+  return level
 }
 
 export function IamGauge({ score, level, degraded, size = 160 }: IamGaugeProps) {

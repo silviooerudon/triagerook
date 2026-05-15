@@ -99,7 +99,7 @@ export default function ScanPage({ params, searchParams }: PageProps) {
   return (
     <main className="px-6 py-12">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-semibold tracking-tight mb-2">
+        <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-2">
           <span className="text-slate-400">scanning</span>{" "}
           <span className="font-mono text-amber-400">
             {owner}/{repo}

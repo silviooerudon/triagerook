@@ -61,7 +61,7 @@ export default function SuppressionsPage() {
     <main className="px-6 py-12">
       <div className="max-w-4xl mx-auto space-y-6">
         <header>
-          <h1 className="text-3xl font-semibold tracking-tight">Suppressions</h1>
+          <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight">Suppressions</h1>
           <p className="text-slate-400 text-sm mt-2">
             Personal, per-repo. Hidden from your scan results until you remove
             them here. Doesn&apos;t affect anyone else who scans the same repo.
