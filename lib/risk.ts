@@ -120,9 +120,16 @@ export function scoreRepo(findings: AnyFinding[]): RiskAssessment {
     else if (sev === "low") breakdown.low += f.score
   }
 
+  // Fixtures are reported in `breakdown.fixture` for transparency (so
+  // the user can see e.g. "182 fixture findings detected") but DO NOT
+  // contribute to the score. Including them produced visibly wrong
+  // gauges: a repo with only test-fixture findings would land in
+  // "CRITICAL 40+" purely from the fixture bucket — directly
+  // contradicting the "Test fixture" tag that promises "this doesn't
+  // count." Per-finding multiplier of 0.1 is kept (lib/risk.ts:42) so
+  // prioritization still sorts fixtures last within the visible list.
   const total =
-    breakdown.critical + breakdown.high + breakdown.medium +
-    breakdown.low + breakdown.fixture
+    breakdown.critical + breakdown.high + breakdown.medium + breakdown.low
 
   return {
     score: compressScore(total),
