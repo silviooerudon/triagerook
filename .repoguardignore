@@ -22,6 +22,18 @@ lib/secret-patterns.ts [rule=secret/*] [reason="Detector self-reference: regex p
 # against its own description.
 lib/code-vulns.ts [rule=code/*] [reason="Detector self-reference: SAST rule descriptions"]
 
+# lib/ast/rules/** holds every AST-based SAST rule. Each rule's
+# `name` / `description` strings literally narrate the pattern it
+# looks for ("eval() with dynamic input", "Math.random() used to
+# generate a security token", "Cookie set with httpOnly: false in
+# auth context"), so the regex SAST layer running over the same
+# files matches the rule's own copy. Detector self-reference, same
+# as lib/code-vulns.ts above. Heuristic isLikelyDetectorDefinition
+# doesn't catch these because the marker is `name:`/`description:`,
+# not `regex:`/`pattern:` — broadening the marker list risks false
+# positives in regular code, so we suppress by path here instead.
+lib/ast/rules/** [rule=code/*] [reason="Detector self-reference: AST rule name/description copy"]
+
 # scripts/patch-iam-d3-1-heredoc.py contains JavaScript embedded in a
 # Python heredoc. The JS-style `dataDocRe.exec()` and `heredocRe.exec()`
 # calls match the Python eval/exec rule erroneously.
