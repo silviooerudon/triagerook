@@ -44,6 +44,32 @@ export function SeverityPill({ severity }: { severity: Severity | "moderate" }) 
   )
 }
 
+// Returns the Tailwind classes that paint the left-edge accent on a
+// finding card. Critical/high get a thick saturated stripe and a faint
+// tinted background; medium gets a thinner stripe; low is unaccented
+// (no visual cost when the list is mostly low-severity noise).
+//
+// Used by FindingCard's CardShell (prioritized view) and by the legacy
+// section cards in this file (group-by-detector view) so both surfaces
+// triage the same way.
+export function severityAccentClass(
+  severity: Severity | "moderate",
+): string {
+  switch (severity) {
+    case "critical":
+      return "border-l-4 border-l-red-500 bg-red-500/[0.04]"
+    case "high":
+      return "border-l-4 border-l-orange-500 bg-orange-500/[0.04]"
+    case "medium":
+    case "moderate":
+      return "border-l-2 border-l-yellow-500/70"
+    case "low":
+      return ""
+    default:
+      return ""
+  }
+}
+
 export function BadgePill({
   label,
   tone = "neutral",
@@ -161,9 +187,10 @@ export function SecretsSection({
 function SecretCard({ finding }: { finding: SecretFinding }) {
   const isTest = finding.likelyTestFixture ?? false
   const isHistory = finding.source === "history"
+  const accent = isTest ? "" : severityAccentClass(finding.severity)
   return (
     <article
-      className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${
+      className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${accent} ${
         isTest ? "opacity-60" : ""
       }`}
     >
@@ -215,7 +242,7 @@ export function SensitiveFilesSection({
       {findings.map((f, i) => (
         <article
           key={i}
-          className="bg-slate-900 border border-slate-800 rounded-xl p-5"
+          className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${severityAccentClass(f.severity)}`}
         >
           <header className="flex items-center gap-2 flex-wrap mb-1">
             <h3 className="font-semibold">{f.name}</h3>
@@ -248,10 +275,14 @@ export function CodeFindingsSection({ findings }: { findings: CodeFinding[] }) {
         count={findings.length}
         hint="Injection, SSRF, XSS, weak crypto and similar runtime risks."
       />
-      {sorted.map((f, i) => (
+      {sorted.map((f, i) => {
+        const accent = f.likelyTestFixture
+          ? ""
+          : severityAccentClass(f.severity)
+        return (
         <article
           key={i}
-          className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${
+          className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${accent} ${
             f.likelyTestFixture ? "opacity-60" : ""
           }`}
         >
@@ -277,7 +308,8 @@ export function CodeFindingsSection({ findings }: { findings: CodeFinding[] }) {
             </code>
           </pre>
         </article>
-      ))}
+        )
+      })}
     </section>
   )
 }
@@ -309,7 +341,7 @@ export function IaCFindingsSection({ findings }: { findings: IaCFinding[] }) {
       {findings.map((f, i) => (
         <article
           key={i}
-          className="bg-slate-900 border border-slate-800 rounded-xl p-5"
+          className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${severityAccentClass(f.severity)}`}
         >
           <header className="flex items-center gap-2 flex-wrap mb-1">
             <h3 className="font-semibold">{f.ruleName}</h3>
@@ -356,7 +388,7 @@ export function DependenciesSection({
       {findings.map((f, i) => (
         <article
           key={i}
-          className="bg-slate-900 border border-slate-800 rounded-xl p-5"
+          className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${severityAccentClass(f.severity)}`}
         >
           <header className="flex items-center gap-2 flex-wrap mb-1">
             <h3 className="font-semibold font-mono">

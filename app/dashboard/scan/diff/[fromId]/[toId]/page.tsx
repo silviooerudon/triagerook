@@ -95,7 +95,7 @@ function DiffView({ data }: { data: DiffResponse }) {
 
   return (
     <>
-      <h1 className="text-3xl font-bold mb-1">
+      <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-1">
         Diff for <span className="font-mono text-amber-400">{owner}/{repo}</span>
       </h1>
       <p className="text-slate-400 text-sm mb-8">

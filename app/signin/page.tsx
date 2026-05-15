@@ -39,7 +39,7 @@ export default async function SignInPage({
             sign in
           </div>
 
-          <h1 className="text-3xl font-semibold tracking-tight mb-3">
+          <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-3">
             Continue with GitHub
           </h1>
           <p className="text-slate-400 text-sm mb-8 leading-relaxed">

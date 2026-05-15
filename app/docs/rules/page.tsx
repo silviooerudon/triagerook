@@ -70,7 +70,7 @@ export default function RulesIndexPage() {
             detection rules
           </div>
 
-          <h1 className="text-4xl font-bold tracking-tight mb-3">
+          <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-3">
             What RepoGuard checks for
           </h1>
           <p className="text-slate-400 text-base leading-relaxed mb-3 max-w-2xl">

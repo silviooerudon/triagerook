@@ -1,28 +1,11 @@
-import Link from "next/link";
+import { PublicNav } from "@/app/components/public-nav";
 
 export default function SecurityPage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
-      {/* NAV */}
-      <nav className="border-b border-slate-800/60 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <span className="font-mono text-amber-400 text-sm">[R/]</span>
-            <span className="font-mono text-sm tracking-tight text-slate-100 group-hover:text-amber-400 transition">
-              repoguard
-            </span>
-          </Link>
-          <Link
-            href="/"
-            className="text-xs font-mono text-slate-400 hover:text-amber-400 transition"
-          >
-            ← back to home
-          </Link>
-        </div>
-      </nav>
-
+    <>
+      <PublicNav />
       <article className="max-w-3xl mx-auto px-6 py-16">
-        <h1 className="text-4xl font-bold tracking-tight mb-2">Security & Privacy</h1>
+        <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-2">Security & Privacy</h1>
         <p className="text-slate-400 mb-12">
           What RepoGuard accesses, stores, and protects. Plain language, no legal jargon.
         </p>
@@ -153,7 +136,7 @@ export default function SecurityPage() {
           becomes outdated or inaccurate, please report it.
         </p>
       </article>
-    </main>
+    </>
   );
 }
 

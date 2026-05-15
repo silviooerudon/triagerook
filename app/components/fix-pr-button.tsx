@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import type { PrioritizedFinding } from "@/lib/risk"
 
 type Patch = { path: string; content: string }
@@ -81,6 +81,17 @@ export function FixPrButton({ owner, repo, finding }: Props) {
     setOpen(false)
   }
 
+  // Esc closes the modal — keyboard parity with the X button and the
+  // overlay-click handler.
+  useEffect(() => {
+    if (!open) return
+    function handler(e: KeyboardEvent) {
+      if (e.key === "Escape") closeModal()
+    }
+    document.addEventListener("keydown", handler)
+    return () => document.removeEventListener("keydown", handler)
+  }, [open])
+
   async function confirmAndCreate() {
     setLoading(true)
     setError(null)
@@ -146,26 +157,40 @@ function FixModal({
 }) {
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="fix-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
-        className="bg-slate-900 border border-slate-800 rounded-xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col"
+        className="bg-slate-900 border border-amber-400/10 rounded-xl shadow-2xl shadow-amber-400/[0.04] max-w-3xl w-full max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="flex items-start justify-between px-6 py-4 border-b border-slate-800">
-          <div>
-            <h2 className="font-semibold text-white">
-              {createdPr ? "Pull request opened" : "Preview fix"}
-            </h2>
-            {preview && !createdPr && (
-              <p className="text-sm text-slate-400 mt-1">{preview.summary}</p>
-            )}
+        <header className="flex items-start justify-between gap-4 px-6 py-4 border-b border-slate-800/60">
+          <div className="flex items-start gap-3 min-w-0">
+            <span
+              aria-hidden
+              className="font-mono text-amber-400 text-sm mt-0.5 select-none shrink-0"
+            >
+              [R/]
+            </span>
+            <div className="min-w-0">
+              <h2
+                id="fix-modal-title"
+                className="font-display text-lg font-bold text-white tracking-tight"
+              >
+                {createdPr ? "Pull request opened" : "Preview fix"}
+              </h2>
+              {preview && !createdPr && (
+                <p className="text-sm text-slate-400 mt-1">{preview.summary}</p>
+              )}
+            </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-white px-2 leading-none text-xl"
+            className="text-slate-400 hover:text-amber-400 px-2 leading-none text-xl transition shrink-0"
             aria-label="Close"
           >
             ×
@@ -247,7 +272,7 @@ function FixModal({
           )}
         </div>
 
-        <footer className="px-6 py-4 border-t border-slate-800 flex items-center justify-end gap-3">
+        <footer className="px-6 py-4 border-t border-slate-800/60 flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={onClose}

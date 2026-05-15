@@ -5,8 +5,9 @@ import type {
   IaCFinding,
   SecretFinding,
   SensitiveFileFinding,
+  Severity,
 } from "@/lib/types"
-import { SeverityPill, BadgePill } from "./scan-findings"
+import { SeverityPill, BadgePill, severityAccentClass } from "./scan-findings"
 import { FixPrButton } from "./fix-pr-button"
 import { SuppressButton } from "./suppress-button"
 import { findingSupportsFix } from "@/lib/fix-engines"
@@ -54,16 +55,23 @@ function iacCategoryLabel(cat: IaCFinding["category"]): string {
   }
 }
 
+// Card shell with a left-edge accent stripe colored by severity. The base
+// rounded-xl + slate-900 stays identical; the accent is an additional
+// border-l plus a faint tinted background, so a list of findings reads
+// triage-first (critical jumps out, low blends in).
 function CardShell({
   dim,
+  severity,
   children,
 }: {
   dim?: boolean
+  severity?: Severity | "moderate"
   children: React.ReactNode
 }) {
+  const accent = severity ? severityAccentClass(severity) : ""
   return (
     <article
-      className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${
+      className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${accent} ${
         dim ? "opacity-60" : ""
       }`}
     >
@@ -76,7 +84,7 @@ function SecretFindingCard({ data }: { data: SecretFinding }) {
   const isFixture = data.likelyTestFixture ?? false
   const isHistory = data.source === "history"
   return (
-    <CardShell dim={isFixture}>
+    <CardShell dim={isFixture} severity={isFixture ? undefined : data.severity}>
       <header className="flex items-center gap-2 flex-wrap mb-1">
         <h3 className="font-semibold">{data.patternName}</h3>
         <SeverityPill severity={data.severity} />
@@ -113,7 +121,7 @@ function SecretFindingCard({ data }: { data: SecretFinding }) {
 function CodeFindingCard({ data }: { data: CodeFinding }) {
   const isFixture = data.likelyTestFixture ?? false
   return (
-    <CardShell dim={isFixture}>
+    <CardShell dim={isFixture} severity={isFixture ? undefined : data.severity}>
       <header className="flex items-center gap-2 flex-wrap mb-1">
         <h3 className="font-semibold">{data.ruleName}</h3>
         <SeverityPill severity={data.severity} />
@@ -136,7 +144,7 @@ function CodeFindingCard({ data }: { data: CodeFinding }) {
 
 function IaCFindingCard({ data }: { data: IaCFinding }) {
   return (
-    <CardShell>
+    <CardShell severity={data.severity}>
       <header className="flex items-center gap-2 flex-wrap mb-1">
         <h3 className="font-semibold">{data.ruleName}</h3>
         <SeverityPill severity={data.severity} />
@@ -166,7 +174,7 @@ function IaCFindingCard({ data }: { data: IaCFinding }) {
 
 function SensitiveFileFindingCard({ data }: { data: SensitiveFileFinding }) {
   return (
-    <CardShell>
+    <CardShell severity={data.severity}>
       <header className="flex items-center gap-2 flex-wrap mb-1">
         <h3 className="font-semibold">{data.name}</h3>
         <SeverityPill severity={data.severity} />
@@ -185,7 +193,7 @@ function SensitiveFileFindingCard({ data }: { data: SensitiveFileFinding }) {
 
 function DependencyFindingCard({ data }: { data: DependencyFinding }) {
   return (
-    <CardShell>
+    <CardShell severity={data.severity}>
       <header className="flex items-center gap-2 flex-wrap mb-1">
         <h3 className="font-semibold font-mono">
           {data.package}@{data.version}

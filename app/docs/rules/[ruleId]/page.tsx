@@ -61,7 +61,7 @@ export default async function RulePage({ params }: PageProps) {
 
           <p className="font-mono text-xs text-amber-400 mb-3">{entry.id}</p>
 
-          <h1 className="text-3xl font-semibold tracking-tight mb-4 leading-tight">
+          <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-4 leading-tight">
             {entry.name}
           </h1>
 

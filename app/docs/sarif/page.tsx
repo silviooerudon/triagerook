@@ -22,7 +22,7 @@ export default function SarifDocsPage() {
           </Link>
 
           <p className="font-mono text-xs text-amber-400 mb-3">SARIF export</p>
-          <h1 className="text-3xl font-semibold tracking-tight mb-4 leading-tight">
+          <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-4 leading-tight">
             Send RepoGuard findings to GitHub Code Scanning
           </h1>
           <p className="text-slate-300 leading-relaxed mb-10">
