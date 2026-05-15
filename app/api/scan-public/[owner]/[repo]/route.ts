@@ -6,6 +6,8 @@ import {
   PUBLIC_SCAN_POLICY,
   PUBLIC_SCAN_PER_REPO_POLICY,
 } from "@/lib/rate-limit"
+import { scanToSarif, REPOGUARD_INFO_URI } from "@/lib/sarif"
+import { resolveCatalogEntry, ruleIdToSlug } from "@/lib/rule-catalog"
 import { NextResponse } from "next/server"
 
 // Best-effort caller IP for rate limiting. Vercel populates
@@ -110,6 +112,14 @@ export async function POST(
     // no body - scanRepo auto-detects
   }
 
+  // ?format=sarif switches the response from the rich UI-shaped JSON
+  // to a SARIF 2.1.0 document with `application/sarif+json` content
+  // type. This is what lets the bundled GitHub Actions workflow pipe
+  // the result straight into `github/codeql-action/upload-sarif`
+  // without any client-side conversion step.
+  const url = new URL(request.url)
+  const wantsSarif = url.searchParams.get("format") === "sarif"
+
   try {
     const {
       fullResult,
@@ -120,6 +130,33 @@ export async function POST(
       supplyChainResult,
       degraded,
     } = await runFullScan(null, owner, repo, explicitBranch, {}, pathPrefix)
+
+    if (wantsSarif) {
+      const sarif = scanToSarif({
+        owner,
+        repo,
+        scannedAt: fullResult.scannedAt,
+        riskScore: assessment.score,
+        // Use the suppressionResult.kept list so SARIF reflects the
+        // same set of findings the UI shows — `.repoguardignore`
+        // suppressions are honored here too.
+        findings: suppressionResult.kept,
+        getHelpUri: (sarifRuleId) => {
+          const entry = resolveCatalogEntry(sarifRuleId)
+          if (!entry) return undefined
+          return `${REPOGUARD_INFO_URI}/docs/rules/${ruleIdToSlug(entry.id)}`
+        },
+      })
+      const filename = `repoguard-${owner}-${repo}.sarif.json`
+      return new NextResponse(JSON.stringify(sarif, null, 2), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/sarif+json",
+          "Content-Disposition": `attachment; filename="${filename}"`,
+          "Cache-Control": "no-store",
+        },
+      })
+    }
 
     return NextResponse.json({
       ...fullResult,
