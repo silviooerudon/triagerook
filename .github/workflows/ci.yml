@@ -22,9 +22,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      # Pin first-party actions to the full commit SHA. The IaC detector
+      # in lib/iac.ts skips actions/, github/, docker/ orgs as "lower
+      # risk" so the self-scan won't flag this, but pinning by SHA is
+      # still the practice we recommend to users — eat our own dogfood.
+      # Comment carries the human-readable tag so renovate/dependabot
+      # can bump both at once.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
           cache: npm
@@ -45,7 +51,7 @@ jobs:
           # unset because the client is created at module-init. Real values
           # live in Vercel and are only used at request time.
           AUTH_SECRET: ci-placeholder-do-not-use
-          AUTH_GITHUB_ID: ci-placeholder
-          AUTH_GITHUB_SECRET: ci-placeholder
+          AUTH_GITHUB_APP_CLIENT_ID: ci-placeholder
+          AUTH_GITHUB_APP_CLIENT_SECRET: ci-placeholder
           SUPABASE_URL: https://ci.placeholder.supabase.co
           SUPABASE_SECRET_KEY: ci-placeholder

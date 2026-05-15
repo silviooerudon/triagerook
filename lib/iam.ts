@@ -74,7 +74,7 @@ async function fetchRepoTreeIam(
   branch: string,
   token: string | null,
 ): Promise<GitHubTreeResponse> {
-  const url = `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`
+  const url = `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`
   const res = await fetch(url, {
     headers: buildGitHubHeaders(token, "application/vnd.github+json"),
     cache: "no-store",

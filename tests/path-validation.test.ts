@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { isSafeOwnerRepo, isSafeRepoFilePath } from "@/lib/path-validation"
+import { isSafeGitRef, isSafeOwnerRepo, isSafeRepoFilePath } from "@/lib/path-validation"
 
 describe("isSafeRepoFilePath", () => {
   it("accepts a normal nested path", () => {
@@ -106,5 +106,55 @@ describe("isSafeOwnerRepo", () => {
     expect(isSafeOwnerRepo("a b")).toBe(false)
     expect(isSafeOwnerRepo("a\nb")).toBe(false)
     expect(isSafeOwnerRepo("a%2fb")).toBe(false)
+  })
+})
+
+describe("isSafeGitRef", () => {
+  it("accepts typical branch names", () => {
+    expect(isSafeGitRef("main")).toBe(true)
+    expect(isSafeGitRef("master")).toBe(true)
+    expect(isSafeGitRef("release/2026.05")).toBe(true)
+    expect(isSafeGitRef("feature/scan-private")).toBe(true)
+    expect(isSafeGitRef("v1.2.3")).toBe(true)
+  })
+
+  it("accepts commit SHAs and short SHAs", () => {
+    expect(isSafeGitRef("34e114876b0b11c390a56381ad16ebd13914f8d5")).toBe(true)
+    expect(isSafeGitRef("abc1234")).toBe(true)
+  })
+
+  it("rejects empty and non-string inputs", () => {
+    expect(isSafeGitRef("")).toBe(false)
+    expect(isSafeGitRef(null)).toBe(false)
+    expect(isSafeGitRef(undefined)).toBe(false)
+    expect(isSafeGitRef(123)).toBe(false)
+  })
+
+  it("rejects URL-reshaping characters", () => {
+    // These are the actual exploit shapes — any would let a malicious
+    // caller redirect the GitHub tree fetch.
+    expect(isSafeGitRef("main?owner=evil")).toBe(false)
+    expect(isSafeGitRef("main#frag")).toBe(false)
+    expect(isSafeGitRef("main with space")).toBe(false)
+    expect(isSafeGitRef("../../etc/passwd")).toBe(false)
+    expect(isSafeGitRef("..")).toBe(false)
+    expect(isSafeGitRef("main..evil")).toBe(false)
+    expect(isSafeGitRef("main%2fevil")).toBe(false)
+  })
+
+  it("rejects leading or trailing slash, leading dash, double slash", () => {
+    expect(isSafeGitRef("/main")).toBe(false)
+    expect(isSafeGitRef("main/")).toBe(false)
+    expect(isSafeGitRef("-main")).toBe(false)
+    expect(isSafeGitRef("a//b")).toBe(false)
+  })
+
+  it("rejects '@' as a whole component (git HEAD shorthand)", () => {
+    expect(isSafeGitRef("@")).toBe(false)
+    expect(isSafeGitRef("refs/@")).toBe(false)
+  })
+
+  it("rejects refs over 255 chars (sanity ceiling)", () => {
+    expect(isSafeGitRef("a".repeat(256))).toBe(false)
   })
 })

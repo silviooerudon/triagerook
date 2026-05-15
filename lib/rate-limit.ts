@@ -12,10 +12,14 @@
 //   - Storage failure: defaults to fail-open (allow the request,
 //     log a warning) for backwards compatibility. Callers protecting
 //     abuse-sensitive endpoints should pass `failClosed: true` so a
-//     Supabase outage cannot be used to bypass throttling. /api/scan-public
-//     uses fail-closed because the scan itself depends on Supabase
-//     anyway — if storage is down, the user-visible 503 from rate-limit
-//     is no worse than a downstream failure.
+//     Supabase outage cannot be used to bypass throttling. failClosed
+//     applies to BOTH the get and the upsert paths — a successful read
+//     followed by a failed write would otherwise leave the counter
+//     stale and let an abuser hammer the endpoint until storage
+//     recovers. /api/scan-public uses fail-closed because the scan
+//     itself depends on Supabase anyway — if storage is down, the
+//     user-visible 503 from rate-limit is no worse than a downstream
+//     failure.
 //   - Race window: two simultaneous requests can both read N-1 and
 //     both decide they're allowed at N. Acceptable for the 10/hr
 //     limit; if abuse warrants it, the get+upsert becomes a single
@@ -99,10 +103,21 @@ export async function checkAndIncrement(
   try {
     await storage.upsert(key, next)
   } catch (err) {
-    console.warn(
-      "[rate-limit] storage.upsert failed; allowing this request:",
-      err instanceof Error ? err.message : String(err),
-    )
+    const msg = err instanceof Error ? err.message : String(err)
+    if (options.failClosed) {
+      // Symmetric with the storage.get fail-closed branch above. If we
+      // can't persist the counter, a follow-up request inside the same
+      // window would read the old value and re-allow — that's exactly
+      // the "rotate during a Supabase outage" bypass the failClosed
+      // option exists to prevent.
+      console.warn("[rate-limit] storage.upsert failed; failing CLOSED:", msg)
+      return {
+        allowed: false,
+        remaining: 0,
+        retryAfterSeconds: Math.ceil(policy.windowMs / 1000),
+      }
+    }
+    console.warn("[rate-limit] storage.upsert failed; allowing this request:", msg)
   }
 
   return {
