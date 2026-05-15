@@ -72,7 +72,7 @@ export default function PublicScanInput() {
         <p className="text-red-400 text-xs font-mono mt-2">{"// "}{error}</p>
       )}
       <p className="text-xs font-mono text-slate-500 mt-3">
-        {"// no login required · 60 scans/hour shared limit · public repos only"}
+        {"// no login required · 10 scans/h per IP · 5 scans/h per repo · public repos only"}
       </p>
     </div>
   )

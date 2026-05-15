@@ -46,3 +46,31 @@ export function isSafeRepoFilePath(value: unknown): value is string {
   }
   return true
 }
+
+// Validates that a string is safe to concatenate into a GitHub git tree
+// API URL as a ref (branch, tag, or commit SHA). The scan pipeline
+// drops the ref straight into `/repos/{owner}/{repo}/git/trees/{ref}`,
+// so any character that GitHub treats as a path separator or query
+// terminator can reshape the URL.
+//
+// Mirrors the subset of `git check-ref-format` that GitHub actually
+// accepts on its tree endpoint, plus a length cap:
+//   - non-empty string, ≤ 255 chars
+//   - allowed chars: [A-Za-z0-9._/-]
+//   - no leading/trailing slash, no '..', no '//'
+//   - no leading '-'
+//   - no path component that equals '@' (git reserves '@' as HEAD)
+//
+// Note: callers should still URL-encode the ref before concatenation.
+// This is a structural check, not a substitute for escaping.
+export function isSafeGitRef(value: unknown): value is string {
+  if (typeof value !== "string") return false
+  if (value.length === 0 || value.length > 255) return false
+  if (!/^[A-Za-z0-9._/-]+$/.test(value)) return false
+  if (value.startsWith("/") || value.endsWith("/")) return false
+  if (value.startsWith("-")) return false
+  if (value.includes("//")) return false
+  if (value.includes("..")) return false
+  if (value === "@" || value.split("/").some((seg) => seg === "@")) return false
+  return true
+}

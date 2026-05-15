@@ -112,4 +112,42 @@ describe("checkAndIncrement", () => {
     // actually back off rather than retrying in seconds.
     expect(r.retryAfterSeconds).toBe(Math.ceil(POLICY.windowMs / 1000))
   })
+
+  it("fails closed when upsert throws and failClosed is set", async () => {
+    // Previously: a successful read followed by a failed write would
+    // log + allow, so a Supabase outage between get and upsert let
+    // requests through without ever incrementing the counter. With
+    // failClosed the upsert path must reject the request too.
+    const storage: RateLimitStorage = {
+      async get() {
+        return null
+      },
+      async upsert() {
+        throw new Error("DB down")
+      },
+    }
+    const r = await checkAndIncrement("ip-1", POLICY, {
+      storage,
+      now: new Date(),
+      failClosed: true,
+    })
+    expect(r.allowed).toBe(false)
+    expect(r.retryAfterSeconds).toBe(Math.ceil(POLICY.windowMs / 1000))
+  })
+
+  it("fails open when upsert throws and failClosed is unset (legacy)", async () => {
+    const storage: RateLimitStorage = {
+      async get() {
+        return null
+      },
+      async upsert() {
+        throw new Error("DB down")
+      },
+    }
+    const r = await checkAndIncrement("ip-1", POLICY, {
+      storage,
+      now: new Date(),
+    })
+    expect(r.allowed).toBe(true)
+  })
 })

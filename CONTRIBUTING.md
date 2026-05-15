@@ -18,13 +18,18 @@ The app will be available at http://localhost:3000.
 
 You will need a `.env.local` file with:
 
-- `AUTH_SECRET` - random 32+ byte string
-- `AUTH_GITHUB_ID` - GitHub OAuth App client ID
-- `AUTH_GITHUB_SECRET` - GitHub OAuth App client secret
+- `AUTH_SECRET` - random 32+ byte string (`npx auth secret`)
+- `AUTH_GITHUB_APP_CLIENT_ID` - RepoGuard Security GitHub App OAuth client ID
+- `AUTH_GITHUB_APP_CLIENT_SECRET` - matching client secret
 - `SUPABASE_URL` - your Supabase project URL
-- `SUPABASE_SECRET_KEY` - Supabase service role key
+- `SUPABASE_SECRET_KEY` - Supabase service-role key (server-side only)
 
-For local development, create a GitHub OAuth App with callback URL `http://localhost:3000/api/auth/callback/github`.
+Optional, only needed if you want to exercise the auto-fix PR flow locally:
+
+- `AUTH_GITHUB_APP_ID` - GitHub App numeric ID
+- `AUTH_GITHUB_APP_PRIVATE_KEY` - PEM private key (escape newlines as `\n` in `.env`)
+
+For local development, register a GitHub App (not an OAuth App) with the callback URL `http://localhost:3000/api/auth/callback/github`.
 
 ## Testing
 

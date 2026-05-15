@@ -95,9 +95,9 @@ False positives happen. From the findings view you can suppress a single finding
 
 ## Privacy
 
-We **never** store:
-- Your source code
-- Your GitHub access token (only used at scan time, never persisted)
+We **never** store in our database:
+- Your source code (we keep only file paths and masked previews — never full file contents)
+- Your GitHub access token (it lives in the encrypted Auth.js session cookie for server-side scan calls, and is never written to Supabase or exposed via `/api/auth/session`)
 - Full secret values (only the type, file path, line number, and a masked preview)
 
 We **do** store: scan metadata (owner/repo, timestamp, counts) and findings (file paths + line numbers + pattern IDs + masked previews) so you can review history.
@@ -126,11 +126,15 @@ npm install
 Create `.env.local`:
 
 ```bash
-AUTH_SECRET=             # generate with: npx auth secret
-AUTH_GITHUB_ID=          # from a GitHub OAuth App pointing to localhost:3000
-AUTH_GITHUB_SECRET=
+AUTH_SECRET=                       # generate with: npx auth secret
+AUTH_GITHUB_APP_CLIENT_ID=         # from the RepoGuard Security GitHub App (OAuth user flow)
+AUTH_GITHUB_APP_CLIENT_SECRET=
 SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_SECRET_KEY=               # Supabase service-role key (server-side only)
+
+# Optional — needed only if you want to test the auto-fix PR flow locally:
+# AUTH_GITHUB_APP_ID=
+# AUTH_GITHUB_APP_PRIVATE_KEY=     # PEM, escape newlines as \n in .env
 ```
 
 Create the `scans` table in Supabase (schema in `docs/`), then:

@@ -1,7 +1,12 @@
 import { auth, getAccessToken } from "@/auth"
 import { getUserId } from "@/lib/auth-utils"
-import { isSafeOwnerRepo, isSafeRepoFilePath } from "@/lib/path-validation"
-import { GitHubRateLimitError, GitHubRepoNotFoundError } from "@/lib/scan"
+import { isSafeGitRef, isSafeOwnerRepo, isSafeRepoFilePath } from "@/lib/path-validation"
+import {
+  assertPublicRepo,
+  GitHubRateLimitError,
+  GitHubRepoNotFoundError,
+  PrivateRepoRefusedError,
+} from "@/lib/scan"
 import { supabase } from "@/lib/supabase"
 import { runFullScan } from "@/lib/scan-pipeline"
 import { NextResponse } from "next/server"
@@ -41,6 +46,17 @@ export async function POST(
   try {
     const body = await request.json()
     if (typeof body?.defaultBranch === "string" && body.defaultBranch.length > 0) {
+      // Validate ref shape before letting it reach GitHub URL paths.
+      // Without this, anything that survives the JSON parse would be
+      // concatenated into /repos/{owner}/{repo}/git/trees/{ref} — a
+      // malicious caller could reshape the URL or hit a different
+      // endpoint via path traversal in the ref segment.
+      if (!isSafeGitRef(body.defaultBranch)) {
+        return NextResponse.json(
+          { error: "Invalid defaultBranch format" },
+          { status: 400 },
+        )
+      }
       explicitBranch = body.defaultBranch
     }
     if (typeof body?.pathPrefix === "string" && body.pathPrefix.length > 0) {
@@ -57,6 +73,17 @@ export async function POST(
   }
 
   try {
+    // /security promises "we only scan public repositories" — enforce
+    // it at the boundary before any GitHub tree/blob fetch runs.
+    // Doing this here (instead of inside scanRepo) also gives us the
+    // resolved default branch in one round-trip, which scanRepo would
+    // otherwise re-fetch when no explicit branch is supplied.
+    const { defaultBranch: resolvedBranch } = await assertPublicRepo(
+      accessToken,
+      owner,
+      repo,
+    )
+
     const {
       fullResult,
       assessment,
@@ -71,7 +98,7 @@ export async function POST(
       accessToken,
       owner,
       repo,
-      explicitBranch,
+      explicitBranch ?? resolvedBranch,
       { userIdForDbSuppressions: userId },
       pathPrefix,
     )
@@ -143,7 +170,22 @@ export async function POST(
         { status: 404 },
       )
     }
+    if (error instanceof PrivateRepoRefusedError) {
+      return NextResponse.json(
+        {
+          error: `Repository ${error.owner}/${error.repo} is private. RepoGuard only scans public repositories.`,
+        },
+        { status: 403 },
+      )
+    }
+    // Internal error: log the real message server-side, return a
+    // generic one to the client. Echoing raw error text leaked
+    // Supabase / GitHub internals in past incident reports.
     const message = error instanceof Error ? error.message : "Unknown error"
-    return NextResponse.json({ error: `Scan failed: ${message}` }, { status: 500 })
+    console.error("[scan] Unhandled scan failure:", message)
+    return NextResponse.json(
+      { error: "Scan failed. Try again in a moment." },
+      { status: 500 },
+    )
   }
 }

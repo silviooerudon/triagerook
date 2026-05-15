@@ -1,4 +1,4 @@
-import { isSafeOwnerRepo, isSafeRepoFilePath } from "@/lib/path-validation"
+import { isSafeGitRef, isSafeOwnerRepo, isSafeRepoFilePath } from "@/lib/path-validation"
 import { GitHubRateLimitError, GitHubRepoNotFoundError } from "@/lib/scan"
 import { runFullScan } from "@/lib/scan-pipeline"
 import {
@@ -89,6 +89,12 @@ export async function POST(
   try {
     const body = await request.json()
     if (typeof body?.defaultBranch === "string" && body.defaultBranch.length > 0) {
+      if (!isSafeGitRef(body.defaultBranch)) {
+        return NextResponse.json(
+          { error: "Invalid defaultBranch format" },
+          { status: 400 },
+        )
+      }
       explicitBranch = body.defaultBranch
     }
     if (typeof body?.pathPrefix === "string" && body.pathPrefix.length > 0) {
@@ -146,7 +152,14 @@ export async function POST(
         { status: 404 },
       )
     }
+    // Log the real message server-side; return a generic message to
+    // the caller so internal Supabase/GitHub error text isn't echoed
+    // to an anonymous client.
     const message = error instanceof Error ? error.message : "Unknown error"
-    return NextResponse.json({ error: `Scan failed: ${message}` }, { status: 500 })
+    console.error("[scan-public] Unhandled scan failure:", message)
+    return NextResponse.json(
+      { error: "Scan failed. Try again in a moment." },
+      { status: 500 },
+    )
   }
 }

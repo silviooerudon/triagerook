@@ -43,6 +43,21 @@ export class GitHubRepoNotFoundError extends Error {
   }
 }
 
+// Raised when the authenticated route is asked to scan a repo the
+// user has access to but that is marked private on GitHub. The
+// /security page promises "we do not read private repositories";
+// enforcing it at the API boundary is what makes that promise true.
+export class PrivateRepoRefusedError extends Error {
+  readonly owner: string
+  readonly repo: string
+  constructor(owner: string, repo: string) {
+    super(`Repository ${owner}/${repo} is private. RepoGuard only scans public repositories.`)
+    this.name = "PrivateRepoRefusedError"
+    this.owner = owner
+    this.repo = repo
+  }
+}
+
 /**
  * Returns retry-after seconds if the response indicates GitHub rate limiting,
  * otherwise null. Handles primary rate limit (403 + x-ratelimit-remaining: 0)
@@ -310,7 +325,7 @@ async function fetchRepoMetadata(
   accessToken: string | null,
   owner: string,
   repo: string
-): Promise<{ default_branch: string }> {
+): Promise<{ default_branch: string; private: boolean }> {
   const url = `https://api.github.com/repos/${owner}/${repo}`
   const response = await fetch(url, {
     headers: buildGitHubHeaders(accessToken),
@@ -329,13 +344,35 @@ async function fetchRepoMetadata(
   return response.json()
 }
 
+// Public visibility check used at the API boundary to enforce the
+// "public repos only" promise on the /security page. Throws
+// GitHubRepoNotFoundError / GitHubRateLimitError on the usual GitHub
+// failure modes; throws PrivateRepoRefusedError if the repo exists and
+// the caller can see it but it's marked private. Returns the default
+// branch so callers can avoid a second metadata round-trip inside
+// scanRepo().
+export async function assertPublicRepo(
+  accessToken: string | null,
+  owner: string,
+  repo: string,
+): Promise<{ defaultBranch: string }> {
+  const meta = await fetchRepoMetadata(accessToken, owner, repo)
+  if (meta.private) {
+    throw new PrivateRepoRefusedError(owner, repo)
+  }
+  return { defaultBranch: meta.default_branch }
+}
+
 async function fetchRepoTree(
   accessToken: string | null,
   owner: string,
   repo: string,
   branch: string
 ): Promise<GitHubTreeResponse> {
-  const url = `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`
+  // encodeURIComponent on the ref is defense-in-depth — the API
+  // boundary already runs isSafeGitRef(), but a future caller that
+  // skips validation would otherwise rebuild a malformed URL here.
+  const url = `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`
 
   const response = await fetch(url, {
     headers: buildGitHubHeaders(accessToken),
