@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { CliLoader } from "@/app/components/cli-loader"
 
 type Suppression = {
   id: string
@@ -69,14 +70,10 @@ export default function SuppressionsPage() {
         </header>
 
         {status === "loading" && (
-          <div className="space-y-3">
-            {[0, 1].map((i) => (
-              <div
-                key={i}
-                className="bg-slate-900 border border-slate-800 rounded-xl p-5 h-[88px] animate-pulse"
-              />
-            ))}
-          </div>
+          <CliLoader
+            label="repoguard suppressions --list"
+            hint="loading your personal suppressions…"
+          />
         )}
 
         {status === "error" && errorMessage && (
@@ -86,10 +83,17 @@ export default function SuppressionsPage() {
         )}
 
         {status === "done" && rows.length === 0 && (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
-            <p className="text-slate-400">No suppressions yet.</p>
-            <p className="text-slate-500 text-sm mt-1">
-              Click &quot;Suppress&quot; on any finding to add one.
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8">
+            <p className="font-mono text-xs text-amber-400 mb-1">
+              {"// $ suppressions --list"}
+            </p>
+            <h2 className="font-display text-xl md:text-2xl font-bold mb-2 tracking-tight">
+              nothing suppressed.
+            </h2>
+            <p className="text-slate-400 text-sm leading-relaxed max-w-md">
+              False positives stay loud until you silence them. Hit{" "}
+              <span className="font-mono text-slate-200">Suppress</span> on any
+              finding to add one here — per-finding, per-rule, or by path glob.
             </p>
           </div>
         )}

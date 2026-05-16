@@ -28,6 +28,7 @@ import { ViewToggleButton } from "@/app/components/view-toggle"
 import { PostureCard } from "@/app/components/posture-card"
 import { IamCard } from "@/app/components/iam-card"
 import { SupplyChainCard } from "@/app/components/supply-chain-card"
+import { CliLoader } from "@/app/components/cli-loader"
 
 type ScanResultFull = ScanResult & {
   dependencies?: DependencyFinding[]
@@ -95,17 +96,10 @@ export default function ScanViewPage({ params }: PageProps) {
         </Link>
 
         {status === "loading" && (
-          <div className="space-y-3">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 h-[140px] animate-pulse" />
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[0, 1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="bg-slate-900 border border-slate-800 rounded-xl p-5 h-[80px] animate-pulse"
-                />
-              ))}
-            </div>
-          </div>
+          <CliLoader
+            label={`repoguard scans show --id ${id.slice(0, 8)}`}
+            hint="reading saved findings and posture from supabase…"
+          />
         )}
 
         {status === "error" && (

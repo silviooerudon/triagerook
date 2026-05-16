@@ -5,6 +5,7 @@ import Link from "next/link"
 import { AlertTriangleIcon, CheckIcon } from "@/app/components/icons"
 import type { ScanDiff } from "@/lib/scan-diff"
 import type { PrioritizedFinding } from "@/lib/risk"
+import { CliLoader } from "@/app/components/cli-loader"
 
 type DiffResponse = {
   owner: string
@@ -58,17 +59,10 @@ export default function ScanDiffPage({ params }: PageProps) {
         </Link>
 
         {status === "loading" && (
-          <div className="space-y-3">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 h-[140px] animate-pulse" />
-            <div className="grid sm:grid-cols-3 gap-3">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="bg-slate-900 border border-slate-800 rounded-xl p-5 h-[88px] animate-pulse"
-                />
-              ))}
-            </div>
-          </div>
+          <CliLoader
+            label={`repoguard scans diff ${fromId.slice(0, 8)}..${toId.slice(0, 8)}`}
+            hint="comparing two scans · counting new / resolved / carried-over findings…"
+          />
         )}
 
         {status === "error" && (
