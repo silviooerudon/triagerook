@@ -165,19 +165,31 @@ const supabaseStorage: RateLimitStorage = {
   },
 }
 
-// Pre-baked policy for /api/scan-public. 10 anonymous scans per hour
-// per source IP — generous enough that an evaluator clicking around
-// won't trip it, restrictive enough that automated abuse stops fast.
+// Pre-baked policy for /api/scan-public. Default 10 anonymous scans
+// per hour per source IP — generous for an evaluator clicking around,
+// restrictive enough to stop automated abuse fast. The limit can be
+// raised via PUBLIC_SCAN_LIMIT_PER_IP for short windows (e.g. the
+// hours surrounding a Show HN front-page event) without redeploying
+// code; setting the env var on Vercel and triggering a redeploy is
+// enough. Values <1 fall back to the safe default.
 export const PUBLIC_SCAN_POLICY: RateLimitPolicy = {
-  limit: 10,
+  limit: parsePositiveInt(process.env.PUBLIC_SCAN_LIMIT_PER_IP, 10),
   windowMs: 60 * 60 * 1000,
 }
 
 // Secondary throttle scoped to owner/repo, regardless of caller IP.
-// Stops "rotate the IP to keep scanning the same repo" abuse and
-// caps total GitHub API spend per target. Stricter than the per-IP
-// limit (legitimate users rescanning the same repo 5x/hour is rare).
+// Stops "rotate the IP to keep scanning the same repo" abuse and caps
+// total GitHub API spend per target. Default 5/hour — fine in steady
+// state but a hard ceiling for a Show HN spike where hundreds of
+// visitors try the same featured repo. Override with
+// PUBLIC_SCAN_LIMIT_PER_REPO when expecting a surge.
 export const PUBLIC_SCAN_PER_REPO_POLICY: RateLimitPolicy = {
-  limit: 5,
+  limit: parsePositiveInt(process.env.PUBLIC_SCAN_LIMIT_PER_REPO, 5),
   windowMs: 60 * 60 * 1000,
+}
+
+function parsePositiveInt(value: string | undefined, fallback: number): number {
+  if (!value) return fallback
+  const n = Number.parseInt(value, 10)
+  return Number.isFinite(n) && n > 0 ? n : fallback
 }

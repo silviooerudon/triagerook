@@ -8,6 +8,7 @@ import {
 } from "@/lib/rate-limit"
 import { scanToSarif, REPOGUARD_INFO_URI } from "@/lib/sarif"
 import { resolveCatalogEntry, ruleIdToSlug } from "@/lib/rule-catalog"
+import { getPublicScanFallbackToken } from "@/lib/public-scan-token"
 import { NextResponse } from "next/server"
 
 // Best-effort caller IP for rate limiting. Vercel populates
@@ -120,6 +121,14 @@ export async function POST(
   const url = new URL(request.url)
   const wantsSarif = url.searchParams.get("format") === "sarif"
 
+  const startedAt = Date.now()
+  // Fall back to the server-side PAT when present. Lifts the effective
+  // GitHub quota for anonymous scans from 60/h shared to 5000/h shared,
+  // which is the difference between "survives Show HN" and "stops
+  // responding to anonymous visitors at the first surge". If the env
+  // var is unset, scanToken stays null and behaviour is unchanged.
+  const scanToken = getPublicScanFallbackToken()
+
   try {
     const {
       fullResult,
@@ -129,7 +138,20 @@ export async function POST(
       iamResult,
       supplyChainResult,
       degraded,
-    } = await runFullScan(null, owner, repo, explicitBranch, {}, pathPrefix)
+    } = await runFullScan(scanToken, owner, repo, explicitBranch, {}, pathPrefix)
+
+    logScanEvent({
+      ok: true,
+      owner,
+      repo,
+      pathPrefix,
+      format: wantsSarif ? "sarif" : "json",
+      withFallbackToken: scanToken !== null,
+      durationMs: Date.now() - startedAt,
+      findings: assessment.prioritized.length,
+      riskScore: assessment.score,
+      degradedCount: degraded?.length ?? 0,
+    })
 
     if (wantsSarif) {
       const sarif = scanToSarif({
@@ -171,7 +193,18 @@ export async function POST(
       degraded,
     })
   } catch (error) {
+    const durationMs = Date.now() - startedAt
     if (error instanceof GitHubRateLimitError) {
+      logScanEvent({
+        ok: false,
+        owner,
+        repo,
+        pathPrefix,
+        format: wantsSarif ? "sarif" : "json",
+        withFallbackToken: scanToken !== null,
+        durationMs,
+        reason: "github_rate_limit",
+      })
       return NextResponse.json(
         {
           error: "GitHub API rate limit exceeded for anonymous scans.",
@@ -184,6 +217,16 @@ export async function POST(
       )
     }
     if (error instanceof GitHubRepoNotFoundError) {
+      logScanEvent({
+        ok: false,
+        owner,
+        repo,
+        pathPrefix,
+        format: wantsSarif ? "sarif" : "json",
+        withFallbackToken: scanToken !== null,
+        durationMs,
+        reason: "repo_not_found",
+      })
       return NextResponse.json(
         { error: `Repository ${error.owner}/${error.repo} not found. It may be private or not exist.` },
         { status: 404 },
@@ -194,9 +237,63 @@ export async function POST(
     // to an anonymous client.
     const message = error instanceof Error ? error.message : "Unknown error"
     console.error("[scan-public] Unhandled scan failure:", message)
+    logScanEvent({
+      ok: false,
+      owner,
+      repo,
+      pathPrefix,
+      format: wantsSarif ? "sarif" : "json",
+      withFallbackToken: scanToken !== null,
+      durationMs,
+      reason: "internal",
+    })
     return NextResponse.json(
       { error: "Scan failed. Try again in a moment." },
       { status: 500 },
     )
+  }
+}
+
+// One JSON line per public-scan attempt, written to stdout so Vercel's
+// runtime logs capture it. The schema is tight on purpose: easy to
+// grep, easy to pipe through `jq` or paste into the manual queries in
+// docs/analytics-queries.md. Does NOT include the caller IP or any
+// other PII — owner/repo and outcome are enough for spike analysis
+// without storing personal data.
+type ScanEvent =
+  | {
+      ok: true
+      owner: string
+      repo: string
+      pathPrefix?: string
+      format: "json" | "sarif"
+      withFallbackToken: boolean
+      durationMs: number
+      findings: number
+      riskScore: number
+      degradedCount: number
+    }
+  | {
+      ok: false
+      owner: string
+      repo: string
+      pathPrefix?: string
+      format: "json" | "sarif"
+      withFallbackToken: boolean
+      durationMs: number
+      reason: "github_rate_limit" | "repo_not_found" | "internal"
+    }
+
+function logScanEvent(event: ScanEvent): void {
+  try {
+    console.log(
+      JSON.stringify({
+        event: "scan_public",
+        ts: new Date().toISOString(),
+        ...event,
+      }),
+    )
+  } catch {
+    // logging must never break the request flow
   }
 }
