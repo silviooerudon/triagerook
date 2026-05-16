@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import type { PrioritizedFinding } from "@/lib/risk"
+import { useModalFocus } from "./use-modal-focus"
 
 type Patch = { path: string; content: string }
 
@@ -155,6 +156,7 @@ function FixModal({
   onClose: () => void
   onConfirm: () => void
 }) {
+  const modalRef = useModalFocus(true)
   return (
     <div
       role="dialog"
@@ -164,6 +166,7 @@ function FixModal({
       onClick={onClose}
     >
       <div
+        ref={modalRef}
         className="bg-slate-900 border border-amber-400/10 rounded-xl shadow-2xl shadow-amber-400/[0.04] max-w-3xl w-full max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >

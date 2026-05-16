@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { AlertTriangleIcon, CheckIcon, InboxIcon } from "@/app/components/icons"
+import { CliLoader } from "@/app/components/cli-loader"
 
 type ScanSummary = {
   id: string
@@ -50,14 +51,10 @@ export default function HistoryPage() {
         </p>
 
         {status === "loading" && (
-          <div className="space-y-3">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="bg-slate-900 border border-slate-800 rounded-xl p-5 h-[92px] animate-pulse"
-              />
-            ))}
-          </div>
+          <CliLoader
+            label="repoguard history --tail 50"
+            hint="fetching your most-recent scans from supabase…"
+          />
         )}
 
         {status === "error" && (
@@ -71,16 +68,32 @@ export default function HistoryPage() {
         )}
 
         {status === "done" && scans.length === 0 && (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
-            <InboxIcon
-              size={40}
-              className="mx-auto mb-3 text-slate-500"
-              aria-hidden="true"
-            />
-            <h2 className="text-xl font-semibold mb-2">No scans yet</h2>
-            <p className="text-slate-400 text-sm">
-              Head back to your repositories and run your first scan.
-            </p>
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8">
+            <div className="flex items-start gap-4">
+              <InboxIcon
+                size={36}
+                className="text-slate-500 shrink-0 mt-1"
+                aria-hidden="true"
+              />
+              <div className="min-w-0">
+                <p className="font-mono text-xs text-amber-400 mb-1">
+                  {"// $ history --tail 1"}
+                </p>
+                <h2 className="font-display text-xl md:text-2xl font-bold mb-2 tracking-tight">
+                  no scans yet.
+                </h2>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Once you scan a repo, every run lands here with a one-click
+                  diff against the previous one. Pick one to start.
+                </p>
+                <Link
+                  href="/dashboard"
+                  className="mt-5 inline-flex items-center gap-1.5 text-xs font-mono text-slate-400 hover:text-amber-400 border-b border-dashed border-slate-700 hover:border-amber-400 transition"
+                >
+                  → pick a repo to scan
+                </Link>
+              </div>
+            </div>
           </div>
         )}
 

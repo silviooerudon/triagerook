@@ -457,20 +457,27 @@ export function PrioritizedList({
 
 export function AllClear() {
   return (
-    <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-8 text-center">
-      <CheckCircleIcon
-        size={40}
-        className="mx-auto mb-3 text-green-400"
-        aria-hidden="true"
-      />
-      <h2 className="text-xl font-semibold text-green-400 mb-2">
-        No issues found
-      </h2>
-      <p className="text-slate-400 text-sm max-w-md mx-auto">
-        We scanned for exposed secrets, sensitive files, vulnerable
-        dependencies, code-level issues and misconfigurations. Everything
-        looks clean.
-      </p>
+    <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-8">
+      <div className="flex items-start gap-4">
+        <CheckCircleIcon
+          size={40}
+          className="text-green-400 shrink-0"
+          aria-hidden="true"
+        />
+        <div className="min-w-0">
+          <p className="font-mono text-xs text-green-400/80 mb-1">
+            {"// scan complete · exit 0"}
+          </p>
+          <h2 className="font-display text-xl md:text-2xl font-bold text-green-300 mb-2 tracking-tight">
+            no findings.
+          </h2>
+          <p className="text-slate-300 text-sm leading-relaxed">
+            Nine detectors ran across secrets, sensitive files, vulnerable
+            dependencies, SAST, IaC and supply chain — none of them tripped.
+            Clean repo.
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

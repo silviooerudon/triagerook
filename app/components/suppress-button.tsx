@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import type { PrioritizedFinding } from "@/lib/risk"
 import { findRuleIdForFinding, getFindingPath } from "@/lib/suppressions"
+import { useModalFocus } from "./use-modal-focus"
 
 type Props = {
   owner: string
@@ -76,6 +77,10 @@ export function SuppressButton({ owner, repo, finding, onSuppressed }: Props) {
     return () => document.removeEventListener("keydown", handler)
   }, [open])
 
+  // Focus trap: Tab cycles within the modal while it's open and focus
+  // returns to the trigger button on close. role="dialog" already set.
+  const modalRef = useModalFocus(open)
+
   return (
     <>
       <button
@@ -95,6 +100,7 @@ export function SuppressButton({ owner, repo, finding, onSuppressed }: Props) {
           onClick={closeModal}
         >
           <div
+            ref={modalRef}
             className="bg-slate-900 border border-amber-400/10 rounded-xl shadow-2xl shadow-amber-400/[0.04] max-w-lg w-full"
             onClick={(e) => e.stopPropagation()}
           >
