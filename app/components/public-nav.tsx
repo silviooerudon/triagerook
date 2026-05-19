@@ -17,6 +17,18 @@ export function PublicNav() {
             rules
           </Link>
           <Link
+            href="/pricing"
+            className="hidden md:inline hover:text-slate-100 transition"
+          >
+            pricing
+          </Link>
+          <Link
+            href="/about"
+            className="hidden md:inline hover:text-slate-100 transition"
+          >
+            about
+          </Link>
+          <Link
             href="/security"
             className="hidden md:inline hover:text-slate-100 transition"
           >

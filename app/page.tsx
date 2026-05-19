@@ -166,6 +166,18 @@ export default async function Home() {
                 faq
               </a>
               <Link
+                href="/pricing"
+                className="hidden md:inline hover:text-slate-100 transition"
+              >
+                pricing
+              </Link>
+              <Link
+                href="/about"
+                className="hidden md:inline hover:text-slate-100 transition"
+              >
+                about
+              </Link>
+              <Link
                 href="/security"
                 className="hidden md:inline hover:text-slate-100 transition"
               >
@@ -442,6 +454,18 @@ export default async function Home() {
                 </p>
               </div>
               <div className="md:col-span-5 flex md:justify-end items-start gap-x-6 gap-y-2 flex-wrap text-slate-500">
+                <Link
+                  href="/about"
+                  className="hover:text-amber-400 transition"
+                >
+                  about
+                </Link>
+                <Link
+                  href="/pricing"
+                  className="hover:text-amber-400 transition"
+                >
+                  pricing
+                </Link>
                 <Link
                   href="/security"
                   className="hover:text-amber-400 transition"
