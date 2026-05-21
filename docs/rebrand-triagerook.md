@@ -29,3 +29,20 @@ Dominio triagerook.com adquirido, repo GitHub renomeado de silviooerudon/repogua
 - npm run lint passa
 - Grep "RepoGuard" no codigo deve retornar apenas casos intencionais (se algum)
 - Grep "repoguard" (lowercase) deve retornar apenas: .repoguardignore (arquivo backward compat), referencias historicas em CHANGELOG/docs se houver
+
+## Deferred to follow-up PRs
+
+These items are intentionally NOT in this PR. Each unblocks separately and has its own risk profile.
+
+### 1. URL swap (repoguard-chi.vercel.app -> triagerook.com)
+- Blocked by DNS for triagerook.com being verified live on Vercel.
+- Then update: metadataBase in app/layout.tsx, TRIAGEROOK_INFO_URI in lib/sarif.ts, curl examples in app/docs/sarif/page.tsx, README badges and links, SECURITY.md scope URL, public/workflows/triagerook.yml curl URL.
+- Also re-tighten tests/sarif.test.ts informationUri assertion (currently weakened to toContain(".vercel.app") - should pin to the exact host once stable).
+
+### 2. GitHub App rename (repoguard-security -> triagerook-security)
+- Blocked by manual rename at github.com/settings/apps.
+- Then update APP_INSTALL_URL in app/components/fix-pr-button.tsx (TODO comment marks the spot), remove the bridge wording in app/signin/page.tsx and app/security/page.tsx mentioning the legacy "RepoGuard Security" name, update the App-name reference in .env.example, and verify the auto-fix PR author display name matches the body text.
+
+### 3. .triagerookignore alias in the suppressions parser (optional)
+- Add fallback so the parser accepts either .repoguardignore (current) or .triagerookignore (new). Lets users migrate at their own pace.
+- Files to touch: lib/scan.ts (fetch helper), lib/suppressions.ts (parser entry point).
