@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og"
 import { supabase } from "@/lib/supabase"
 
 export const runtime = "nodejs"
-export const alt = "RepoGuard scan summary"
+export const alt = "TriageRook scan summary"
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
 
@@ -91,9 +91,9 @@ export default async function PublicScanOG({ params }: PageProps) {
               fontSize: 24,
             }}
           >
-            R
+            T
           </span>
-          REPOGUARD
+          TRIAGEROOK
         </div>
 
         <div

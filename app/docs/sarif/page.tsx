@@ -3,9 +3,9 @@ import type { Metadata } from "next"
 import { PublicNav } from "@/app/components/public-nav"
 
 export const metadata: Metadata = {
-  title: "SARIF export — RepoGuard",
+  title: "SARIF export — TriageRook",
   description:
-    "How to download SARIF 2.1.0 from RepoGuard and upload to GitHub Code Scanning so findings appear in your repo's Security tab.",
+    "How to download SARIF 2.1.0 from TriageRook and upload to GitHub Code Scanning so findings appear in your repo's Security tab.",
 }
 
 export default function SarifDocsPage() {
@@ -23,10 +23,10 @@ export default function SarifDocsPage() {
 
           <p className="font-mono text-xs text-amber-400 mb-3">SARIF export</p>
           <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-4 leading-tight">
-            Send RepoGuard findings to GitHub Code Scanning
+            Send TriageRook findings to GitHub Code Scanning
           </h1>
           <p className="text-slate-300 leading-relaxed mb-10">
-            Every RepoGuard scan can be exported as{" "}
+            Every TriageRook scan can be exported as{" "}
             <a
               href="https://docs.oasis-open.org/sarif/sarif/v2.1.0/"
               target="_blank"
@@ -39,7 +39,7 @@ export default function SarifDocsPage() {
             consumers speak. Upload it once and your findings show up in the
             repo&apos;s <span className="font-mono">Security → Code scanning</span>{" "}
             tab alongside Dependabot and CodeQL — with each result linked back
-            to its rule page on RepoGuard.
+            to its rule page on TriageRook.
           </p>
 
           <section className="mb-10">
@@ -62,7 +62,7 @@ export default function SarifDocsPage() {
             <pre className="mt-3 bg-slate-900/80 border border-slate-800 rounded-lg p-4 text-xs font-mono text-slate-300 overflow-x-auto">
 {`curl -L "https://repoguard-chi.vercel.app/api/scans/<SCAN_ID>/sarif" \\
   -H "Cookie: authjs.session-token=<your-session-cookie>" \\
-  -o repoguard.sarif.json`}
+  -o triagerook.sarif.json`}
             </pre>
           </section>
 
@@ -79,14 +79,14 @@ export default function SarifDocsPage() {
               :
             </p>
             <pre className="bg-slate-900/80 border border-slate-800 rounded-lg p-4 text-xs font-mono text-slate-300 overflow-x-auto">
-{`# .github/workflows/repoguard-sarif.yml
-name: RepoGuard → Code Scanning
+{`# .github/workflows/triagerook-sarif.yml
+name: TriageRook → Code Scanning
 
 on:
   workflow_dispatch:
     inputs:
       scan_id:
-        description: "RepoGuard scan id"
+        description: "TriageRook scan id"
         required: true
 
 permissions:
@@ -97,22 +97,22 @@ jobs:
   upload:
     runs-on: ubuntu-latest
     steps:
-      - name: Download SARIF from RepoGuard
+      - name: Download SARIF from TriageRook
         run: |
           curl -fL \\
-            -H "Cookie: authjs.session-token=\${{ secrets.REPOGUARD_SESSION }}" \\
+            -H "Cookie: authjs.session-token=\${{ secrets.TRIAGEROOK_SESSION }}" \\
             "https://repoguard-chi.vercel.app/api/scans/\${{ inputs.scan_id }}/sarif" \\
-            -o repoguard.sarif.json
+            -o triagerook.sarif.json
 
       - name: Upload to Code Scanning
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: repoguard.sarif.json
-          category: repoguard`}
+          sarif_file: triagerook.sarif.json
+          category: triagerook`}
             </pre>
             <p className="text-slate-400 leading-relaxed text-sm mt-4">
               The session cookie comes from your authenticated browser session
-              with RepoGuard. Long-term we&apos;ll ship a proper API token; for
+              with TriageRook. Long-term we&apos;ll ship a proper API token; for
               now this manual flow is enough to satisfy any team policy that
               requires findings to live in the GitHub Security tab.
             </p>
@@ -124,7 +124,7 @@ jobs:
             </h2>
             <ul className="text-slate-300 leading-relaxed text-sm space-y-2 list-disc list-inside">
               <li>
-                Each result deep-links back to its rule page on RepoGuard via{" "}
+                Each result deep-links back to its rule page on TriageRook via{" "}
                 <code className="font-mono text-amber-300">helpUri</code>, so a
                 triager can read the &quot;what / why / remediation&quot;
                 without leaving the alert.
@@ -154,12 +154,12 @@ jobs:
               all. The anonymous scan endpoint accepts{" "}
               <code className="font-mono text-amber-300">?format=sarif</code>{" "}
               and returns SARIF directly — drop this workflow at{" "}
-              <code className="font-mono">.github/workflows/repoguard.yml</code>{" "}
+              <code className="font-mono">.github/workflows/triagerook.yml</code>{" "}
               and every push runs a fresh scan that lands in Code Scanning:
             </p>
             <pre className="bg-slate-900/80 border border-slate-800 rounded-lg p-4 text-xs font-mono text-slate-300 overflow-x-auto">
-{`# .github/workflows/repoguard.yml
-name: RepoGuard → Code Scanning
+{`# .github/workflows/triagerook.yml
+name: TriageRook → Code Scanning
 
 on:
   push:
@@ -175,26 +175,26 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch SARIF from RepoGuard
+      - name: Fetch SARIF from TriageRook
         env:
           OWNER: \${{ github.repository_owner }}
           REPO: \${{ github.event.repository.name }}
         run: |
           curl -fSL -X POST \\
             "https://repoguard-chi.vercel.app/api/scan-public/\${OWNER}/\${REPO}?format=sarif" \\
-            -o repoguard.sarif.json
+            -o triagerook.sarif.json
       - uses: github/codeql-action/upload-sarif@f411752efdf656cb71aa17b755b22c890960da1d # v3.35.5
         with:
-          sarif_file: repoguard.sarif.json
-          category: repoguard`}
+          sarif_file: triagerook.sarif.json
+          category: triagerook`}
             </pre>
             <p className="text-slate-400 leading-relaxed text-sm mt-4">
               Or download the ready-to-use file from{" "}
               <a
-                href="/workflows/repoguard.yml"
+                href="/workflows/triagerook.yml"
                 className="text-amber-400 hover:underline font-mono"
               >
-                /workflows/repoguard.yml
+                /workflows/triagerook.yml
               </a>
               . Anonymous scans are rate-limited to 5 per repo per hour and
               10 per source IP per hour — generous for normal commit cadence,
@@ -225,10 +225,10 @@ jobs:
               SARIF schema version:{" "}
               <code className="font-mono text-amber-300">2.1.0</code>. Tool
               driver name:{" "}
-              <code className="font-mono text-amber-300">RepoGuard</code>.
+              <code className="font-mono text-amber-300">TriageRook</code>.
               Found a mapping bug or want a richer SARIF field populated?{" "}
               <a
-                href="https://github.com/silviooerudon/repoguard/issues/new?title=SARIF%20feedback"
+                href="https://github.com/silviooerudon/triagerook/issues/new?title=SARIF%20feedback"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-amber-400 hover:underline"

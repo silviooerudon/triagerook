@@ -115,7 +115,7 @@ export async function prepareFixContext(
       return {
         ok: false,
         status: 403,
-        error: "The RepoGuard Security GitHub App is not installed on this repository",
+        error: "The TriageRook Security GitHub App is not installed on this repository",
         code: "app_not_installed",
       }
     }
@@ -158,7 +158,7 @@ export async function prepareFixContext(
       return {
         ok: false,
         status: 403,
-        error: "The RepoGuard Security GitHub App is not installed on this repository",
+        error: "The TriageRook Security GitHub App is not installed on this repository",
         code: "app_not_installed",
       }
     }

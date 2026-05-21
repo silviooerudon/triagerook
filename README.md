@@ -1,4 +1,4 @@
-# RepoGuard
+# TriageRook
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg) ![Status: Beta](https://img.shields.io/badge/status-beta-orange.svg) ![Next.js 16](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs) ![TypeScript 5](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript) ![Live](https://img.shields.io/website?url=https%3A%2F%2Frepoguard-chi.vercel.app&label=live%20demo)
 
@@ -12,11 +12,11 @@ Scans your GitHub repos across nine detector families, run in parallel where ind
 
 I've spent 10+ years in Identity & Access Management — the field that exists because credentials leak and people get owned. Tools like Snyk and GitGuardian are great, but priced for teams with security budgets. Solo devs and tiny startups skip security scanning entirely because the bar to entry is too high.
 
-RepoGuard is my attempt at the smallest useful security tool: scan a repo in one click, see what's wrong, fix it. Built in public.
+TriageRook is my attempt at the smallest useful security tool: scan a repo in one click, see what's wrong, fix it. Built in public.
 
-## What RepoGuard actually detects
+## What TriageRook actually detects
 
-RepoGuard runs nine independent detectors over your repo and aggregates the results into a single prioritized report.
+TriageRook runs nine independent detectors over your repo and aggregates the results into a single prioritized report.
 
 ### 1. Secrets in source code (60+ patterns)
 
@@ -28,11 +28,11 @@ Filename-based detection that flags files which are never safe to commit regardl
 
 ### 3. High-entropy secrets in `.env` / config files
 
-When a regex can't help, entropy analysis can. RepoGuard parses `.env`, `.envrc`, `.ini`, `.toml`, `.properties`, `.yaml`, and `.conf` files line-by-line, extracts `KEY=VALUE` pairs, discards placeholders (`xxx`, `changeme`, URLs, semver, IPs), and flags values with Shannon entropy ≥ 4.0 bits/char whose key names match `password|secret|api_key|access_key|auth_token|client_secret|…`. Catches custom corporate tokens that dedicated regexes miss.
+When a regex can't help, entropy analysis can. TriageRook parses `.env`, `.envrc`, `.ini`, `.toml`, `.properties`, `.yaml`, and `.conf` files line-by-line, extracts `KEY=VALUE` pairs, discards placeholders (`xxx`, `changeme`, URLs, semver, IPs), and flags values with Shannon entropy ≥ 4.0 bits/char whose key names match `password|secret|api_key|access_key|auth_token|client_secret|…`. Catches custom corporate tokens that dedicated regexes miss.
 
 ### 4. Secrets in recent git history
 
-Even a rotated secret is still a compromised secret if it lives in a past commit. RepoGuard fetches up to 30 recent commits via the GitHub API, extracts added patch lines, and re-runs the full 60+ pattern library over them. Findings are deduplicated against the current tree so only history-exclusive matches surface, tagged with commit SHA + author + date.
+Even a rotated secret is still a compromised secret if it lives in a past commit. TriageRook fetches up to 30 recent commits via the GitHub API, extracts added patch lines, and re-runs the full 60+ pattern library over them. Findings are deduplicated against the current tree so only history-exclusive matches surface, tagged with commit SHA + author + date.
 
 ### 5. Code-level vulnerabilities (SAST)
 
@@ -75,21 +75,21 @@ Detection runs over JavaScript / TypeScript primarily. Python coverage extends t
 
 ### 8. Repository posture score
 
-Beyond looking for specific findings, RepoGuard grades how the repo is set up: governance docs (`SECURITY.md`, `LICENSE`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`), branch protection rules on the default branch, vulnerability-alert configuration, dependency-update automation, and other operational hygiene signals. The result is a single A+ to F grade with a per-signal breakdown showing exactly what to fix to raise it. Signals the OAuth token cannot inspect (e.g. branch protection without admin permission) are reported as `unknown` rather than as failures, so the grade stays honest.
+Beyond looking for specific findings, TriageRook grades how the repo is set up: governance docs (`SECURITY.md`, `LICENSE`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`), branch protection rules on the default branch, vulnerability-alert configuration, dependency-update automation, and other operational hygiene signals. The result is a single A+ to F grade with a per-signal breakdown showing exactly what to fix to raise it. Signals the OAuth token cannot inspect (e.g. branch protection without admin permission) are reported as `unknown` rather than as failures, so the grade stays honest.
 
 ### 9. IAM risk scanner
 
-The angle a 10+ year IAM/IGA specialist actually cares about: identity and access risk at org and repo level. RepoGuard surfaces org-level MFA enforcement (when `read:org` scope is granted), outside-collaborator permission levels, repo-level secret scoping, and authorship patterns that signal stale ownership. When a signal requires permissions the token does not have, RepoGuard skips it and labels it as such rather than guessing. This is the slice of enterprise IAM tooling that solo devs and small teams have historically had no access to.
+The angle a 10+ year IAM/IGA specialist actually cares about: identity and access risk at org and repo level. TriageRook surfaces org-level MFA enforcement (when `read:org` scope is granted), outside-collaborator permission levels, repo-level secret scoping, and authorship patterns that signal stale ownership. When a signal requires permissions the token does not have, TriageRook skips it and labels it as such rather than guessing. This is the slice of enterprise IAM tooling that solo devs and small teams have historically had no access to.
 
 ## Beyond detection
 
 ### SARIF 2.1.0 export + GitHub Code Scanning
 
-Every saved scan is one click from a SARIF 2.1.0 export. Drop the file into `github/codeql-action/upload-sarif` and findings show up in your repo's `Security → Code scanning` tab next to CodeQL and Dependabot — with each result deep-linked back to its rule documentation. Anonymous scans at `/scan-public/<owner>/<repo>` can also export SARIF (generated client-side from the in-flight result). For public repos, the anonymous scan endpoint accepts `?format=sarif` directly — drop the [ready-made workflow](https://repoguard-chi.vercel.app/workflows/repoguard.yml) at `.github/workflows/repoguard.yml` and every push gets scanned + uploaded with zero auth setup. Full setup guide with copy-pasteable workflow YAML at [`/docs/sarif`](https://repoguard-chi.vercel.app/docs/sarif).
+Every saved scan is one click from a SARIF 2.1.0 export. Drop the file into `github/codeql-action/upload-sarif` and findings show up in your repo's `Security → Code scanning` tab next to CodeQL and Dependabot — with each result deep-linked back to its rule documentation. Anonymous scans at `/scan-public/<owner>/<repo>` can also export SARIF (generated client-side from the in-flight result). For public repos, the anonymous scan endpoint accepts `?format=sarif` directly — drop the [ready-made workflow](https://repoguard-chi.vercel.app/workflows/triagerook.yml) at `.github/workflows/triagerook.yml` and every push gets scanned + uploaded with zero auth setup. Full setup guide with copy-pasteable workflow YAML at [`/docs/sarif`](https://repoguard-chi.vercel.app/docs/sarif).
 
 ### Auto-fix pull requests
 
-For findings that have a clean fix (secret rotation via `.env.example` updates, dependency bumps to a non-vulnerable version), RepoGuard can open a PR against your repo directly. Requires installing the **RepoGuard Security** GitHub App on the target repo so the PR can be authored — installation is scoped to the single repo and grants only `Contents: write` and `Pull requests: write`. You review the PR before merging.
+For findings that have a clean fix (secret rotation via `.env.example` updates, dependency bumps to a non-vulnerable version), TriageRook can open a PR against your repo directly. Requires installing the **TriageRook Security** GitHub App on the target repo so the PR can be authored — installation is scoped to the single repo and grants only `Contents: write` and `Pull requests: write`. You review the PR before merging.
 
 ### Per-repo suppressions
 
@@ -109,7 +109,7 @@ Data lives in Supabase (EU region) and Vercel. You can revoke access anytime via
 ## Tech stack
 
 - **Framework:** Next.js 16 (App Router) + TypeScript + Tailwind
-- **Auth:** NextAuth v5 backed by the **RepoGuard Security GitHub App** (user OAuth gives read access to public repositories; installing the App on a target repo grants the scoped write needed for auto-fix PRs)
+- **Auth:** NextAuth v5 backed by the **TriageRook Security GitHub App** (user OAuth gives read access to public repositories; installing the App on a target repo grants the scoped write needed for auto-fix PRs)
 - **Database:** Supabase (Postgres + JSONB, EU region) with RLS policies as a defense-in-depth layer
 - **Hosting:** Vercel
 - **Static analysis:** `ts-morph` (TypeScript Compiler API wrapper) for the AST layer
@@ -120,8 +120,8 @@ Data lives in Supabase (EU region) and Vercel. You can revoke access anytime via
 Prereqs: Node 20+, a GitHub account, a Supabase project (free tier is fine).
 
 ```bash
-git clone https://github.com/silviooerudon/repoguard.git
-cd repoguard
+git clone https://github.com/silviooerudon/triagerook.git
+cd triagerook
 npm install
 ```
 
@@ -129,7 +129,7 @@ Create `.env.local`:
 
 ```bash
 AUTH_SECRET=                       # generate with: npx auth secret
-AUTH_GITHUB_APP_CLIENT_ID=         # from the RepoGuard Security GitHub App (OAuth user flow)
+AUTH_GITHUB_APP_CLIENT_ID=         # from the TriageRook Security GitHub App (OAuth user flow)
 AUTH_GITHUB_APP_CLIENT_SECRET=
 SUPABASE_URL=
 SUPABASE_SECRET_KEY=               # Supabase service-role key (server-side only)
@@ -160,7 +160,7 @@ Built in public. Rough order of what's next, depending on user feedback:
 - [ ] Team accounts and shared scan history
 - [ ] Private-repo support (read scope expansion)
 
-If something here matters to you, [open an issue](https://github.com/silviooerudon/repoguard/issues) — feedback shapes priorities.
+If something here matters to you, [open an issue](https://github.com/silviooerudon/triagerook/issues) — feedback shapes priorities.
 
 ## Author
 

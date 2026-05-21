@@ -22,12 +22,12 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://repoguard-chi.vercel.app"),
   title: {
-    default: "RepoGuard — GitHub security scanner for solo devs",
-    template: "%s · RepoGuard",
+    default: "TriageRook — Security triage for solo devs",
+    template: "%s · TriageRook",
   },
   description:
-    "Scan a public GitHub repo for exposed secrets, vulnerable dependencies, and IaC misconfigs in under 60 seconds. No CLI, no config, no sales call.",
-  applicationName: "RepoGuard",
+    "Security triage for solo devs. Scan your GitHub repo in one click. Nine detectors covering secrets, dependencies, supply chain, repo posture, and IAM risk.",
+  applicationName: "TriageRook",
   authors: [{ name: "Silvio Gazzoli" }],
   keywords: [
     "github security scanner",
@@ -35,22 +35,22 @@ export const metadata: Metadata = {
     "exposed secrets",
     "dependency vulnerability scanner",
     "open source security",
-    "repoguard",
+    "triagerook",
   ],
   openGraph: {
     type: "website",
-    siteName: "RepoGuard",
-    title: "RepoGuard — GitHub security scanner for solo devs",
+    siteName: "TriageRook",
+    title: "TriageRook — Security triage for solo devs",
     description:
-      "Scan a public GitHub repo for exposed secrets, vulnerable dependencies, and IaC misconfigs in under 60 seconds.",
+      "Security triage for solo devs. Scan your GitHub repo in one click. Nine detectors covering secrets, dependencies, supply chain, repo posture, and IAM risk.",
     url: "/",
     locale: "en",
   },
   twitter: {
     card: "summary_large_image",
-    title: "RepoGuard — GitHub security scanner for solo devs",
+    title: "TriageRook — Security triage for solo devs",
     description:
-      "Free, open-source security scan for any public GitHub repo. Results in under a minute.",
+      "Security triage for solo devs. Free, open-source scan for any public GitHub repo. Results in under a minute.",
   },
   robots: { index: true, follow: true },
 };

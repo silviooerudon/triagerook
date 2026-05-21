@@ -4,7 +4,7 @@ import { PublicNav } from "@/app/components/public-nav";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Who builds RepoGuard, how to get in touch, and the current project status.",
+    "Who builds TriageRook, how to get in touch, and the current project status.",
   alternates: { canonical: "/about" },
 };
 
@@ -17,18 +17,18 @@ export default function AboutPage() {
           {"// about"}
         </div>
         <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-8">
-          About RepoGuard
+          About TriageRook
         </h1>
 
         <div className="text-slate-300 leading-relaxed space-y-5 mb-12">
           <p>
-            RepoGuard is built by Silvio Gazzoli, a solo developer based in
+            TriageRook is built by Silvio Gazzoli, a solo developer based in
             Dublin with 10+ years implementing IAM and IGA at enterprises
             (SailPoint, CyberArk).
           </p>
           <p>
             After a decade watching the same preventable security issues show
-            up in audit after audit, I built RepoGuard for solo devs,
+            up in audit after audit, I built TriageRook for solo devs,
             freelancers, and small teams who do not have a security team of
             their own.
           </p>

@@ -1,4 +1,4 @@
-// RepoGuard - Supply Chain Scanner: Postinstall Content Analysis (python) - E4
+// TriageRook - Supply Chain Scanner: Postinstall Content Analysis (python) - E4
 // Analyzes the CONTENT of setuptools cmdclass overrides and pyproject.toml
 // build hooks for malicious patterns, beyond the IaC scanner's binary "exists"
 // signal. Mirrors lib/supply-chain-pi-npm.ts shape and conventions.

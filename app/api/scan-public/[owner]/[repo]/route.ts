@@ -6,7 +6,7 @@ import {
   PUBLIC_SCAN_POLICY,
   PUBLIC_SCAN_PER_REPO_POLICY,
 } from "@/lib/rate-limit"
-import { scanToSarif, REPOGUARD_INFO_URI } from "@/lib/sarif"
+import { scanToSarif, TRIAGEROOK_INFO_URI } from "@/lib/sarif"
 import { resolveCatalogEntry, ruleIdToSlug } from "@/lib/rule-catalog"
 import { getPublicScanFallbackToken } from "@/lib/public-scan-token"
 import { NextResponse } from "next/server"
@@ -166,10 +166,10 @@ export async function POST(
         getHelpUri: (sarifRuleId) => {
           const entry = resolveCatalogEntry(sarifRuleId)
           if (!entry) return undefined
-          return `${REPOGUARD_INFO_URI}/docs/rules/${ruleIdToSlug(entry.id)}`
+          return `${TRIAGEROOK_INFO_URI}/docs/rules/${ruleIdToSlug(entry.id)}`
         },
       })
-      const filename = `repoguard-${owner}-${repo}.sarif.json`
+      const filename = `triagerook-${owner}-${repo}.sarif.json`
       return new NextResponse(JSON.stringify(sarif, null, 2), {
         status: 200,
         headers: {

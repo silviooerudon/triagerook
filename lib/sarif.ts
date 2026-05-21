@@ -5,11 +5,11 @@ import { version as PACKAGE_VERSION } from "../package.json"
 //
 // Produced by /api/scans/[id]/sarif so users can:
 //   - Download a static SARIF file and feed it to any SARIF-aware tool
-//   - Upload it to GitHub Code Scanning so RepoGuard findings appear in
+//   - Upload it to GitHub Code Scanning so TriageRook findings appear in
 //     the repo's Security tab next to CodeQL/Dependabot
 //
 // Mapping decisions:
-//   - tool.driver.name = "RepoGuard", informationUri points to the app.
+//   - tool.driver.name = "TriageRook", informationUri points to the app.
 //   - One result per finding. ruleId follows the same `<kind>/<id>`
 //     namespace used by lib/suppressions.ts so suppressions and SARIF
 //     output share vocabulary.
@@ -33,8 +33,8 @@ export const SARIF_SCHEMA =
 // "0.1.0" — a tool driver version that mismatches the actual deploy is
 // the kind of thing that erodes trust with SARIF consumers like
 // GitHub Code Scanning, which dedupes alerts by (toolName, version).
-export const REPOGUARD_TOOL_VERSION = PACKAGE_VERSION
-export const REPOGUARD_INFO_URI = "https://repoguard-chi.vercel.app"
+export const TRIAGEROOK_TOOL_VERSION = PACKAGE_VERSION
+export const TRIAGEROOK_INFO_URI = "https://repoguard-chi.vercel.app"
 
 export type ScanForSarif = {
   owner: string
@@ -45,7 +45,7 @@ export type ScanForSarif = {
   // Optional callback to compute a helpUri for each SARIF rule entry,
   // typically the public /docs/rules/<slug> page so SARIF consumers
   // (GitHub Code Scanning especially) surface a clickable link from the
-  // finding back to RepoGuard's rule documentation. Returns undefined to
+  // finding back to TriageRook's rule documentation. Returns undefined to
   // omit helpUri for that rule. Pure-function shape so this module
   // stays bundleable client-side without pulling rule-catalog imports.
   getHelpUri?: (sarifRuleId: string) => string | undefined
@@ -260,9 +260,9 @@ export function scanToSarif(scan: ScanForSarif): SarifLog {
       {
         tool: {
           driver: {
-            name: "RepoGuard",
-            version: REPOGUARD_TOOL_VERSION,
-            informationUri: REPOGUARD_INFO_URI,
+            name: "TriageRook",
+            version: TRIAGEROOK_TOOL_VERSION,
+            informationUri: TRIAGEROOK_INFO_URI,
             rules,
           },
         },

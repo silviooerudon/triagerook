@@ -35,7 +35,7 @@ export function PublicNav() {
             security
           </Link>
           <a
-            href="https://github.com/silviooerudon/repoguard"
+            href="https://github.com/silviooerudon/triagerook"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden md:inline hover:text-slate-100 transition"

@@ -76,7 +76,7 @@ describe("isSafeRepoFilePath", () => {
 describe("isSafeOwnerRepo", () => {
   it("accepts typical GitHub owner/repo names", () => {
     expect(isSafeOwnerRepo("silviooerudon")).toBe(true)
-    expect(isSafeOwnerRepo("repoguard")).toBe(true)
+    expect(isSafeOwnerRepo("triagerook")).toBe(true)
     expect(isSafeOwnerRepo("next.js")).toBe(true)
     expect(isSafeOwnerRepo("vercel")).toBe(true)
     expect(isSafeOwnerRepo("user-name")).toBe(true)

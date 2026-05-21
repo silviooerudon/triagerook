@@ -71,7 +71,7 @@ export default function SuppressionsPage() {
 
         {status === "loading" && (
           <CliLoader
-            label="repoguard suppressions --list"
+            label="triagerook suppressions --list"
             hint="loading your personal suppressions…"
           />
         )}

@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 // Baseline security headers applied to every response.
 //
-// - Strict-Transport-Security: 2y HSTS preload — RepoGuard is HTTPS-only
+// - Strict-Transport-Security: 2y HSTS preload — TriageRook is HTTPS-only
 // - X-Content-Type-Options: nosniff (browser MIME-sniff defence)
 // - X-Frame-Options: DENY (clickjacking — no iframing this app at all)
 // - Referrer-Policy: strict-origin-when-cross-origin (URL leak defence)

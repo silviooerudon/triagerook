@@ -36,7 +36,7 @@ export function TruncationBanner({
       </span>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-amber-200 text-sm mb-1">
-          Partial scan — repo is larger than RepoGuard&apos;s per-run budget
+          Partial scan — repo is larger than TriageRook&apos;s per-run budget
         </p>
         <p className="text-amber-100/80 text-xs leading-relaxed">
           {filesScanned.toLocaleString()} files were inspected; {filesSkippedNote}{" "}

@@ -52,7 +52,7 @@ export default function HistoryPage() {
 
         {status === "loading" && (
           <CliLoader
-            label="repoguard history --tail 50"
+            label="triagerook history --tail 50"
             hint="fetching your most-recent scans from supabase…"
           />
         )}

@@ -125,7 +125,7 @@ export default async function RulePage({ params }: PageProps) {
             <p>
               Found a false positive or want this rule tuned?{" "}
               <a
-                href={`https://github.com/silviooerudon/repoguard/issues/new?title=${encodeURIComponent(`Rule feedback: ${entry.id}`)}`}
+                href={`https://github.com/silviooerudon/triagerook/issues/new?title=${encodeURIComponent(`Rule feedback: ${entry.id}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-amber-400 hover:underline"

@@ -26,6 +26,8 @@ type ApiError = {
   code: string | null
 }
 
+// TODO: rename GitHub App slug to `triagerook-security` (github.com/settings/apps)
+// then update this URL. Until the App is renamed, this points at the live slug.
 const APP_INSTALL_URL =
   "https://github.com/apps/repoguard-security/installations/new"
 
@@ -176,7 +178,7 @@ function FixModal({
               aria-hidden
               className="font-mono text-amber-400 text-sm mt-0.5 select-none shrink-0"
             >
-              [R/]
+              [T/]
             </span>
             <div className="min-w-0">
               <h2
@@ -211,11 +213,11 @@ function FixModal({
           {error && error.code === "app_not_installed" && (
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-2">
               <p className="text-amber-300 text-sm font-semibold">
-                RepoGuard Security App not installed on this repo
+                TriageRook Security App not installed on this repo
               </p>
               <p className="text-amber-200/80 text-sm">
                 The App needs to be granted access to this repository before
-                RepoGuard can open a pull request. You stay in control of which
+                TriageRook can open a pull request. You stay in control of which
                 repos are exposed — the App only sees what you select.
               </p>
               <a
@@ -268,7 +270,7 @@ function FixModal({
                 </div>
               ))}
               <p className="text-xs text-slate-500">
-                RepoGuard will commit these files on a new branch and open a pull request.
+                TriageRook will commit these files on a new branch and open a pull request.
                 Nothing touches your default branch until you review and merge.
               </p>
             </>

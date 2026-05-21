@@ -7,7 +7,7 @@ import { PublicNav } from "@/app/components/public-nav"
 export const metadata: Metadata = {
   title: "Sign in",
   description:
-    "Sign in to RepoGuard with the RepoGuard Security GitHub App. Public repos, no code stored.",
+    "Sign in to TriageRook with the TriageRook Security GitHub App. Public repos, no code stored.",
   robots: { index: false, follow: false },
 }
 
@@ -44,7 +44,7 @@ export default async function SignInPage({
           </h1>
           <p className="text-slate-400 text-sm mb-8 leading-relaxed">
             Sign-in is handled by the{" "}
-            <span className="font-mono text-slate-200">RepoGuard Security</span>{" "}
+            <span className="font-mono text-slate-200">TriageRook Security</span>{" "}
             GitHub App — not a legacy OAuth scope. Read what we access before
             you authorise.
           </p>
@@ -75,7 +75,7 @@ export default async function SignInPage({
                   >
                     Settings → Applications
                   </a>{" "}
-                  → find RepoGuard Security → Revoke.
+                  → find TriageRook Security → Revoke.
                 </>
               }
             />

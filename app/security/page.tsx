@@ -7,13 +7,13 @@ export default function SecurityPage() {
       <article className="max-w-3xl mx-auto px-6 py-16">
         <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-2">Security & Privacy</h1>
         <p className="text-slate-400 mb-12">
-          What RepoGuard accesses, stores, and protects. Plain language, no legal jargon.
+          What TriageRook accesses, stores, and protects. Plain language, no legal jargon.
         </p>
 
         <Section title="What we access">
           <p>
-            RepoGuard is authenticated through the <strong>RepoGuard Security</strong>{" "}
-            GitHub App (not a legacy OAuth App). When you sign in, RepoGuard reads:
+            TriageRook is authenticated through the <strong>TriageRook Security</strong>{" "}
+            GitHub App (not a legacy OAuth App). When you sign in, TriageRook reads:
           </p>
           <ul className="list-disc pl-6 space-y-1 mt-3">
             <li>Your GitHub username, avatar, and public email — for the session</li>
@@ -26,11 +26,11 @@ export default function SecurityPage() {
           </p>
           <p className="mt-3">
             For the optional <strong>auto-fix PR</strong> feature, you install the
-            RepoGuard Security GitHub App on the target repository. That install grants
+            TriageRook Security GitHub App on the target repository. That install grants
             the App <code className="bg-slate-900 px-1.5 py-0.5 rounded text-sm">Contents: write</code>{" "}
             and <code className="bg-slate-900 px-1.5 py-0.5 rounded text-sm">Pull requests: write</code>{" "}
             <strong>scoped to that repo only</strong>, so we can push a branch and open
-            a PR for your review. Without an install, RepoGuard cannot write to a repo.
+            a PR for your review. Without an install, TriageRook cannot write to a repo.
           </p>
         </Section>
 
@@ -69,22 +69,22 @@ export default function SecurityPage() {
 
         <Section title="Source code">
           <p>
-            RepoGuard is open source. You can audit the entire codebase, including how
+            TriageRook is open source. You can audit the entire codebase, including how
             we handle your token and data:{" "}
             <a
-              href="https://github.com/silviooerudon/repoguard"
+              href="https://github.com/silviooerudon/triagerook"
               target="_blank"
               rel="noopener noreferrer"
               className="text-amber-400 hover:underline"
             >
-              github.com/silviooerudon/repoguard
+              github.com/silviooerudon/triagerook
             </a>
           </p>
         </Section>
 
         <Section title="Revoking access">
           <p>
-            You can revoke RepoGuard&apos;s access at any time:
+            You can revoke TriageRook&apos;s access at any time:
           </p>
           <ul className="list-disc pl-6 space-y-2 mt-3">
             <li>
@@ -92,14 +92,14 @@ export default function SecurityPage() {
               <a href="https://github.com/settings/applications" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline">
                 Settings → Applications → Authorized GitHub Apps
               </a>{" "}
-              → find <strong>RepoGuard Security</strong> → <strong>Revoke</strong>.
+              → find <strong>TriageRook Security</strong> → <strong>Revoke</strong>.
             </li>
             <li>
               <strong>Uninstall auto-fix:</strong> GitHub →{" "}
               <a href="https://github.com/settings/installations" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline">
                 Settings → Applications → Installed GitHub Apps
               </a>{" "}
-              → find <strong>RepoGuard Security</strong> → <strong>Uninstall</strong>{" "}
+              → find <strong>TriageRook Security</strong> → <strong>Uninstall</strong>{" "}
               (or remove individual repos).
             </li>
           </ul>
@@ -121,7 +121,7 @@ export default function SecurityPage() {
             </a>{" "}
             or open an issue on{" "}
             <a
-              href="https://github.com/silviooerudon/repoguard/issues"
+              href="https://github.com/silviooerudon/triagerook/issues"
               target="_blank"
               rel="noopener noreferrer"
               className="text-amber-400 hover:underline"

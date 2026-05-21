@@ -4,7 +4,7 @@ import { PublicNav } from "@/app/components/public-nav";
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Simple, transparent pricing for RepoGuard. Free during beta.",
+    "Simple, transparent pricing for TriageRook. Free during beta.",
   alternates: { canonical: "/pricing" },
 };
 
@@ -50,7 +50,7 @@ export default function PricingPage() {
         >
           <p className="font-semibold mb-1">Beta - free for everyone.</p>
           <p className="text-sm leading-relaxed text-slate-700">
-            RepoGuard is free during the beta period while I validate real
+            TriageRook is free during the beta period while I validate real
             usage. Anyone using it now will get advance notice before pricing
             applies.
           </p>

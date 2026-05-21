@@ -150,7 +150,7 @@ export async function getInstallationTokenForRepo(
       404,
       "Not Found",
       `/repos/${owner}/${repo}/installation`,
-      `RepoGuard Security GitHub App is not installed on ${owner}/${repo}.`
+      `TriageRook Security GitHub App is not installed on ${owner}/${repo}.`
     )
   }
 

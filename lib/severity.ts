@@ -1,7 +1,7 @@
 import type { Severity } from "./types"
 
 // Detector inputs (npm audit, OSV.dev, GHSA) historically used "moderate"
-// for what RepoGuard internally calls "medium". To keep one canonical
+// for what TriageRook internally calls "medium". To keep one canonical
 // severity vocabulary, every detector boundary should pass the raw
 // string through normalizeSeverity before constructing a Finding.
 //

@@ -97,7 +97,7 @@ export default function ScanViewPage({ params }: PageProps) {
 
         {status === "loading" && (
           <CliLoader
-            label={`repoguard scans show --id ${id.slice(0, 8)}`}
+            label={`triagerook scans show --id ${id.slice(0, 8)}`}
             hint="reading saved findings and posture from supabase…"
           />
         )}
