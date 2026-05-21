@@ -60,7 +60,7 @@ export default function ScanDiffPage({ params }: PageProps) {
 
         {status === "loading" && (
           <CliLoader
-            label={`repoguard scans diff ${fromId.slice(0, 8)}..${toId.slice(0, 8)}`}
+            label={`triagerook scans diff ${fromId.slice(0, 8)}..${toId.slice(0, 8)}`}
             hint="comparing two scans · counting new / resolved / carried-over findings…"
           />
         )}

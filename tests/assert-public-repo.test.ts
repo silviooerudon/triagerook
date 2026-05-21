@@ -34,7 +34,7 @@ describe("assertPublicRepo", () => {
       default_branch: "main",
       private: false,
     })
-    const { defaultBranch } = await assertPublicRepo(null, "silviooerudon", "repoguard")
+    const { defaultBranch } = await assertPublicRepo(null, "silviooerudon", "triagerook")
     expect(defaultBranch).toBe("main")
   })
 

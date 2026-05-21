@@ -121,7 +121,7 @@ export type DependencyFinding = {
   package: string
   version: string
   ecosystem?: DependencyEcosystem
-  // "medium" is the canonical RepoGuard severity emitted by the dep
+  // "medium" is the canonical TriageRook severity emitted by the dep
   // detectors via normalizeSeverity. "moderate" remains valid in the
   // type so old scans persisted with that string still parse — see
   // lib/severity.ts for the full story.

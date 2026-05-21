@@ -109,7 +109,7 @@ export default async function Dashboard() {
               nothing to scan yet.
             </h2>
             <p className="text-slate-400 text-sm leading-relaxed max-w-md">
-              RepoGuard can only see your public repositories. Create one on
+              TriageRook can only see your public repositories. Create one on
               GitHub, refresh this page, and scan it in one click.
             </p>
             <a

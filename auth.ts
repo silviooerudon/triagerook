@@ -3,7 +3,7 @@ import GitHub from "next-auth/providers/github"
 import { getToken } from "next-auth/jwt"
 import { headers as nextHeaders } from "next/headers"
 
-// Auth is backed by the "RepoGuard Security" GitHub App, not a legacy OAuth
+// Auth is backed by the "TriageRook Security" GitHub App, not a legacy OAuth
 // App. Permissions are declared on the App itself (Contents: read+write,
 // Pull requests: write, Email: read, Metadata: read), so no `scope` param
 // here — passing one would be ignored by GitHub App user flows anyway.
@@ -27,7 +27,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.accessToken = account.access_token
         // providerAccountId is the GitHub numeric user id — stable, unique,
         // and unaffected by display-name changes. This is the source of
-        // truth for user identity in RepoGuard; never use session.user.name
+        // truth for user identity in TriageRook; never use session.user.name
         // (mutable, non-unique) as a key into the scans table.
         if (account.providerAccountId) {
           token.githubId = account.providerAccountId

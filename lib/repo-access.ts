@@ -3,7 +3,7 @@ import { isSafeOwnerRepo } from "./path-validation"
 
 // Verifies that the GitHub user behind `userAccessToken` has at least
 // push access to a given repo. Used as a gate inside the auto-fix
-// endpoints so a logged-in RepoGuard user cannot trigger a PR (under
+// endpoints so a logged-in TriageRook user cannot trigger a PR (under
 // the GitHub App identity) on a repo they themselves do not have write
 // access to.
 //

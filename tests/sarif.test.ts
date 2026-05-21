@@ -37,12 +37,12 @@ describe("scanToSarif - envelope", () => {
     expect(out.runs).toHaveLength(1)
   })
 
-  it("populates tool.driver with RepoGuard metadata", () => {
+  it("populates tool.driver with TriageRook metadata", () => {
     const out = scanToSarif(baseScan())
     const driver = out.runs[0].tool.driver
-    expect(driver.name).toBe("RepoGuard")
+    expect(driver.name).toBe("TriageRook")
     expect(driver.version).toBeTruthy()
-    expect(driver.informationUri).toContain("repoguard")
+    expect(driver.informationUri).toContain(".vercel.app")
   })
 
   it("uses the version from package.json (not a stale hardcoded string)", async () => {

@@ -124,7 +124,7 @@ describe("scoreRepo", () => {
   })
 
   it("does NOT count fixture findings toward the score gauge", () => {
-    // Regression for the dogfood pass: scanning repoguard/repoguard
+    // Regression for the dogfood pass: scanning triagerook/triagerook
     // returned score=43 CRITICAL even though every visible finding was
     // tagged "Test fixture". The breakdown.fixture bucket was leaking
     // into the score total. The tag promises the user "this doesn't

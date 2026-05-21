@@ -12,7 +12,7 @@ import {
 export const metadata: Metadata = {
   title: "Detection rules",
   description:
-    "Every rule RepoGuard checks against. Severity, CWE mapping, plain-language description for each detector across AST SAST, code regex, secret patterns, sensitive files, and IaC checks.",
+    "Every rule TriageRook checks against. Severity, CWE mapping, plain-language description for each detector across AST SAST, code regex, secret patterns, sensitive files, and IaC checks.",
 }
 
 // Pages under /docs use the same chrome as the landing nav. No auth gate.
@@ -71,7 +71,7 @@ export default function RulesIndexPage() {
           </div>
 
           <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-3">
-            What RepoGuard checks for
+            What TriageRook checks for
           </h1>
           <p className="text-slate-400 text-base leading-relaxed mb-3 max-w-2xl">
             Every detection rule that runs against your repo. Open source, with
@@ -161,7 +161,7 @@ export default function RulesIndexPage() {
             <p>
               Want a rule we don&apos;t have?{" "}
               <a
-                href="https://github.com/silviooerudon/repoguard/issues/new"
+                href="https://github.com/silviooerudon/triagerook/issues/new"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-amber-400 hover:underline"

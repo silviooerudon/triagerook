@@ -1,12 +1,12 @@
-# Contributing to RepoGuard
+# Contributing to TriageRook
 
-Thank you for considering a contribution. RepoGuard is currently maintained as a solo project, but PRs and issues are welcome.
+Thank you for considering a contribution. TriageRook is currently maintained as a solo project, but PRs and issues are welcome.
 
 ## Quick Start
 
 ```
 git clone <your-fork-url>
-cd repoguard
+cd triagerook
 npm install
 npm run build
 npm run dev
@@ -19,7 +19,7 @@ The app will be available at http://localhost:3000.
 You will need a `.env.local` file with:
 
 - `AUTH_SECRET` - random 32+ byte string (`npx auth secret`)
-- `AUTH_GITHUB_APP_CLIENT_ID` - RepoGuard Security GitHub App OAuth client ID
+- `AUTH_GITHUB_APP_CLIENT_ID` - TriageRook Security GitHub App OAuth client ID
 - `AUTH_GITHUB_APP_CLIENT_SECRET` - matching client secret
 - `SUPABASE_URL` - your Supabase project URL
 - `SUPABASE_SECRET_KEY` - Supabase service-role key (server-side only)
@@ -33,7 +33,7 @@ For local development, register a GitHub App (not an OAuth App) with the callbac
 
 ## Testing
 
-RepoGuard uses smoke tests against fixture repositories rather than unit tests.
+TriageRook uses smoke tests against fixture repositories rather than unit tests.
 
 ```
 npx tsx scripts/smoke-supply-chain.ts
@@ -41,7 +41,7 @@ npx tsx scripts/smoke-iam.ts
 npx tsx scripts/smoke-posture.ts
 ```
 
-Fixtures live in `repoguard-fixtures/` (committed in repo).
+Fixtures live in `triagerook-fixtures/` (committed in repo).
 
 ## Commit Style
 

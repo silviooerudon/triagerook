@@ -62,7 +62,7 @@ interface OutputFile {
 async function fetchJson(url: string): Promise<unknown> {
   const res = await fetch(url, {
     redirect: "follow",
-    headers: { "User-Agent": "RepoGuard refresh-popular-packages" },
+    headers: { "User-Agent": "TriageRook refresh-popular-packages" },
   });
   if (!res.ok) {
     throw new Error(`Fetch failed: ${url} -> ${res.status} ${res.statusText}`);

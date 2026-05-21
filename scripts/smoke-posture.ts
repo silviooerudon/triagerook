@@ -58,7 +58,7 @@ async function main() {
   // branch-protection signal returned satisfied=false because the classic
   // /branches endpoint reports protected=true while the /protection endpoint
   // 404s on Ruleset-only repos. Post-fix we expect satisfied=true.
-  const self = await run("self (with token)", "silviooerudon", "repoguard", token)
+  const self = await run("self (with token)", "silviooerudon", "triagerook", token)
 
   // Public reference repo with no protection at all - sanity baseline.
   await run("baseline (no token, no protection)", "octocat", "Hello-World", null)

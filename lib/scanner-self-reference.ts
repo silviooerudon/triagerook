@@ -1,6 +1,6 @@
 // Heuristics that recognise when a regex match is the literal that
 // DEFINES the detector itself — not real exploit material. Without
-// this, RepoGuard scanning RepoGuard (and any other project with
+// this, TriageRook scanning TriageRook (and any other project with
 // regex literals or property-style rule definitions) flags its own
 // rule library as critical findings.
 //

@@ -3,7 +3,7 @@ import { scanPythonDependencies } from "../lib/python-deps"
 
 const TOKEN = process.env.TEST_GITHUB_TOKEN ?? null
 const OWNER = process.env.TEST_OWNER ?? "silviooerudon"
-const REPO = process.env.TEST_REPO ?? "repoguard"
+const REPO = process.env.TEST_REPO ?? "triagerook"
 
 async function main() {
   console.log(`Scanning ${OWNER}/${REPO}...`)

@@ -217,7 +217,7 @@ function downloadSarif(owner: string, repo: string, result: ScanResultFull): voi
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
-  a.download = `repoguard-${owner}-${repo}.sarif.json`
+  a.download = `triagerook-${owner}-${repo}.sarif.json`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)

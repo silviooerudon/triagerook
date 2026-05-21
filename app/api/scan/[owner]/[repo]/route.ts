@@ -180,7 +180,7 @@ export async function POST(
     if (error instanceof PrivateRepoRefusedError) {
       return NextResponse.json(
         {
-          error: `Repository ${error.owner}/${error.repo} is private. RepoGuard only scans public repositories.`,
+          error: `Repository ${error.owner}/${error.repo} is private. TriageRook only scans public repositories.`,
         },
         { status: 403 },
       )

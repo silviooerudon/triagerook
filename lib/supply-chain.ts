@@ -1,4 +1,4 @@
-// RepoGuard - Supply Chain Scanner
+// TriageRook - Supply Chain Scanner
 // Foundation lib (E1) + typosquatting (E2) + postinstall npm (E3) + postinstall python (E4) wired.
 // E5 adds the assessSupplyChain entrypoint that fetches files from GitHub
 // Contents API and orchestrates scanSupplyChain - mirrors assessPosture/assessIAM.
@@ -172,7 +172,7 @@ async function fetchContent(
 ): Promise<string | null> {
   const headers: Record<string, string> = {
     ...buildGitHubHeaders(accessToken, "application/vnd.github.raw"),
-    "User-Agent": "RepoGuard-SupplyChain",
+    "User-Agent": "TriageRook-SupplyChain",
   };
   const refQuery = branch ? `?ref=${encodeURIComponent(branch)}` : "";
   const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path}${refQuery}`;

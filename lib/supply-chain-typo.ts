@@ -1,4 +1,4 @@
-// RepoGuard - Supply Chain Scanner: Typosquatting Detector (E2)
+// TriageRook - Supply Chain Scanner: Typosquatting Detector (E2)
 // Detects packages with names suspiciously close to popular packages.
 //
 // Strategy:

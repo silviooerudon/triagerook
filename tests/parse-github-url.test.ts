@@ -3,9 +3,9 @@ import { parseGitHubUrl } from "@/lib/parse-github-url"
 
 describe("parseGitHubUrl", () => {
   it("parses canonical https URLs", () => {
-    expect(parseGitHubUrl("https://github.com/silviooerudon/repoguard")).toEqual({
+    expect(parseGitHubUrl("https://github.com/silviooerudon/triagerook")).toEqual({
       owner: "silviooerudon",
-      repo: "repoguard",
+      repo: "triagerook",
     })
   })
 

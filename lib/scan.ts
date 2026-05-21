@@ -51,7 +51,7 @@ export class PrivateRepoRefusedError extends Error {
   readonly owner: string
   readonly repo: string
   constructor(owner: string, repo: string) {
-    super(`Repository ${owner}/${repo} is private. RepoGuard only scans public repositories.`)
+    super(`Repository ${owner}/${repo} is private. TriageRook only scans public repositories.`)
     this.name = "PrivateRepoRefusedError"
     this.owner = owner
     this.repo = repo

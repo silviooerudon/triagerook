@@ -1,4 +1,4 @@
-// RepoGuard - Supply Chain Scanner: Postinstall Content Analysis (npm) - E3
+// TriageRook - Supply Chain Scanner: Postinstall Content Analysis (npm) - E3
 // Analyzes the CONTENT of npm install lifecycle scripts in package.json
 // for malicious patterns, beyond the IaC scanner's binary "exists" signal.
 
