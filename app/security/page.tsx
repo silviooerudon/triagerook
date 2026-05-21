@@ -84,7 +84,10 @@ export default function SecurityPage() {
 
         <Section title="Revoking access">
           <p>
-            You can revoke TriageRook&apos;s access at any time:
+            You can revoke TriageRook&apos;s access at any time. Until the
+            GitHub App rename completes, the App is still listed on GitHub
+            under its previous name <strong>RepoGuard Security</strong> —
+            both names refer to the same App.
           </p>
           <ul className="list-disc pl-6 space-y-2 mt-3">
             <li>
@@ -92,14 +95,16 @@ export default function SecurityPage() {
               <a href="https://github.com/settings/applications" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline">
                 Settings → Applications → Authorized GitHub Apps
               </a>{" "}
-              → find <strong>TriageRook Security</strong> → <strong>Revoke</strong>.
+              → find <strong>TriageRook Security</strong> (or its
+              legacy name <strong>RepoGuard Security</strong>) → <strong>Revoke</strong>.
             </li>
             <li>
               <strong>Uninstall auto-fix:</strong> GitHub →{" "}
               <a href="https://github.com/settings/installations" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline">
                 Settings → Applications → Installed GitHub Apps
               </a>{" "}
-              → find <strong>TriageRook Security</strong> → <strong>Uninstall</strong>{" "}
+              → find <strong>TriageRook Security</strong> (or its
+              legacy name <strong>RepoGuard Security</strong>) → <strong>Uninstall</strong>{" "}
               (or remove individual repos).
             </li>
           </ul>

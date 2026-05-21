@@ -75,7 +75,7 @@ export default async function SignInPage({
                   >
                     Settings → Applications
                   </a>{" "}
-                  → find TriageRook Security → Revoke.
+                  → find TriageRook Security (still listed as &quot;RepoGuard Security&quot; until the App rename completes) → Revoke.
                 </>
               }
             />
