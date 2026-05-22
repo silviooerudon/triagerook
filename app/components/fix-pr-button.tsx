@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import type { PrioritizedFinding } from "@/lib/risk"
 import { useModalFocus } from "./use-modal-focus"
 
@@ -172,12 +173,13 @@ function FixModal({
       >
         <header className="flex items-start justify-between gap-4 px-6 py-4 border-b border-slate-800/60">
           <div className="flex items-start gap-3 min-w-0">
-            <span
-              aria-hidden
-              className="font-mono text-amber-400 text-sm mt-0.5 select-none shrink-0"
-            >
-              [T/]
-            </span>
+            <Image
+              src="/logo.png"
+              alt=""
+              width={24}
+              height={24}
+              className="mt-0.5 shrink-0"
+            />
             <div className="min-w-0">
               <h2
                 id="fix-modal-title"

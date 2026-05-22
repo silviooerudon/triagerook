@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import type { PrioritizedFinding } from "@/lib/risk"
 import { findRuleIdForFinding, getFindingPath } from "@/lib/suppressions"
 import { useModalFocus } from "./use-modal-focus"
@@ -105,9 +106,13 @@ export function SuppressButton({ owner, repo, finding, onSuppressed }: Props) {
             onClick={(e) => e.stopPropagation()}
           >
             <header className="px-6 py-4 border-b border-slate-800/60 flex items-start gap-3">
-              <span aria-hidden className="font-mono text-amber-400 text-sm mt-0.5 select-none">
-                [T/]
-              </span>
+              <Image
+                src="/logo.png"
+                alt=""
+                width={24}
+                height={24}
+                className="mt-0.5 shrink-0"
+              />
               <div className="flex-1 min-w-0">
                 <h2
                   id="suppress-modal-title"
