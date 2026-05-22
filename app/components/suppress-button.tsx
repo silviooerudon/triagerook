@@ -106,7 +106,7 @@ export function SuppressButton({ owner, repo, finding, onSuppressed }: Props) {
           >
             <header className="px-6 py-4 border-b border-slate-800/60 flex items-start gap-3">
               <span aria-hidden className="font-mono text-amber-400 text-sm mt-0.5 select-none">
-                [R/]
+                [T/]
               </span>
               <div className="flex-1 min-w-0">
                 <h2
