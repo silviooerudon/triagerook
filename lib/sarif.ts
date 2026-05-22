@@ -34,7 +34,7 @@ export const SARIF_SCHEMA =
 // the kind of thing that erodes trust with SARIF consumers like
 // GitHub Code Scanning, which dedupes alerts by (toolName, version).
 export const TRIAGEROOK_TOOL_VERSION = PACKAGE_VERSION
-export const TRIAGEROOK_INFO_URI = "https://repoguard-chi.vercel.app"
+export const TRIAGEROOK_INFO_URI = "https://www.triagerook.com"
 
 export type ScanForSarif = {
   owner: string

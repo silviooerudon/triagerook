@@ -20,7 +20,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://repoguard-chi.vercel.app"),
+  metadataBase: new URL("https://www.triagerook.com"),
   title: {
     default: "TriageRook — Security triage for solo devs",
     template: "%s · TriageRook",

@@ -34,10 +34,11 @@ Dominio triagerook.com adquirido, repo GitHub renomeado de silviooerudon/repogua
 
 These items are intentionally NOT in this PR. Each unblocks separately and has its own risk profile.
 
-### 1. URL swap (repoguard-chi.vercel.app -> triagerook.com)
-- Blocked by DNS for triagerook.com being verified live on Vercel.
-- Then update: metadataBase in app/layout.tsx, TRIAGEROOK_INFO_URI in lib/sarif.ts, curl examples in app/docs/sarif/page.tsx, README badges and links, SECURITY.md scope URL, public/workflows/triagerook.yml curl URL.
-- Also re-tighten tests/sarif.test.ts informationUri assertion (currently weakened to toContain(".vercel.app") - should pin to the exact host once stable).
+### 1. URL swap (repoguard-chi.vercel.app -> www.triagerook.com) — DONE
+- DNS for triagerook.com verified live on Vercel on 2026-05-22 (apex 308-redirects to www.).
+- Code swap landed: metadataBase in app/layout.tsx, TRIAGEROOK_INFO_URI in lib/sarif.ts, curl examples in app/docs/sarif/page.tsx, README badges/links, SECURITY.md scope URL, public/workflows/triagerook.yml curl URLs.
+- tests/sarif.test.ts informationUri assertion tightened from toContain(".vercel.app") to toBe("https://www.triagerook.com").
+- GitHub App-side: added the www.triagerook.com callback URL alongside the existing vercel.app one; the legacy callback is being kept short-term to avoid breaking active sessions, removal scheduled once Vercel deploy of merged main is confirmed in production.
 
 ### 2. GitHub App rename (repoguard-security -> triagerook-security) — DONE
 - Manual rename completed in github.com/settings/apps on 2026-05-21.
