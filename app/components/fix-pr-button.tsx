@@ -26,10 +26,8 @@ type ApiError = {
   code: string | null
 }
 
-// TODO: rename GitHub App slug to `triagerook-security` (github.com/settings/apps)
-// then update this URL. Until the App is renamed, this points at the live slug.
 const APP_INSTALL_URL =
-  "https://github.com/apps/repoguard-security/installations/new"
+  "https://github.com/apps/triagerook-security/installations/new"
 
 type Props = {
   owner: string
