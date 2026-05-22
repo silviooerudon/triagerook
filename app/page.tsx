@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import PublicScanInput from "./_components/PublicScanInput";
@@ -140,8 +141,15 @@ export default async function Home() {
         {/* NAV */}
         <nav className="border-b border-slate-800/60 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
           <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <span className="font-mono text-amber-400 text-sm">[T/]</span>
+            <Link href="/" className="flex items-center gap-2 group">
+              <Image
+                src="/logo.png"
+                alt=""
+                width={28}
+                height={28}
+                priority
+                className="shrink-0"
+              />
               <span className="font-mono text-sm tracking-tight text-slate-100 group-hover:text-amber-400 transition">
                 triagerook
               </span>
@@ -441,7 +449,16 @@ export default async function Home() {
           <div className="max-w-6xl mx-auto px-6 py-14 font-mono text-xs">
             <div className="grid md:grid-cols-12 gap-8">
               <div className="md:col-span-7">
-                <div className="text-amber-400 mb-3">[T/] triagerook</div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Image
+                    src="/logo.png"
+                    alt=""
+                    width={20}
+                    height={20}
+                    className="shrink-0"
+                  />
+                  <span className="text-amber-400">triagerook</span>
+                </div>
                 <p className="text-slate-400 leading-relaxed">
                   <span className="text-slate-600">$ whoami</span>
                   <br />→ built in dublin by{" "}
