@@ -39,9 +39,10 @@ These items are intentionally NOT in this PR. Each unblocks separately and has i
 - Then update: metadataBase in app/layout.tsx, TRIAGEROOK_INFO_URI in lib/sarif.ts, curl examples in app/docs/sarif/page.tsx, README badges and links, SECURITY.md scope URL, public/workflows/triagerook.yml curl URL.
 - Also re-tighten tests/sarif.test.ts informationUri assertion (currently weakened to toContain(".vercel.app") - should pin to the exact host once stable).
 
-### 2. GitHub App rename (repoguard-security -> triagerook-security)
-- Blocked by manual rename at github.com/settings/apps.
-- Then update APP_INSTALL_URL in app/components/fix-pr-button.tsx (TODO comment marks the spot), remove the bridge wording in app/signin/page.tsx and app/security/page.tsx mentioning the legacy "RepoGuard Security" name, update the App-name reference in .env.example, and verify the auto-fix PR author display name matches the body text.
+### 2. GitHub App rename (repoguard-security -> triagerook-security) — DONE
+- Manual rename completed in github.com/settings/apps on 2026-05-21.
+- Code cleanup landed in the same week: APP_INSTALL_URL in app/components/fix-pr-button.tsx updated to the new slug, bridge wording removed from /signin and /security, App-name note removed from .env.example.
+- Note: App ID (3675742) and Client ID (Iv23liqDMeHfUNQkoCCe) are stable across the rename, so installations and OAuth sessions were unaffected.
 
 ### 3. .triagerookignore alias in the suppressions parser (optional)
 - Add fallback so the parser accepts either .repoguardignore (current) or .triagerookignore (new). Lets users migrate at their own pace.
