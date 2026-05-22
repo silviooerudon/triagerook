@@ -60,7 +60,7 @@ export default function SarifDocsPage() {
               You can also pull it programmatically:
             </p>
             <pre className="mt-3 bg-slate-900/80 border border-slate-800 rounded-lg p-4 text-xs font-mono text-slate-300 overflow-x-auto">
-{`curl -L "https://repoguard-chi.vercel.app/api/scans/<SCAN_ID>/sarif" \\
+{`curl -L "https://www.triagerook.com/api/scans/<SCAN_ID>/sarif" \\
   -H "Cookie: authjs.session-token=<your-session-cookie>" \\
   -o triagerook.sarif.json`}
             </pre>
@@ -101,7 +101,7 @@ jobs:
         run: |
           curl -fL \\
             -H "Cookie: authjs.session-token=\${{ secrets.TRIAGEROOK_SESSION }}" \\
-            "https://repoguard-chi.vercel.app/api/scans/\${{ inputs.scan_id }}/sarif" \\
+            "https://www.triagerook.com/api/scans/\${{ inputs.scan_id }}/sarif" \\
             -o triagerook.sarif.json
 
       - name: Upload to Code Scanning
@@ -181,7 +181,7 @@ jobs:
           REPO: \${{ github.event.repository.name }}
         run: |
           curl -fSL -X POST \\
-            "https://repoguard-chi.vercel.app/api/scan-public/\${OWNER}/\${REPO}?format=sarif" \\
+            "https://www.triagerook.com/api/scan-public/\${OWNER}/\${REPO}?format=sarif" \\
             -o triagerook.sarif.json
       - uses: github/codeql-action/upload-sarif@f411752efdf656cb71aa17b755b22c890960da1d # v3.35.5
         with:

@@ -68,4 +68,5 @@ skills-lock.json
 # bodies to gh+git on Windows (heredoc + here-string have edge cases).
 # These should never be tracked.
 .commit-msg.txt
+.commit-msg-tmp
 .pr-body.txt

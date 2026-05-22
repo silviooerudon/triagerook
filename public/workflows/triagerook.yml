@@ -4,7 +4,7 @@
 #
 # Public repositories only — TriageRook's anonymous scan endpoint refuses
 # private repos by design. For private repos, sign in at
-# https://repoguard-chi.vercel.app and use the SARIF download from a
+# https://www.triagerook.com and use the SARIF download from a
 # saved scan.
 #
 # Rate limit: 5 scans per repo per hour, 10 scans per source IP per
@@ -39,7 +39,7 @@ jobs:
           curl -fSL \
             -X POST \
             -H "Content-Type: application/json" \
-            "https://repoguard-chi.vercel.app/api/scan-public/${OWNER}/${REPO}?format=sarif" \
+            "https://www.triagerook.com/api/scan-public/${OWNER}/${REPO}?format=sarif" \
             -o triagerook.sarif.json
 
       - name: Upload to Code Scanning

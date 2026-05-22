@@ -42,7 +42,7 @@ describe("scanToSarif - envelope", () => {
     const driver = out.runs[0].tool.driver
     expect(driver.name).toBe("TriageRook")
     expect(driver.version).toBeTruthy()
-    expect(driver.informationUri).toContain(".vercel.app")
+    expect(driver.informationUri).toBe("https://www.triagerook.com")
   })
 
   it("uses the version from package.json (not a stale hardcoded string)", async () => {

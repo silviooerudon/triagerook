@@ -1,12 +1,12 @@
 # TriageRook
 
-![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg) ![Status: Beta](https://img.shields.io/badge/status-beta-orange.svg) ![Next.js 16](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs) ![TypeScript 5](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript) ![Live](https://img.shields.io/website?url=https%3A%2F%2Frepoguard-chi.vercel.app&label=live%20demo)
+![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg) ![Status: Beta](https://img.shields.io/badge/status-beta-orange.svg) ![Next.js 16](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs) ![TypeScript 5](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript) ![Live](https://img.shields.io/website?url=https%3A%2F%2Fwww.triagerook.com&label=live%20demo)
 
-> Lightweight GitHub security scanner for solo devs and small teams. Live at **[repoguard-chi.vercel.app](https://repoguard-chi.vercel.app)**.
+> Lightweight GitHub security scanner for solo devs and small teams. Live at **[www.triagerook.com](https://www.triagerook.com)**.
 
 Scans your GitHub repos across nine detector families, run in parallel where independent — **60+ secret patterns**, sensitive files, **28 AST-based SAST rules**, dependencies across **npm, PyPI, Go, and RubyGems**, supply-chain misconfigurations, IaC checks for Dockerfile and GitHub Actions, and git-history replay — with no CLI, no config, and no pipelines to wire up. Sign in with GitHub or paste a public URL, then get a prioritized list of findings in under a minute. Every finding is one click from a **SARIF 2.1.0 export** ready to upload to GitHub Code Scanning.
 
-📖 The full rule catalog (170+ rules, every CWE) is published at [`/docs/rules`](https://repoguard-chi.vercel.app/docs/rules). The SARIF integration guide lives at [`/docs/sarif`](https://repoguard-chi.vercel.app/docs/sarif).
+📖 The full rule catalog (170+ rules, every CWE) is published at [`/docs/rules`](https://www.triagerook.com/docs/rules). The SARIF integration guide lives at [`/docs/sarif`](https://www.triagerook.com/docs/sarif).
 
 ## Why I built this
 
@@ -41,7 +41,7 @@ Two layers run side-by-side:
 - **AST analysis** via the TypeScript Compiler API (`ts-morph`) — 28 rules over JS/TS that track user input flowing into dangerous sinks across property hops the regex layer can't follow.
 - **Conservative regex rules** over JS/TS and Python where AST parsing would be overkill — TLS verify disabled, weak bcrypt cost, NEXT_PUBLIC_ secret reads, Python `yaml.load` without `SafeLoader`, etc.
 
-Every rule is tied to a CWE identifier so findings are actionable. Headline coverage (full list at [`/docs/rules`](https://repoguard-chi.vercel.app/docs/rules)):
+Every rule is tied to a CWE identifier so findings are actionable. Headline coverage (full list at [`/docs/rules`](https://www.triagerook.com/docs/rules)):
 
 - **Injection** — SQL (CWE-89), command (CWE-78), NoSQL (`$where` user input, CWE-943), SSTI (CWE-1336), prototype pollution (CWE-1321), XXE (CWE-611)
 - **Cross-site scripting** — React `dangerouslySetInnerHTML` (CWE-79), reflected XSS via `res.send`
@@ -85,7 +85,7 @@ The angle a 10+ year IAM/IGA specialist actually cares about: identity and acces
 
 ### SARIF 2.1.0 export + GitHub Code Scanning
 
-Every saved scan is one click from a SARIF 2.1.0 export. Drop the file into `github/codeql-action/upload-sarif` and findings show up in your repo's `Security → Code scanning` tab next to CodeQL and Dependabot — with each result deep-linked back to its rule documentation. Anonymous scans at `/scan-public/<owner>/<repo>` can also export SARIF (generated client-side from the in-flight result). For public repos, the anonymous scan endpoint accepts `?format=sarif` directly — drop the [ready-made workflow](https://repoguard-chi.vercel.app/workflows/triagerook.yml) at `.github/workflows/triagerook.yml` and every push gets scanned + uploaded with zero auth setup. Full setup guide with copy-pasteable workflow YAML at [`/docs/sarif`](https://repoguard-chi.vercel.app/docs/sarif).
+Every saved scan is one click from a SARIF 2.1.0 export. Drop the file into `github/codeql-action/upload-sarif` and findings show up in your repo's `Security → Code scanning` tab next to CodeQL and Dependabot — with each result deep-linked back to its rule documentation. Anonymous scans at `/scan-public/<owner>/<repo>` can also export SARIF (generated client-side from the in-flight result). For public repos, the anonymous scan endpoint accepts `?format=sarif` directly — drop the [ready-made workflow](https://www.triagerook.com/workflows/triagerook.yml) at `.github/workflows/triagerook.yml` and every push gets scanned + uploaded with zero auth setup. Full setup guide with copy-pasteable workflow YAML at [`/docs/sarif`](https://www.triagerook.com/docs/sarif).
 
 ### Auto-fix pull requests
 
@@ -104,7 +104,7 @@ We **never** store in our database:
 
 We **do** store: scan metadata (owner/repo, timestamp, counts) and findings (file paths + line numbers + pattern IDs + masked previews) so you can review history.
 
-Data lives in Supabase (EU region) and Vercel. You can revoke access anytime via your [GitHub settings](https://github.com/settings/applications). Full details on the [security page](https://repoguard-chi.vercel.app/security).
+Data lives in Supabase (EU region) and Vercel. You can revoke access anytime via your [GitHub settings](https://github.com/settings/applications). Full details on the [security page](https://www.triagerook.com/security).
 
 ## Tech stack
 
@@ -151,7 +151,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Built in public. Rough order of what's next, depending on user feedback:
 
-- [x] SARIF 2.1.0 export and GitHub Code Scanning integration — [`/docs/sarif`](https://repoguard-chi.vercel.app/docs/sarif)
+- [x] SARIF 2.1.0 export and GitHub Code Scanning integration — [`/docs/sarif`](https://www.triagerook.com/docs/sarif)
 - [x] Ignore rules / per-finding suppressions (user-scoped, synced via Supabase)
 - [x] Auto-fix pull requests (requires GitHub App install on the target repo)
 - [x] Go and Ruby dependency scanning (OSV.dev covers both — `go.mod` + `Gemfile.lock`)
