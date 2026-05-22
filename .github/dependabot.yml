@@ -11,6 +11,15 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
+    ignore:
+      # eslint-config-next@16.2.6 (current stable) bundles
+      # eslint-plugin-react@7.37.5, which uses the legacy
+      # `context.getFilename()` API that ESLint 10 removed. The plugin's
+      # peer dep is `eslint: ^9` and Vercel has not yet shipped a stable
+      # Next.js eslint-config that supports ESLint 10. Block major bumps
+      # of eslint until that lands upstream, then drop this rule.
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
     groups:
       production-dependencies:
         dependency-type: "production"
