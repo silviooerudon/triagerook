@@ -14,6 +14,7 @@ import {
   scanDockerfile,
   scanGithubActions,
 } from "./iac"
+import { scanKubernetes } from "./iac-k8s"
 import type {
   SecretFinding,
   SensitiveFileFinding,
@@ -513,6 +514,11 @@ async function scanFile(
       iac.push(...scanDockerfile(content, file.path))
     } else if (isActionsWorkflowPath(file.path)) {
       iac.push(...scanGithubActions(content, file.path))
+    } else if (/\.ya?ml$/i.test(file.path)) {
+      // Kubernetes manifests aren't path-identifiable, so scanKubernetes
+      // self-guards on content (apiVersion: + kind:) and returns [] for
+      // non-manifest YAML.
+      iac.push(...scanKubernetes(content, file.path))
     }
 
     return {
