@@ -194,6 +194,18 @@ function describeFinding(finding: AnyFinding): FindingShape | null {
       lineNumber: null,
     }
   }
+  if (finding.kind === "license") {
+    const d = finding.data
+    return {
+      ruleId: `license/${d.risk}`,
+      ruleName: `${d.license ?? "No license"} (${d.risk})`,
+      ruleDescription: d.description,
+      level: severityToLevel(d.severity, false),
+      message: `${d.package}@${d.version} — ${d.license ?? "no license declared"} (${d.risk})`,
+      filePath: d.source ?? "package-lock.json",
+      lineNumber: null,
+    }
+  }
   return null
 }
 

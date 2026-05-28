@@ -323,6 +323,8 @@ function findingTitle(f: PrioritizedFinding): string {
       return f.data.name
     case "dependency":
       return `${f.data.package} — ${f.data.title}`
+    case "license":
+      return `${f.data.package} — ${f.data.license ?? "no license"} (${f.data.risk})`
   }
 }
 
@@ -339,6 +341,8 @@ function findingLocation(f: PrioritizedFinding): string {
       return f.data.filePath
     case "dependency":
       return f.data.ghsa ? `${f.data.ghsa}` : `version ${f.data.version}`
+    case "license":
+      return `${f.data.package}@${f.data.version}`
   }
 }
 
