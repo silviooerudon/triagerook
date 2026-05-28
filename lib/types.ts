@@ -110,6 +110,7 @@ export type IaCCategory =
   | "github-actions"
   | "terraform"
   | "kubernetes"
+  | "iam-policy"
   | "npm-scripts"
   | "supply-chain"
 

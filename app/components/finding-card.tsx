@@ -52,6 +52,8 @@ function iacCategoryLabel(cat: IaCFinding["category"]): string {
       return "Terraform"
     case "kubernetes":
       return "Kubernetes"
+    case "iam-policy":
+      return "Cloud IAM"
     case "npm-scripts":
       return "npm lifecycle"
     case "supply-chain":

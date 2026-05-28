@@ -159,6 +159,8 @@ function howItRuns(layer: string): string {
       return "Run against `.github/workflows/*.yml` files. Targets the published patterns behind real-world breaches (GhostAction, s1ngularity, tj-actions/changed-files)."
     case "iac-kubernetes":
       return "Run against YAML files that look like Kubernetes manifests (top-level `apiVersion:` + `kind:`). Line-based checks across multi-document files; Helm-templated lines are skipped."
+    case "iac-iam":
+      return "Run against JSON/YAML/source files. AWS IAM rules require a policy-document context (Statement + Effect); GCP primitive roles are matched anywhere. HCL is left to the Terraform layer."
     default:
       return "Detection layer not documented."
   }

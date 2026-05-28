@@ -66,6 +66,10 @@ Detection runs over JavaScript / TypeScript primarily. Python coverage extends t
 - **Go** — parses `go.mod` (direct + indirect requires, strips `+incompatible`). Queries OSV with ecosystem `Go`; advisories link to `pkg.go.dev/vuln/...` for the official Go vulnerability page when available.
 - **RubyGems** — parses `Gemfile.lock` for pinned versions (Gemfile alone is not authoritative because it carries constraints, not concrete versions). Queries OSV with ecosystem `RubyGems`, same advisory coverage `bundler-audit` uses.
 
+### 6b. Cloud IAM in code
+
+Over-privileged cloud IAM declared in code/config — the `chmod 777` of cloud permissions. TriageRook flags **AWS IAM policy documents** (in `*.json` or inline in source) with a wildcard action (`"Action": "*"`), service-wide wildcard (`"s3:*"`), wildcard resource (`"Resource": "*"`), or a public principal (`"Principal": "*"` / `{"AWS": "*"}`); and **GCP primitive roles** (`roles/owner`, `roles/editor`) wherever they appear. AWS rules require a real policy-document context (`Statement` + `Effect`) to avoid false positives on arbitrary JSON. HCL (`.tf`) is left to the Terraform layer. This is distinct from the org/repo IAM-posture scanner below — this is identity risk *in your code*.
+
 ### 7. CI / IaC / supply-chain misconfigurations
 
 - **Dockerfile** — container running as root, missing `USER` directive, `:latest` base tags, `ADD http(s)://`, secrets baked into `ENV`, `RUN curl | sh`, `chmod 777`, unpinned `apt install`
