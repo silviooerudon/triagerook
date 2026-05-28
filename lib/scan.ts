@@ -18,12 +18,15 @@ import {
   scanDockerfile,
   scanGithubActions,
 } from "./iac"
+import { scanKubernetes } from "./iac-k8s"
+import { isTerraformPath, scanTerraform } from "./iac-terraform"
 import type {
   SecretFinding,
   SensitiveFileFinding,
   CodeFinding,
   IaCFinding,
   DependencyFinding,
+  LicenseFinding,
   DetectorHealth,
 } from "./types"
 
@@ -113,6 +116,9 @@ export type ScanResult = {
   // always emit them (possibly empty arrays).
   goDependencies?: DependencyFinding[]
   rubyDependencies?: DependencyFinding[]
+  // Open-source license / compliance findings (copyleft, missing license).
+  // Optional so persisted scans pre-2026-05-28 still parse as empty.
+  licenseFindings?: LicenseFinding[]
   // When set, the scan was narrowed to a subfolder of the repo. UI
   // shows this in the header so a user looking at "0 findings" for a
   // narrow scan doesn't conclude the whole repo is clean. Persisted
@@ -539,6 +545,13 @@ async function scanFile(
       iac.push(...scanDockerfile(content, file.path))
     } else if (isActionsWorkflowPath(file.path)) {
       iac.push(...scanGithubActions(content, file.path))
+    } else if (isTerraformPath(file.path)) {
+      iac.push(...scanTerraform(content, file.path))
+    } else if (/\.ya?ml$/i.test(file.path)) {
+      // Kubernetes manifests aren't path-identifiable, so scanKubernetes
+      // self-guards on content (apiVersion: + kind:) and returns [] for
+      // non-manifest YAML.
+      iac.push(...scanKubernetes(content, file.path))
     }
 
     return {

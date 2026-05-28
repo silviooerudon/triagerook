@@ -4,6 +4,7 @@ import type {
   IaCFinding,
   SensitiveFileFinding,
   DependencyFinding,
+  LicenseFinding,
 } from "./types"
 
 export type AnyFinding =
@@ -12,6 +13,7 @@ export type AnyFinding =
   | { kind: "iac"; data: IaCFinding }
   | { kind: "sensitive-file"; data: SensitiveFileFinding }
   | { kind: "dependency"; data: DependencyFinding }
+  | { kind: "license"; data: LicenseFinding }
 
 export type PrioritizedFinding = AnyFinding & {
   score: number
@@ -102,6 +104,13 @@ export function scoreFinding(finding: AnyFinding): number {
     points *= TRANSITIVE_DEP_MULTIPLIER
   }
 
+  // A copyleft obligation flows through transitive deps too, but a transitive
+  // license risk is a lower priority to act on than a direct one — mirror the
+  // dependency discount so the prioritized list sorts direct deps first.
+  if (finding.kind === "license" && finding.data.isTransitive) {
+    points *= TRANSITIVE_DEP_MULTIPLIER
+  }
+
   return points
 }
 
@@ -160,6 +169,7 @@ type ScanLikeShape = {
   pythonDependencies?: DependencyFinding[]
   goDependencies?: DependencyFinding[]
   rubyDependencies?: DependencyFinding[]
+  licenseFindings?: LicenseFinding[]
 }
 
 export function flattenScan(scan: ScanLikeShape): AnyFinding[] {
@@ -173,5 +183,6 @@ export function flattenScan(scan: ScanLikeShape): AnyFinding[] {
   for (const d of scan.pythonDependencies ?? []) out.push({ kind: "dependency", data: d })
   for (const d of scan.goDependencies ?? []) out.push({ kind: "dependency", data: d })
   for (const d of scan.rubyDependencies ?? []) out.push({ kind: "dependency", data: d })
+  for (const l of scan.licenseFindings ?? []) out.push({ kind: "license", data: l })
   return out
 }

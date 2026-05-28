@@ -17,7 +17,7 @@ import {
   type Suppression,
   type SuppressionResult,
 } from "./suppressions"
-import type { DependencyFinding, DetectorHealth } from "./types"
+import type { DependencyFinding, LicenseFinding, DetectorHealth } from "./types"
 import { listSuppressions, toRuntimeSuppression } from "./db-suppressions"
 
 // Output shape that's intentionally a superset: callers pick what they need.
@@ -34,6 +34,7 @@ export type FullScanResult = {
     // them as optional + empty.
     goDependencies: DependencyFinding[]
     rubyDependencies: DependencyFinding[]
+    licenseFindings: LicenseFinding[]
   }
   assessment: RiskAssessment
   suppressionResult: SuppressionResult
@@ -114,6 +115,7 @@ export async function runFullScan(
     pythonDependencies: pythonResult.findings,
     goDependencies: goResult.findings,
     rubyDependencies: rubyResult.findings,
+    licenseFindings: npmResult.licenseFindings,
     iacFindings: [
       ...(secretsResult.iacFindings ?? []),
       ...npmResult.lifecycleIssues,

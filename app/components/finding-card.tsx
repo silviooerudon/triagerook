@@ -3,6 +3,7 @@ import type {
   CodeFinding,
   DependencyFinding,
   IaCFinding,
+  LicenseFinding,
   SecretFinding,
   SensitiveFileFinding,
   Severity,
@@ -20,6 +21,7 @@ const KIND_LABELS: Record<PrioritizedFinding["kind"], string> = {
   iac: "iac",
   "sensitive-file": "sensitive file",
   dependency: "dependency",
+  license: "license",
 }
 
 function KindBadge({ kind }: { kind: PrioritizedFinding["kind"] }) {
@@ -48,6 +50,8 @@ function iacCategoryLabel(cat: IaCFinding["category"]): string {
       return "GitHub Actions"
     case "terraform":
       return "Terraform"
+    case "kubernetes":
+      return "Kubernetes"
     case "npm-scripts":
       return "npm lifecycle"
     case "supply-chain":
@@ -242,6 +246,51 @@ function DependencyFindingCard({ data }: { data: DependencyFinding }) {
   )
 }
 
+const LICENSE_RISK_LABELS: Record<LicenseFinding["risk"], string> = {
+  "copyleft-strong": "strong copyleft",
+  "copyleft-weak": "weak copyleft",
+  missing: "no license",
+  "non-standard": "non-standard",
+}
+
+function LicenseFindingCard({ data }: { data: LicenseFinding }) {
+  return (
+    <CardShell severity={data.severity}>
+      <header className="flex items-center gap-2 flex-wrap mb-1">
+        <h3 className="font-semibold font-mono">
+          {data.package}@{data.version}
+        </h3>
+        <SeverityPill severity={data.severity} />
+        <KindBadge kind="license" />
+        <BadgePill label={LICENSE_RISK_LABELS[data.risk]} tone="warn" />
+        {data.isTransitive && (
+          <BadgePill
+            label="transitive"
+            title="Introduced via another dependency, not directly declared"
+          />
+        )}
+      </header>
+      <p className="text-sm text-slate-400 mb-3">{data.description}</p>
+      <div className="text-xs space-y-1 bg-black/40 border border-slate-800 rounded-lg p-3">
+        <div className="text-slate-400">
+          <span className="text-slate-500">License:</span>{" "}
+          <span className="font-mono text-amber-400">
+            {data.license ?? "none declared"}
+          </span>
+        </div>
+        <a
+          href={data.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block text-amber-400 hover:underline mt-1"
+        >
+          License details →
+        </a>
+      </div>
+    </CardShell>
+  )
+}
+
 export function FindingCard({
   finding,
   fixContext,
@@ -264,6 +313,8 @@ export function FindingCard({
         return <SensitiveFileFindingCard data={finding.data} />
       case "dependency":
         return <DependencyFindingCard data={finding.data} />
+      case "license":
+        return <LicenseFindingCard data={finding.data} />
     }
   })()
 

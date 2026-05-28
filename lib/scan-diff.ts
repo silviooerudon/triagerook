@@ -52,6 +52,8 @@ export function fingerprintFinding(f: AnyFinding | PrioritizedFinding): string {
       const ident = f.data.ghsa ?? f.data.version ?? "?"
       return `dependency|${f.data.package}|${ident}`
     }
+    case "license":
+      return `license|${f.data.package}|${f.data.version}|${f.data.risk}`
   }
 }
 
