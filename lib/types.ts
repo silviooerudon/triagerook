@@ -143,6 +143,33 @@ export type DependencyFinding = {
   isTransitive?: boolean
 }
 
+// License/compliance risk class for a dependency.
+//   copyleft-strong — GPL/AGPL: linking or network use can impose source-
+//                      disclosure obligations on the whole work.
+//   copyleft-weak   — LGPL/MPL/EPL/CDDL: file- or library-level reciprocity.
+//   missing         — no license declared: legally you have no right to use it.
+//   non-standard    — explicitly proprietary / UNLICENSED.
+export type LicenseRisk =
+  | "copyleft-strong"
+  | "copyleft-weak"
+  | "missing"
+  | "non-standard"
+
+export type LicenseFinding = {
+  package: string
+  version: string
+  ecosystem: DependencyEcosystem
+  // The raw SPDX id/expression as declared, or null when none was found.
+  license: string | null
+  risk: LicenseRisk
+  severity: Severity
+  description: string
+  // SPDX license page when we have a recognised id, else the registry page.
+  url: string
+  source?: DependencyFinding["source"]
+  isTransitive?: boolean
+}
+
 export type RulesetBypassFinding = {
   ruleId: string
   ruleName: string

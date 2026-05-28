@@ -4,7 +4,7 @@
 
 > Lightweight GitHub security scanner for solo devs and small teams. Live at **[www.triagerook.com](https://www.triagerook.com)**.
 
-Scans your GitHub repos across nine detector families, run in parallel where independent — **60+ secret patterns**, sensitive files, **28 AST-based SAST rules**, dependencies across **npm, PyPI, Go, and RubyGems**, supply-chain misconfigurations, IaC checks for Dockerfile and GitHub Actions, and git-history replay — with no CLI, no config, and no pipelines to wire up. Sign in with GitHub or paste a public URL, then get a prioritized list of findings in under a minute. Every finding is one click from a **SARIF 2.1.0 export** ready to upload to GitHub Code Scanning.
+Scans your GitHub repos across ten detector families, run in parallel where independent — **60+ secret patterns**, sensitive files, **28 AST-based SAST rules**, dependencies across **npm, PyPI, Go, and RubyGems**, supply-chain misconfigurations, IaC checks for Dockerfile and GitHub Actions, and git-history replay — with no CLI, no config, and no pipelines to wire up. Sign in with GitHub or paste a public URL, then get a prioritized list of findings in under a minute. Every finding is one click from a **SARIF 2.1.0 export** ready to upload to GitHub Code Scanning.
 
 📖 The full rule catalog (170+ rules, every CWE) is published at [`/docs/rules`](https://www.triagerook.com/docs/rules). The SARIF integration guide lives at [`/docs/sarif`](https://www.triagerook.com/docs/sarif).
 
@@ -16,7 +16,7 @@ TriageRook is my attempt at the smallest useful security tool: scan a repo in on
 
 ## What TriageRook actually detects
 
-TriageRook runs nine independent detectors over your repo and aggregates the results into a single prioritized report.
+TriageRook runs ten independent detectors over your repo and aggregates the results into a single prioritized report.
 
 ### 1. Secrets in source code (60+ patterns)
 
@@ -82,6 +82,10 @@ Beyond looking for specific findings, TriageRook grades how the repo is set up: 
 ### 9. IAM risk scanner
 
 The angle a 10+ year IAM/IGA specialist actually cares about: identity and access risk at org and repo level. TriageRook surfaces org-level MFA enforcement (when `read:org` scope is granted), outside-collaborator permission levels, repo-level secret scoping, and authorship patterns that signal stale ownership. When a signal requires permissions the token does not have, TriageRook skips it and labels it as such rather than guessing. This is the slice of enterprise IAM tooling that solo devs and small teams have historically had no access to.
+
+### 10. Open-source license / compliance risk
+
+Legal risk, not security: a transitive GPL/AGPL dependency in a proprietary product, or a package with no license at all (which grants you no legal right to use it), is a real problem CVE scans never surface. TriageRook reads the `license` field recorded on every entry of `package-lock.json` (npm v2/v3) — **no extra network calls** — and flags **strong copyleft** (GPL/AGPL/SSPL), **weak copyleft** (LGPL/MPL/EPL/CDDL), **missing**, and **proprietary/UNLICENSED** licenses. Dual-licensed `(MIT OR GPL-3.0)` expressions with a permissive escape are treated as acceptable, and dev-only dependencies are skipped since they aren't redistributed. PyPI/Go/RubyGems license coverage (which needs per-package registry lookups) is on the roadmap.
 
 ## Beyond detection
 

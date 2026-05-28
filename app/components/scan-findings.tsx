@@ -2,6 +2,7 @@ import type {
   CodeFinding,
   DependencyFinding,
   IaCFinding,
+  LicenseFinding,
   SecretFinding,
   SensitiveFileFinding,
   Severity,
@@ -100,6 +101,7 @@ export type AllFindings = {
   pythonDependencies: DependencyFinding[]
   goDependencies: DependencyFinding[]
   rubyDependencies: DependencyFinding[]
+  licenseFindings: LicenseFinding[]
 }
 
 export function countBySeverity(all: AllFindings) {
@@ -117,6 +119,7 @@ export function countBySeverity(all: AllFindings) {
   for (const f of all.pythonDependencies) bump(f.severity)
   for (const f of all.goDependencies) bump(f.severity)
   for (const f of all.rubyDependencies) bump(f.severity)
+  for (const f of all.licenseFindings) bump(f.severity)
   return buckets
 }
 
@@ -130,7 +133,8 @@ export function totalCount(all: AllFindings) {
     all.npmDependencies.length +
     all.pythonDependencies.length +
     all.goDependencies.length +
-    all.rubyDependencies.length
+    all.rubyDependencies.length +
+    all.licenseFindings.length
   )
 }
 
@@ -432,6 +436,62 @@ export function DependenciesSection({
               className="inline-block text-amber-400 hover:underline mt-1"
             >
               View advisory →
+            </a>
+          </div>
+        </article>
+      ))}
+    </section>
+  )
+}
+
+const LICENSE_RISK_LABELS: Record<LicenseFinding["risk"], string> = {
+  "copyleft-strong": "strong copyleft",
+  "copyleft-weak": "weak copyleft",
+  missing: "no license",
+  "non-standard": "non-standard",
+}
+
+export function LicensesSection({ findings }: { findings: LicenseFinding[] }) {
+  if (findings.length === 0) return null
+  return (
+    <section className="space-y-3">
+      <SectionHeader
+        title="Dependency license / compliance risks"
+        count={findings.length}
+      />
+      {findings.map((f, i) => (
+        <article
+          key={i}
+          className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${severityAccentClass(f.severity)}`}
+        >
+          <header className="flex items-center gap-2 flex-wrap mb-1">
+            <h3 className="font-semibold font-mono">
+              {f.package}@{f.version}
+            </h3>
+            <SeverityPill severity={f.severity} />
+            <BadgePill label={LICENSE_RISK_LABELS[f.risk]} tone="warn" />
+            {f.isTransitive && (
+              <BadgePill
+                label="transitive"
+                title="Introduced via another dependency, not directly declared"
+              />
+            )}
+          </header>
+          <p className="text-sm text-slate-400 mb-3">{f.description}</p>
+          <div className="text-xs space-y-1 bg-black/40 border border-slate-800 rounded-lg p-3">
+            <div className="text-slate-400">
+              <span className="text-slate-500">License:</span>{" "}
+              <span className="font-mono text-amber-400">
+                {f.license ?? "none declared"}
+              </span>
+            </div>
+            <a
+              href={f.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block text-amber-400 hover:underline mt-1"
+            >
+              License details →
             </a>
           </div>
         </article>

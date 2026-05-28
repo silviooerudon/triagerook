@@ -22,6 +22,7 @@ import type {
   CodeFinding,
   IaCFinding,
   DependencyFinding,
+  LicenseFinding,
   DetectorHealth,
 } from "./types"
 
@@ -111,6 +112,9 @@ export type ScanResult = {
   // always emit them (possibly empty arrays).
   goDependencies?: DependencyFinding[]
   rubyDependencies?: DependencyFinding[]
+  // Open-source license / compliance findings (copyleft, missing license).
+  // Optional so persisted scans pre-2026-05-28 still parse as empty.
+  licenseFindings?: LicenseFinding[]
   // When set, the scan was narrowed to a subfolder of the repo. UI
   // shows this in the header so a user looking at "0 findings" for a
   // narrow scan doesn't conclude the whole repo is clean. Persisted
