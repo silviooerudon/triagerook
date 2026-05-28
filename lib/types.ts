@@ -100,6 +100,7 @@ export type IaCCategory =
   | "dockerfile"
   | "github-actions"
   | "terraform"
+  | "kubernetes"
   | "npm-scripts"
   | "supply-chain"
 
