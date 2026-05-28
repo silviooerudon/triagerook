@@ -87,6 +87,10 @@ The angle a 10+ year IAM/IGA specialist actually cares about: identity and acces
 
 Every saved scan is one click from a SARIF 2.1.0 export. Drop the file into `github/codeql-action/upload-sarif` and findings show up in your repo's `Security → Code scanning` tab next to CodeQL and Dependabot — with each result deep-linked back to its rule documentation. Anonymous scans at `/scan-public/<owner>/<repo>` can also export SARIF (generated client-side from the in-flight result). For public repos, the anonymous scan endpoint accepts `?format=sarif` directly — drop the [ready-made workflow](https://www.triagerook.com/workflows/triagerook.yml) at `.github/workflows/triagerook.yml` and every push gets scanned + uploaded with zero auth setup. Full setup guide with copy-pasteable workflow YAML at [`/docs/sarif`](https://www.triagerook.com/docs/sarif).
 
+### Attack paths & blast radius
+
+Individual findings tell you *what's wrong*; this tells you *so what*. TriageRook correlates the findings into multi-hop **attack paths** and assigns each leaked credential a **blast radius** — the concrete assets it reaches. A leaked AWS key becomes "→ AWS account → S3/RDS/data"; pair it with a public-S3 or wildcard-IAM finding in the same repo and the path is chained and elevated to critical. SCM tokens surface the "→ CI/CD → downstream supply chain" pivot; payments keys surface customer-data reach. When secret validation (above) confirms a credential is live, its path is marked and pushed to the top. Pure correlation over the existing findings — no extra calls.
+
 ### Auto-fix pull requests
 
 For findings that have a clean fix (secret rotation via `.env.example` updates, dependency bumps to a non-vulnerable version), TriageRook can open a PR against your repo directly. Requires installing the **TriageRook Security** GitHub App on the target repo so the PR can be authored — installation is scoped to the single repo and grants only `Contents: write` and `Pull requests: write`. You review the PR before merging.

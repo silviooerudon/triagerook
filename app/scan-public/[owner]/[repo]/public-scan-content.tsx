@@ -12,6 +12,7 @@ import type { SupplyChainResult } from "@/lib/supply-chain"
 import {
   AllClear,
   CodeFindingsSection,
+  AttackPathsSection,
   DependenciesSection,
   IaCFindingsSection,
   PrioritizedList,
@@ -397,6 +398,8 @@ function ScanResultView({
       {result.posture && <PostureCard posture={result.posture} />}
       {result.iam && <IamCard iam={result.iam} />}
       {result.supplyChain && <SupplyChainCard supplyChain={result.supplyChain} />}
+
+      <AttackPathsSection graph={result.attackGraph} />
 
       {meta}
 

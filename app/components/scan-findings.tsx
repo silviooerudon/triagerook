@@ -7,6 +7,7 @@ import type {
   Severity,
 } from "@/lib/types"
 import type { PrioritizedFinding } from "@/lib/risk"
+import type { AttackGraph } from "@/lib/attack-graph"
 import { FindingCard } from "./finding-card"
 import { CheckCircleIcon } from "./icons"
 
@@ -131,6 +132,53 @@ export function totalCount(all: AllFindings) {
     all.pythonDependencies.length +
     all.goDependencies.length +
     all.rubyDependencies.length
+  )
+}
+
+// Attack-path summary: the "so what" view that chains correlated findings
+// (e.g. leaked cloud key → public bucket → data) into a single narrative.
+// Rendered above the per-finding lists since it's the headline triage signal.
+export function AttackPathsSection({ graph }: { graph?: AttackGraph }) {
+  if (!graph || graph.paths.length === 0) return null
+  return (
+    <section className="space-y-3">
+      <SectionHeader
+        title="Attack paths"
+        count={graph.paths.length}
+        hint="Correlated, multi-hop reachability — not just individual findings."
+      />
+      {graph.paths.map((p) => (
+        <article
+          key={p.id}
+          className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${severityAccentClass(p.severity)}`}
+        >
+          <header className="flex items-center gap-2 flex-wrap mb-3">
+            <h3 className="font-semibold">{p.title}</h3>
+            <SeverityPill severity={p.severity} />
+            {p.liveCredential && (
+              <span className="text-xs px-2 py-0.5 rounded-full border bg-red-500/15 border-red-500/40 text-red-300 font-medium">
+                ● live credential
+              </span>
+            )}
+          </header>
+          <ol className="space-y-1.5">
+            {p.steps.map((step, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
+                <span className="font-mono text-xs text-amber-400 mt-0.5 shrink-0">
+                  {i === 0 ? "▶" : "└→"}
+                </span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+          {p.entry && (
+            <p className="text-xs text-slate-500 mt-3 font-mono">
+              entry: {p.entry.filePath}:{p.entry.lineNumber}
+            </p>
+          )}
+        </article>
+      ))}
+    </section>
   )
 }
 
