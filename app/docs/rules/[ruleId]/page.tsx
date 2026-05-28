@@ -161,6 +161,8 @@ function howItRuns(layer: string): string {
       return "Run against YAML files that look like Kubernetes manifests (top-level `apiVersion:` + `kind:`). Line-based checks across multi-document files; Helm-templated lines are skipped."
     case "iac-iam":
       return "Run against JSON/YAML/source files. AWS IAM rules require a policy-document context (Statement + Effect); GCP primitive roles are matched anywhere. HCL is left to the Terraform layer."
+    case "framework":
+      return "Gated on framework detection: the repo's manifests (package.json, requirements.txt, pom.xml, Gemfile, composer.json) are read to identify the stack, and the rule only runs against matching-language files when its framework is present."
     default:
       return "Detection layer not documented."
   }
