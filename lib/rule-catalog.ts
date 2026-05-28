@@ -4,6 +4,7 @@ import { CODE_RULES } from "./code-vulns"
 import { SECRET_PATTERNS } from "./secret-patterns"
 import { FILE_RULES } from "./sensitive-files"
 import { DOCKER_RULES, ACTIONS_RULES } from "./iac"
+import { IAM_POLICY_RULES } from "./iam-policy"
 
 // Side-effect import so the AST rule modules register themselves into
 // the runner before we enumerate them. Without this, listAstRules()
@@ -19,6 +20,7 @@ export type DetectorLayer =
   | "sensitive-file"
   | "iac-dockerfile"
   | "iac-github-actions"
+  | "iac-iam"
 
 export type CatalogEntry = {
   id: string
@@ -132,6 +134,19 @@ export function getRuleCatalog(): readonly CatalogEntry[] {
     })
   }
 
+  for (const rule of IAM_POLICY_RULES) {
+    out.push({
+      id: `iac/iam/${rule.id}`,
+      layer: "iac-iam",
+      name: rule.name,
+      severity: rule.severity,
+      category: "iac-iam",
+      cwe: null,
+      description: rule.description,
+      remediation: rule.remediation,
+    })
+  }
+
   out.sort((a, b) => {
     const sev = SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]
     if (sev !== 0) return sev
@@ -172,6 +187,7 @@ export function resolveCatalogEntry(id: string): CatalogEntry | undefined {
   if (prefix === "iac") {
     return findCatalogEntry(`iac/dockerfile/${rest}`)
       ?? findCatalogEntry(`iac/actions/${rest}`)
+      ?? findCatalogEntry(`iac/iam/${rest}`)
   }
   return undefined
 }
@@ -200,4 +216,5 @@ export const LAYER_LABELS: Record<DetectorLayer, string> = {
   "sensitive-file": "Sensitive file",
   "iac-dockerfile": "Dockerfile",
   "iac-github-actions": "GitHub Actions",
+  "iac-iam": "Cloud IAM",
 }

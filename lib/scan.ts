@@ -14,6 +14,7 @@ import {
   scanDockerfile,
   scanGithubActions,
 } from "./iac"
+import { scanIamPolicy } from "./iam-policy"
 import type {
   SecretFinding,
   SensitiveFileFinding,
@@ -514,6 +515,10 @@ async function scanFile(
     } else if (isActionsWorkflowPath(file.path)) {
       iac.push(...scanGithubActions(content, file.path))
     }
+    // IAM-in-code runs additively (not in the else-if chain): an AWS policy
+    // JSON or a file mentioning a GCP primitive role is usually neither a
+    // Dockerfile nor a workflow. Self-guards and skips .tf internally.
+    iac.push(...scanIamPolicy(content, file.path))
 
     return {
       secrets: [...regexFindings, ...entropyFindings],

@@ -24,6 +24,7 @@ const LAYER_ORDER: DetectorLayer[] = [
   "sensitive-file",
   "iac-dockerfile",
   "iac-github-actions",
+  "iac-iam",
 ]
 
 const LAYER_BLURBS: Record<DetectorLayer, string> = {
@@ -38,6 +39,8 @@ const LAYER_BLURBS: Record<DetectorLayer, string> = {
     "Dockerfile hygiene checks: USER root, latest tags, ADD instead of COPY, unsafe shell escapes.",
   "iac-github-actions":
     "GitHub Actions workflow checks: pull_request_target with PR checkout, third-party actions pinned by tag instead of SHA, secrets in expressions.",
+  "iac-iam":
+    "Cloud IAM-in-code checks: AWS IAM policy documents with wildcard actions/resources or a public principal, and GCP primitive roles (roles/owner, roles/editor). Scans JSON/YAML/source; HCL is covered by the Terraform layer.",
 }
 
 const SEV_STYLES: Record<string, string> = {
