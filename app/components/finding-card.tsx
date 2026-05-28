@@ -8,7 +8,7 @@ import type {
   SensitiveFileFinding,
   Severity,
 } from "@/lib/types"
-import { SeverityPill, BadgePill, severityAccentClass } from "./scan-findings"
+import { SeverityPill, BadgePill, ValidationBadge, severityAccentClass } from "./scan-findings"
 import { FixPrButton } from "./fix-pr-button"
 import { SuppressButton } from "./suppress-button"
 import { findingSupportsFix } from "@/lib/fix-engines"
@@ -93,6 +93,7 @@ function SecretFindingCard({ data }: { data: SecretFinding }) {
         <h3 className="font-semibold">{data.patternName}</h3>
         <SeverityPill severity={data.severity} />
         <KindBadge kind="secret" />
+        <ValidationBadge status={data.validation} />
         {isFixture && <FixtureBadge />}
         {isHistory && data.commitSha && (
           <BadgePill

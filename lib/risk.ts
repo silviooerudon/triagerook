@@ -44,6 +44,10 @@ export const SEVERITY_BASE_POINTS = {
 export const TEST_FIXTURE_MULTIPLIER = 0.1
 export const TRANSITIVE_DEP_MULTIPLIER = 0.5
 export const HISTORY_SECRET_MULTIPLIER = 0.5
+// A provider-confirmed live secret is the highest-urgency finding; a rejected
+// (revoked/rotated) one barely matters. Applied only when validation ran.
+export const ACTIVE_SECRET_MULTIPLIER = 1.5
+export const INACTIVE_SECRET_MULTIPLIER = 0.15
 export const REPO_SCORE_CAP = 100
 
 // Score (== penalty) is compressed through log10 so large repos don't
@@ -86,6 +90,14 @@ export function scoreFinding(finding: AnyFinding): number {
 
   if (finding.kind === "secret" && finding.data.source === "history") {
     points *= HISTORY_SECRET_MULTIPLIER
+  }
+
+  // Secret validation (when it ran) sharply changes priority: a confirmed-live
+  // credential is the most urgent thing in any scan, while one the provider
+  // rejected is almost certainly already revoked/rotated.
+  if (finding.kind === "secret") {
+    if (finding.data.validation === "active") points *= ACTIVE_SECRET_MULTIPLIER
+    else if (finding.data.validation === "inactive") points *= INACTIVE_SECRET_MULTIPLIER
   }
 
   if (finding.kind === "dependency" && finding.data.isTransitive) {
