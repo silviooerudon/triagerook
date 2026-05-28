@@ -30,6 +30,15 @@ export type SecretFinding = {
   commitSha?: string
   commitDate?: string
   commitAuthor?: string
+  // Liveness status from the secret-validation engine (lib/secret-validation.ts).
+  // Only the status is ever stored — never the secret value. Absent on scans
+  // where validation was disabled (the common case).
+  validation?:
+    | "active"
+    | "inactive"
+    | "unverifiable"
+    | "error"
+    | "skipped"
 }
 
 export type CodeVulnCategory =

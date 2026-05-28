@@ -90,6 +90,38 @@ export function BadgePill({
   )
 }
 
+// Liveness badge for a validated secret. Only renders for statuses worth
+// showing: a confirmed-live credential (loud red) or a provider-rejected one
+// (muted green = likely already revoked). `unverifiable`/`error`/`skipped`
+// render nothing to avoid clutter.
+export function ValidationBadge({
+  status,
+}: {
+  status?: SecretFinding["validation"]
+}) {
+  if (status === "active") {
+    return (
+      <span
+        className="text-xs px-2 py-0.5 rounded-full border bg-red-500/15 border-red-500/40 text-red-300 font-medium"
+        title="The provider confirmed this credential is still live. Rotate it immediately."
+      >
+        ● live credential
+      </span>
+    )
+  }
+  if (status === "inactive") {
+    return (
+      <span
+        className="text-xs px-2 py-0.5 rounded-full border bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+        title="The provider rejected this credential — it appears already revoked or rotated."
+      >
+        revoked / inactive
+      </span>
+    )
+  }
+  return null
+}
+
 export type AllFindings = {
   secrets: SecretFinding[]
   historySecrets: SecretFinding[]
@@ -197,6 +229,7 @@ function SecretCard({ finding }: { finding: SecretFinding }) {
       <header className="flex items-center gap-2 flex-wrap mb-1">
         <h3 className="font-semibold">{finding.patternName}</h3>
         <SeverityPill severity={finding.severity} />
+        <ValidationBadge status={finding.validation} />
         {isTest && (
           <BadgePill
             label="Test fixture"

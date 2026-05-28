@@ -101,7 +101,7 @@ export async function POST(
       owner,
       repo,
       explicitBranch ?? resolvedBranch,
-      { userIdForDbSuppressions: userId },
+      { userIdForDbSuppressions: userId, allowSecretValidation: true },
       pathPrefix,
     )
 

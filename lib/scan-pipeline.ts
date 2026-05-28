@@ -68,6 +68,11 @@ export type RunFullScanOptions = {
   // are loaded and unioned with the in-repo .repoguardignore. The public
   // scan path passes null and only consumes the file source.
   userIdForDbSuppressions?: string | null
+  // When true, this scan path permits secret liveness validation (it still
+  // ANDs with the deployment-level ENABLE_SECRET_VALIDATION flag). The
+  // authenticated route opts in; the anonymous public route leaves it false so
+  // validation never fires third-party calls with arbitrary repos' secrets.
+  allowSecretValidation?: boolean
 }
 
 export async function runFullScan(
@@ -91,7 +96,9 @@ export async function runFullScan(
     iamResult,
     supplyChainResult,
   ] = await Promise.all([
-    scanRepo(accessToken, owner, repo, explicitBranch, pathPrefix),
+    scanRepo(accessToken, owner, repo, explicitBranch, pathPrefix, {
+      validateSecrets: options.allowSecretValidation ?? false,
+    }),
     scanDependencies(owner, repo, accessToken),
     scanPythonDependencies(owner, repo, accessToken),
     scanGoDependencies(owner, repo, accessToken),
