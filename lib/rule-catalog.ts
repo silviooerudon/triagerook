@@ -4,6 +4,10 @@ import { CODE_RULES } from "./code-vulns"
 import { SECRET_PATTERNS } from "./secret-patterns"
 import { FILE_RULES } from "./sensitive-files"
 import { DOCKER_RULES, ACTIONS_RULES } from "./iac"
+import { K8S_RULES } from "./iac-k8s"
+import { TERRAFORM_RULES } from "./iac-terraform"
+import { IAM_POLICY_RULES } from "./iam-policy"
+import { FRAMEWORK_RULES } from "./framework-rules"
 
 // Side-effect import so the AST rule modules register themselves into
 // the runner before we enumerate them. Without this, listAstRules()
@@ -19,6 +23,10 @@ export type DetectorLayer =
   | "sensitive-file"
   | "iac-dockerfile"
   | "iac-github-actions"
+  | "iac-terraform"
+  | "iac-kubernetes"
+  | "iac-iam"
+  | "framework"
 
 export type CatalogEntry = {
   id: string
@@ -81,6 +89,21 @@ export function getRuleCatalog(): readonly CatalogEntry[] {
     })
   }
 
+  for (const rule of FRAMEWORK_RULES) {
+    out.push({
+      // SARIF emits these as `code/<id>` (they're CodeFindings), so the
+      // catalog id matches for a direct resolve.
+      id: `code/${rule.id}`,
+      layer: "framework",
+      name: rule.name,
+      severity: rule.severity,
+      category: `framework:${rule.framework}`,
+      cwe: rule.cwe,
+      description: rule.description,
+      languages: rule.languages,
+    })
+  }
+
   for (const rule of SECRET_PATTERNS) {
     out.push({
       id: `secret/${rule.id}`,
@@ -132,6 +155,45 @@ export function getRuleCatalog(): readonly CatalogEntry[] {
     })
   }
 
+  for (const rule of TERRAFORM_RULES) {
+    out.push({
+      id: `iac/terraform/${rule.id}`,
+      layer: "iac-terraform",
+      name: rule.name,
+      severity: rule.severity,
+      category: "iac-terraform",
+      cwe: null,
+      description: rule.description,
+      remediation: rule.remediation,
+    })
+  }
+
+  for (const rule of K8S_RULES) {
+    out.push({
+      id: `iac/kubernetes/${rule.id}`,
+      layer: "iac-kubernetes",
+      name: rule.name,
+      severity: rule.severity,
+      category: "iac-kubernetes",
+      cwe: null,
+      description: rule.description,
+      remediation: rule.remediation,
+    })
+  }
+
+  for (const rule of IAM_POLICY_RULES) {
+    out.push({
+      id: `iac/iam/${rule.id}`,
+      layer: "iac-iam",
+      name: rule.name,
+      severity: rule.severity,
+      category: "iac-iam",
+      cwe: null,
+      description: rule.description,
+      remediation: rule.remediation,
+    })
+  }
+
   out.sort((a, b) => {
     const sev = SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]
     if (sev !== 0) return sev
@@ -172,6 +234,9 @@ export function resolveCatalogEntry(id: string): CatalogEntry | undefined {
   if (prefix === "iac") {
     return findCatalogEntry(`iac/dockerfile/${rest}`)
       ?? findCatalogEntry(`iac/actions/${rest}`)
+      ?? findCatalogEntry(`iac/terraform/${rest}`)
+      ?? findCatalogEntry(`iac/kubernetes/${rest}`)
+      ?? findCatalogEntry(`iac/iam/${rest}`)
   }
   return undefined
 }
@@ -200,4 +265,8 @@ export const LAYER_LABELS: Record<DetectorLayer, string> = {
   "sensitive-file": "Sensitive file",
   "iac-dockerfile": "Dockerfile",
   "iac-github-actions": "GitHub Actions",
+  "iac-terraform": "Terraform",
+  "iac-kubernetes": "Kubernetes",
+  "iac-iam": "Cloud IAM",
+  framework: "Framework-aware",
 }

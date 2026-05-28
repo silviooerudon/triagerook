@@ -11,6 +11,7 @@ import {
   AttackPathsSection,
   DependenciesSection,
   IaCFindingsSection,
+  LicensesSection,
   PrioritizedList,
   SecretsSection,
   SensitiveFilesSection,
@@ -160,6 +161,7 @@ function ScanResultView({
     pythonDependencies: result.pythonDependencies ?? [],
     goDependencies: result.goDependencies ?? [],
     rubyDependencies: result.rubyDependencies ?? [],
+    licenseFindings: result.licenseFindings ?? [],
   }
 
   const counts = countBySeverity(all)
@@ -216,6 +218,7 @@ function ScanResultView({
       <DependenciesSection findings={all.pythonDependencies} label="Python" />
       <DependenciesSection findings={all.goDependencies} label="Go" />
       <DependenciesSection findings={all.rubyDependencies} label="Ruby" />
+      <LicensesSection findings={all.licenseFindings} />
       <IaCFindingsSection findings={all.iacFindings} />
       <SecretsSection findings={all.historySecrets} sourceLabel="history" />
     </>

@@ -130,6 +130,9 @@ export function findRuleIdForFinding(finding: FindingLike): string {
     // Deps are path-light; the typical user writes `* [rule=dependency/<pkg>]`.
     case "dependency":
       return `dependency/${data.package ?? "unknown"}`;
+    // License findings suppress per-package, same as deps.
+    case "license":
+      return `license/${data.package ?? "unknown"}`;
     default:
       return "unknown/unknown";
   }
@@ -139,6 +142,7 @@ export function getFindingPath(finding: FindingLike): string {
   const kind = finding?.kind;
   const data = finding?.data ?? {};
   if (kind === "dependency") return data.source ?? "package.json";
+  if (kind === "license") return data.source ?? "package-lock.json";
   if (kind === "secret" || kind === "code" || kind === "iac" || kind === "sensitive-file") {
     return data.filePath ?? "";
   }
@@ -160,9 +164,9 @@ export function getFindingPaths(finding: FindingLike): string[] {
   const kind = finding?.kind;
   const data = finding?.data ?? {};
 
-  if (kind !== "dependency") return [getFindingPath(finding)];
+  if (kind !== "dependency" && kind !== "license") return [getFindingPath(finding)];
 
-  const source = data.source ?? "package.json";
+  const source = data.source ?? (kind === "license" ? "package-lock.json" : "package.json");
   if (NPM_MANIFESTS.has(source)) return Array.from(NPM_MANIFESTS);
   if (PY_MANIFESTS.has(source)) return Array.from(PY_MANIFESTS);
   return [source];

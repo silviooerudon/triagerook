@@ -1,7 +1,13 @@
-import type { DependencyFinding, DetectorHealth, IaCFinding } from "./types"
+import type {
+  DependencyFinding,
+  DetectorHealth,
+  IaCFinding,
+  LicenseFinding,
+} from "./types"
 import { GitHubRateLimitError, parseGitHubRateLimit } from "./scan"
 import { normalizeSeverity } from "./severity"
 import { buildGitHubHeaders } from "./github-fetch"
+import { scanNpmLicenses } from "./licenses"
 
 type PackageJson = {
   name?: string
@@ -274,6 +280,7 @@ async function queryNpmAudit(refs: PkgRef[]): Promise<NpmAuditResult> {
 export type NpmDepsScanResult = {
   vulns: DependencyFinding[]
   lifecycleIssues: IaCFinding[]
+  licenseFindings: LicenseFinding[]
   degraded?: DetectorHealth[]
 }
 
@@ -315,7 +322,7 @@ export async function scanDependencies(
     fetchRepoFile(owner, repo, "package-lock.json", accessToken),
   ])
 
-  if (!pkgRaw && !lockRaw) return { vulns: [], lifecycleIssues: [] }
+  if (!pkgRaw && !lockRaw) return { vulns: [], lifecycleIssues: [], licenseFindings: [] }
 
   let pkg: PackageJson = {}
   try {
@@ -344,9 +351,14 @@ export async function scanDependencies(
     Promise.resolve(findLifecycleScriptIssues(pkg)),
   ])
 
+  // License risk is read straight from the lockfile (no extra network) — npm
+  // records a `license` field per package entry in v2/v3 lockfiles.
+  const licenseFindings = lockRaw ? scanNpmLicenses(lockRaw) : []
+
   return {
     vulns: auditResult.findings,
     lifecycleIssues,
+    licenseFindings,
     degraded: auditResult.degraded ? [auditResult.degraded] : undefined,
   }
 }
