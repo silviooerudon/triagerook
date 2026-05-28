@@ -11,6 +11,7 @@ import { assessPosture, type PostureResult } from "./posture"
 import { assessIAM, type IAMResult } from "./iam"
 import { assessSupplyChain, type SupplyChainResult } from "./supply-chain"
 import { flattenScan, scoreRepo, type RiskAssessment } from "./risk"
+import { buildAttackGraph } from "./attack-graph"
 import {
   parseSuppressions,
   applySuppressions,
@@ -163,6 +164,11 @@ export async function runFullScan(
   const suppressionResult = applySuppressions(flatFindings, parsedSuppressions)
 
   const assessment = scoreRepo(suppressionResult.kept)
+
+  // Blast-radius / attack-path correlation over the kept (non-suppressed)
+  // findings. Pure, no I/O. Attached to fullResult so it persists + returns
+  // alongside everything else.
+  fullResult.attackGraph = buildAttackGraph(suppressionResult.kept)
 
   return {
     fullResult,

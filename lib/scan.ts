@@ -37,6 +37,7 @@ import type {
   LicenseFinding,
   DetectorHealth,
 } from "./types"
+import type { AttackGraph } from "./attack-graph"
 
 export class GitHubRateLimitError extends Error {
   readonly retryAfterSeconds: number
@@ -135,6 +136,10 @@ export type ScanResult = {
   // Detectors that soft-failed during this scan. UI surfaces these as
   // a warning banner so "0 findings" isn't mistaken for "actually clean".
   degraded?: DetectorHealth[]
+  // Blast-radius / attack-path correlation over the findings (lib/attack-
+  // graph.ts). Attached by the scan pipeline. Optional so persisted scans
+  // pre-2026-05-28 still parse.
+  attackGraph?: AttackGraph
 }
 
 // File extensions we want to scan (text-based, likely to contain secrets)

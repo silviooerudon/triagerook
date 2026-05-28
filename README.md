@@ -103,6 +103,10 @@ Every saved scan is one click from a SARIF 2.1.0 export. Drop the file into `git
 
 When enabled (`ENABLE_SECRET_VALIDATION=true`), authenticated scans additionally probe each detected provider secret — GitHub, GitLab, Stripe, OpenAI, Anthropic, SendGrid, Slack, npm — against a single read-only endpoint to mark it **live** or **revoked/inactive**, *without ever exposing or storing the value* (only the status). A confirmed-live credential is boosted to the top of the report; a rejected one is pushed down as almost certainly already rotated. This is the single biggest false-positive reducer for secret findings. It is **off by default** and **never** runs on the anonymous public-scan path — that path scans arbitrary repos, and TriageRook will not fire third-party API calls using strangers' leaked credentials. AWS keys are reported as unverifiable (validating them needs both key halves plus request signing).
 
+### Attack paths & blast radius
+
+Individual findings tell you *what's wrong*; this tells you *so what*. TriageRook correlates the findings into multi-hop **attack paths** and assigns each leaked credential a **blast radius** — the concrete assets it reaches. A leaked AWS key becomes "→ AWS account → S3/RDS/data"; pair it with a public-S3 or wildcard-IAM finding in the same repo and the path is chained and elevated to critical. SCM tokens surface the "→ CI/CD → downstream supply chain" pivot; payments keys surface customer-data reach. When secret validation (above) confirms a credential is live, its path is marked and pushed to the top. Pure correlation over the existing findings — no extra calls.
+
 ### Auto-fix pull requests
 
 For findings that have a clean fix (secret rotation via `.env.example` updates, dependency bumps to a non-vulnerable version), TriageRook can open a PR against your repo directly. Requires installing the **TriageRook Security** GitHub App on the target repo so the PR can be authored — installation is scoped to the single repo and grants only `Contents: write` and `Pull requests: write`. You review the PR before merging.

@@ -14,6 +14,7 @@ import {
   CodeFindingsSection,
   DependenciesSection,
   IaCFindingsSection,
+  AttackPathsSection,
   LicensesSection,
   PrioritizedList,
   SecretsSection,
@@ -238,6 +239,8 @@ function SavedScanView({ scan }: { scan: SavedScan }) {
       {scan.posture && <PostureCard posture={scan.posture} />}
       {scan.iam && <IamCard iam={scan.iam} />}
       {scan.supplyChain && <SupplyChainCard supplyChain={scan.supplyChain} />}
+
+      <AttackPathsSection graph={scan.result.attackGraph} />
 
       {hasRisk ? (
         <>
