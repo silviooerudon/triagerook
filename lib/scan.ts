@@ -14,6 +14,7 @@ import {
   scanDockerfile,
   scanGithubActions,
 } from "./iac"
+import { isTerraformPath, scanTerraform } from "./iac-terraform"
 import type {
   SecretFinding,
   SensitiveFileFinding,
@@ -513,6 +514,8 @@ async function scanFile(
       iac.push(...scanDockerfile(content, file.path))
     } else if (isActionsWorkflowPath(file.path)) {
       iac.push(...scanGithubActions(content, file.path))
+    } else if (isTerraformPath(file.path)) {
+      iac.push(...scanTerraform(content, file.path))
     }
 
     return {
