@@ -59,6 +59,8 @@ Every rule is tied to a CWE identifier so findings are actionable. Headline cove
 
 Detection runs over JavaScript / TypeScript primarily. Python coverage extends to the regex layer for SAST and the dependency layer for vulnerabilities.
 
+**Framework-aware rules (context-aware SAST).** A third layer reads the repo's manifests to detect the stack in use (Next.js, Express, NestJS, Django, Flask, FastAPI, Spring, Laravel, Rails) and runs framework-specific checks *only when that framework is present* — so `DEBUG = True` is flagged as a Django production risk rather than as noise on any variable named `DEBUG`. Coverage includes Django `DEBUG`/`ALLOWED_HOSTS=['*']`/`@csrf_exempt`, Flask `debug=True`, FastAPI wildcard-CORS-with-credentials, Express/NestJS default-wildcard CORS, Spring `csrf().disable()` / `@CrossOrigin("*")` / Actuator `exposure.include=*`, Laravel `'debug' => true`, and Rails `skip_before_action :verify_authenticity_token`.
+
 ### 6. Vulnerable dependencies (npm, PyPI, Go, RubyGems)
 
 - **npm** — prefers `package-lock.json` to cover the entire dependency tree (direct + transitive), supports lockfile v1, v2, and v3. Queries the npm advisory bulk API and links each finding to its GHSA + CVSS score.

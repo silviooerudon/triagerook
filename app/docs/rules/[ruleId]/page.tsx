@@ -157,6 +157,8 @@ function howItRuns(layer: string): string {
       return "Run against Dockerfiles detected by path or basename. Line-based checks with remediation guidance."
     case "iac-github-actions":
       return "Run against `.github/workflows/*.yml` files. Targets the published patterns behind real-world breaches (GhostAction, s1ngularity, tj-actions/changed-files)."
+    case "framework":
+      return "Gated on framework detection: the repo's manifests (package.json, requirements.txt, pom.xml, Gemfile, composer.json) are read to identify the stack, and the rule only runs against matching-language files when its framework is present."
     default:
       return "Detection layer not documented."
   }

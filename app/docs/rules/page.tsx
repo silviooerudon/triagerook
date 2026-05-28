@@ -24,6 +24,7 @@ const LAYER_ORDER: DetectorLayer[] = [
   "sensitive-file",
   "iac-dockerfile",
   "iac-github-actions",
+  "framework",
 ]
 
 const LAYER_BLURBS: Record<DetectorLayer, string> = {
@@ -38,6 +39,8 @@ const LAYER_BLURBS: Record<DetectorLayer, string> = {
     "Dockerfile hygiene checks: USER root, latest tags, ADD instead of COPY, unsafe shell escapes.",
   "iac-github-actions":
     "GitHub Actions workflow checks: pull_request_target with PR checkout, third-party actions pinned by tag instead of SHA, secrets in expressions.",
+  framework:
+    "Context-aware rules that only fire when the repo actually uses the framework (Next.js, Express, NestJS, Django, Flask, FastAPI, Spring, Laravel, Rails). Catches framework-specific misconfig — DEBUG on, CSRF disabled, wildcard CORS — without false positives on unrelated code.",
 }
 
 const SEV_STYLES: Record<string, string> = {

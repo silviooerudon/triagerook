@@ -53,6 +53,7 @@ export type CodeVulnCategory =
   | "weak-session"
   | "timing-attack"
   | "xxe"
+  | "framework"
 
 export type CodeFinding = {
   ruleId: string

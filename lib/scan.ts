@@ -14,6 +14,13 @@ import {
   scanDockerfile,
   scanGithubActions,
 } from "./iac"
+import {
+  detectFrameworks,
+  MANIFEST_FILES,
+  type Framework,
+  type Manifests,
+} from "./framework-detect"
+import { scanFrameworkRules } from "./framework-rules"
 import type {
   SecretFinding,
   SensitiveFileFinding,
@@ -249,6 +256,17 @@ export async function scanRepo(
   //    sibling subfolders.
   const sensitiveFiles = findSensitiveFiles(blobsInScope.map((b) => b.path))
 
+  // 4b. Detect frameworks from manifests so the framework-aware SAST layer
+  //     can gate its rules. Best-effort: detection failure just means those
+  //     rules don't fire. Uses the in-scope blob list so a narrowed scan
+  //     detects the right subproject's stack.
+  let frameworks: Set<Framework> = new Set()
+  try {
+    frameworks = await detectRepoFrameworks(accessToken, owner, repo, blobsInScope)
+  } catch {
+    frameworks = new Set()
+  }
+
   // 5. Scan files in parallel batches
   const findings: SecretFinding[] = []
   const codeFindings: CodeFinding[] = []
@@ -265,7 +283,7 @@ export async function scanRepo(
 
     const batch = filesToScan.slice(i, i + BATCH_SIZE)
     const batchResults = await Promise.all(
-      batch.map((file) => scanFile(accessToken, owner, repo, file))
+      batch.map((file) => scanFile(accessToken, owner, repo, file, frameworks))
     )
 
     for (const { secrets, code, iac } of batchResults) {
@@ -473,25 +491,70 @@ type FileScanResult = {
   iac: IaCFinding[]
 }
 
+// Fetch a single blob's UTF-8 text by sha, or null on any failure. Shared by
+// scanFile and the framework-manifest pre-pass.
+async function fetchBlobText(
+  accessToken: string | null,
+  owner: string,
+  repo: string,
+  sha: string,
+): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/git/blobs/${sha}`,
+      { headers: buildGitHubHeaders(accessToken), cache: "no-store" },
+    )
+    if (!res.ok) return null
+    const data = (await res.json()) as { content: string; encoding: string }
+    if (data.encoding !== "base64") return null
+    return Buffer.from(data.content, "base64").toString("utf-8")
+  } catch {
+    return null
+  }
+}
+
+// Detect web frameworks from the repo's root manifests. Fetches only the
+// shallowest copy of each known manifest (so a vendored package.json deep in
+// the tree doesn't drive detection) — a handful of small blob fetches.
+async function detectRepoFrameworks(
+  accessToken: string | null,
+  owner: string,
+  repo: string,
+  blobs: GitHubTreeItem[],
+): Promise<Set<Framework>> {
+  const shallowest = new Map<keyof Manifests, GitHubTreeItem>()
+  for (const blob of blobs) {
+    const base = blob.path.split("/").pop() ?? ""
+    const key = MANIFEST_FILES[base]
+    if (!key) continue
+    const existing = shallowest.get(key)
+    if (!existing || blob.path.split("/").length < existing.path.split("/").length) {
+      shallowest.set(key, blob)
+    }
+  }
+  if (shallowest.size === 0) return new Set()
+
+  const entries = await Promise.all(
+    Array.from(shallowest.entries()).map(async ([key, blob]) => {
+      const text = await fetchBlobText(accessToken, owner, repo, blob.sha)
+      return [key, text] as const
+    }),
+  )
+  const manifests: Manifests = {}
+  for (const [key, text] of entries) manifests[key] = text
+  return detectFrameworks(manifests)
+}
+
 async function scanFile(
   accessToken: string | null,
   owner: string,
   repo: string,
-  file: GitHubTreeItem
+  file: GitHubTreeItem,
+  frameworks: Set<Framework>,
 ): Promise<FileScanResult> {
   try {
-    const url = `https://api.github.com/repos/${owner}/${repo}/git/blobs/${file.sha}`
-    const response = await fetch(url, {
-      headers: buildGitHubHeaders(accessToken),
-      cache: "no-store",
-    })
-
-    if (!response.ok) return { secrets: [], code: [], iac: [] }
-
-    const data = (await response.json()) as { content: string; encoding: string }
-    if (data.encoding !== "base64") return { secrets: [], code: [], iac: [] }
-
-    const content = Buffer.from(data.content, "base64").toString("utf-8")
+    const content = await fetchBlobText(accessToken, owner, repo, file.sha)
+    if (content === null) return { secrets: [], code: [], iac: [] }
 
     // Skip files that look binary (lots of non-printable chars)
     if (looksBinary(content)) return { secrets: [], code: [], iac: [] }
@@ -500,6 +563,15 @@ async function scanFile(
     const regexFindings = matchPatterns(content, file.path, likelyTestFixture)
     const entropyFindings = findEntropySecrets(content, file.path, likelyTestFixture)
     const codeFindings = findCodeVulns(content, file.path, likelyTestFixture)
+    // Framework-aware rules — gated on the repo's detected frameworks and the
+    // file's language (see lib/framework-rules.ts). Empty when no framework
+    // matched, so it's free for non-framework repos.
+    const frameworkFindings = scanFrameworkRules(
+      content,
+      file.path,
+      frameworks,
+      likelyTestFixture,
+    )
     // AST-based SAST runs alongside the regex code-vulns layer (not
     // instead of it). Regex rules catch patterns AST can't cheaply
     // express (e.g. comments, string-content checks like bcrypt rounds);
@@ -517,7 +589,7 @@ async function scanFile(
 
     return {
       secrets: [...regexFindings, ...entropyFindings],
-      code: [...codeFindings, ...astFindings],
+      code: [...codeFindings, ...astFindings, ...frameworkFindings],
       iac,
     }
   } catch {

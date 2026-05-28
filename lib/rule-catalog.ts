@@ -4,6 +4,7 @@ import { CODE_RULES } from "./code-vulns"
 import { SECRET_PATTERNS } from "./secret-patterns"
 import { FILE_RULES } from "./sensitive-files"
 import { DOCKER_RULES, ACTIONS_RULES } from "./iac"
+import { FRAMEWORK_RULES } from "./framework-rules"
 
 // Side-effect import so the AST rule modules register themselves into
 // the runner before we enumerate them. Without this, listAstRules()
@@ -19,6 +20,7 @@ export type DetectorLayer =
   | "sensitive-file"
   | "iac-dockerfile"
   | "iac-github-actions"
+  | "framework"
 
 export type CatalogEntry = {
   id: string
@@ -75,6 +77,21 @@ export function getRuleCatalog(): readonly CatalogEntry[] {
       name: rule.name,
       severity: rule.severity,
       category: rule.category,
+      cwe: rule.cwe,
+      description: rule.description,
+      languages: rule.languages,
+    })
+  }
+
+  for (const rule of FRAMEWORK_RULES) {
+    out.push({
+      // SARIF emits these as `code/<id>` (they're CodeFindings), so the
+      // catalog id matches for a direct resolve.
+      id: `code/${rule.id}`,
+      layer: "framework",
+      name: rule.name,
+      severity: rule.severity,
+      category: `framework:${rule.framework}`,
       cwe: rule.cwe,
       description: rule.description,
       languages: rule.languages,
@@ -200,4 +217,5 @@ export const LAYER_LABELS: Record<DetectorLayer, string> = {
   "sensitive-file": "Sensitive file",
   "iac-dockerfile": "Dockerfile",
   "iac-github-actions": "GitHub Actions",
+  framework: "Framework-aware",
 }
