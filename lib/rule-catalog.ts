@@ -4,6 +4,7 @@ import { CODE_RULES } from "./code-vulns"
 import { SECRET_PATTERNS } from "./secret-patterns"
 import { FILE_RULES } from "./sensitive-files"
 import { DOCKER_RULES, ACTIONS_RULES } from "./iac"
+import { K8S_RULES } from "./iac-k8s"
 import { TERRAFORM_RULES } from "./iac-terraform"
 
 // Side-effect import so the AST rule modules register themselves into
@@ -21,6 +22,7 @@ export type DetectorLayer =
   | "iac-dockerfile"
   | "iac-github-actions"
   | "iac-terraform"
+  | "iac-kubernetes"
 
 export type CatalogEntry = {
   id: string
@@ -147,6 +149,19 @@ export function getRuleCatalog(): readonly CatalogEntry[] {
     })
   }
 
+  for (const rule of K8S_RULES) {
+    out.push({
+      id: `iac/kubernetes/${rule.id}`,
+      layer: "iac-kubernetes",
+      name: rule.name,
+      severity: rule.severity,
+      category: "iac-kubernetes",
+      cwe: null,
+      description: rule.description,
+      remediation: rule.remediation,
+    })
+  }
+
   out.sort((a, b) => {
     const sev = SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]
     if (sev !== 0) return sev
@@ -188,6 +203,7 @@ export function resolveCatalogEntry(id: string): CatalogEntry | undefined {
     return findCatalogEntry(`iac/dockerfile/${rest}`)
       ?? findCatalogEntry(`iac/actions/${rest}`)
       ?? findCatalogEntry(`iac/terraform/${rest}`)
+      ?? findCatalogEntry(`iac/kubernetes/${rest}`)
   }
   return undefined
 }
@@ -217,4 +233,5 @@ export const LAYER_LABELS: Record<DetectorLayer, string> = {
   "iac-dockerfile": "Dockerfile",
   "iac-github-actions": "GitHub Actions",
   "iac-terraform": "Terraform",
+  "iac-kubernetes": "Kubernetes",
 }

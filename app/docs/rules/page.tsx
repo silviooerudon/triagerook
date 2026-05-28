@@ -25,6 +25,7 @@ const LAYER_ORDER: DetectorLayer[] = [
   "iac-dockerfile",
   "iac-github-actions",
   "iac-terraform",
+  "iac-kubernetes",
 ]
 
 const LAYER_BLURBS: Record<DetectorLayer, string> = {
@@ -41,6 +42,8 @@ const LAYER_BLURBS: Record<DetectorLayer, string> = {
     "GitHub Actions workflow checks: pull_request_target with PR checkout, third-party actions pinned by tag instead of SHA, secrets in expressions.",
   "iac-terraform":
     "Terraform/HCL misconfiguration checks: public S3 buckets, security groups open to 0.0.0.0/0, wildcard IAM actions/resources, unencrypted or publicly accessible storage.",
+  "iac-kubernetes":
+    "Kubernetes manifest checks: privileged containers, host namespaces, privilege escalation, running as root, mutable image tags, dangerous Linux capabilities. Helm-templated lines are skipped.",
 }
 
 const SEV_STYLES: Record<string, string> = {
