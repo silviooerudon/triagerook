@@ -9,11 +9,18 @@ import { prioritizeFilesForScan } from "./scan-priority"
 import { getMaxFilesToScan, getMaxScanTimeMs } from "./scan-budget"
 import { isLikelyScannerSelfReference } from "./scanner-self-reference"
 import {
+  validateSecrets,
+  type SecretWithValue,
+} from "./secret-validation"
+import {
   isActionsWorkflowPath,
   isDockerfilePath,
   scanDockerfile,
   scanGithubActions,
 } from "./iac"
+import { scanKubernetes } from "./iac-k8s"
+import { isTerraformPath, scanTerraform } from "./iac-terraform"
+import { scanIamPolicy } from "./iam-policy"
 import {
   detectFrameworks,
   MANIFEST_FILES,
@@ -27,6 +34,7 @@ import type {
   CodeFinding,
   IaCFinding,
   DependencyFinding,
+  LicenseFinding,
   DetectorHealth,
 } from "./types"
 
@@ -116,6 +124,9 @@ export type ScanResult = {
   // always emit them (possibly empty arrays).
   goDependencies?: DependencyFinding[]
   rubyDependencies?: DependencyFinding[]
+  // Open-source license / compliance findings (copyleft, missing license).
+  // Optional so persisted scans pre-2026-05-28 still parse as empty.
+  licenseFindings?: LicenseFinding[]
   // When set, the scan was narrowed to a subfolder of the repo. UI
   // shows this in the header so a user looking at "0 findings" for a
   // narrow scan doesn't conclude the whole repo is clean. Persisted
@@ -211,7 +222,13 @@ export async function scanRepo(
   // isSafeRepoFilePath() at the API boundary — callers that don't
   // pre-validate risk feeding GitHub's tree filter a directory
   // traversal segment.
-  pathPrefix?: string
+  pathPrefix?: string,
+  // Optional scan-level options. `validateSecrets` is the per-call permission
+  // gate for secret liveness validation — it ANDs with the deployment-level
+  // ENABLE_SECRET_VALIDATION flag (see lib/secret-validation.ts). The
+  // anonymous public-scan path leaves this false so it never fires
+  // third-party API calls with credentials found in arbitrary repos.
+  opts?: { validateSecrets?: boolean },
 ): Promise<ScanResult> {
   const startedAt = Date.now()
   const repoFullName = `${owner}/${repo}`
@@ -271,6 +288,8 @@ export async function scanRepo(
   const findings: SecretFinding[] = []
   const codeFindings: CodeFinding[] = []
   const iacFindings: IaCFinding[] = []
+  // Transient raw-value channel for optional secret validation. Never returned.
+  const secretValues: SecretWithValue[] = []
   let filesScanned = 0
   let timeLimitHit = false
 
@@ -286,13 +305,22 @@ export async function scanRepo(
       batch.map((file) => scanFile(accessToken, owner, repo, file, frameworks))
     )
 
-    for (const { secrets, code, iac } of batchResults) {
+    for (const { secrets, code, iac, secretValues: sv } of batchResults) {
       findings.push(...secrets)
       codeFindings.push(...code)
       iacFindings.push(...iac)
+      secretValues.push(...sv)
     }
     filesScanned += batch.length
   }
+
+  // Optional secret liveness validation. Mutates finding.validation in place
+  // (the finding objects in `secretValues` are the same references already
+  // pushed to `findings`). Raw values stay local to this function and are
+  // never returned. No-ops unless the deployment flag + per-call flag are set.
+  await validateSecrets(secretValues, {
+    enabled: opts?.validateSecrets ?? false,
+  })
 
   // 6. Scan recent commit history (best-effort; soft-fails on errors)
   let historyFindings: SecretFinding[] = []
@@ -489,6 +517,10 @@ type FileScanResult = {
   secrets: SecretFinding[]
   code: CodeFinding[]
   iac: IaCFinding[]
+  // Transient: regex-pattern secrets paired with their raw values, for
+  // optional liveness validation. Entropy secrets are omitted (no known
+  // provider to validate against). Never persisted.
+  secretValues: SecretWithValue[]
 }
 
 // Fetch a single blob's UTF-8 text by sha, or null on any failure. Shared by
@@ -554,13 +586,14 @@ async function scanFile(
 ): Promise<FileScanResult> {
   try {
     const content = await fetchBlobText(accessToken, owner, repo, file.sha)
-    if (content === null) return { secrets: [], code: [], iac: [] }
+    if (content === null) return { secrets: [], code: [], iac: [], secretValues: [] }
 
     // Skip files that look binary (lots of non-printable chars)
-    if (looksBinary(content)) return { secrets: [], code: [], iac: [] }
+    if (looksBinary(content)) return { secrets: [], code: [], iac: [], secretValues: [] }
 
     const likelyTestFixture = isTestLikePath(file.path)
-    const regexFindings = matchPatterns(content, file.path, likelyTestFixture)
+    const regexMatches = matchPatterns(content, file.path, likelyTestFixture)
+    const regexFindings = regexMatches.map((m) => m.finding)
     const entropyFindings = findEntropySecrets(content, file.path, likelyTestFixture)
     const codeFindings = findCodeVulns(content, file.path, likelyTestFixture)
     // Framework-aware rules — gated on the repo's detected frameworks and the
@@ -585,15 +618,27 @@ async function scanFile(
       iac.push(...scanDockerfile(content, file.path))
     } else if (isActionsWorkflowPath(file.path)) {
       iac.push(...scanGithubActions(content, file.path))
+    } else if (isTerraformPath(file.path)) {
+      iac.push(...scanTerraform(content, file.path))
+    } else if (/\.ya?ml$/i.test(file.path)) {
+      // Kubernetes manifests aren't path-identifiable, so scanKubernetes
+      // self-guards on content (apiVersion: + kind:) and returns [] for
+      // non-manifest YAML.
+      iac.push(...scanKubernetes(content, file.path))
     }
+    // IAM-in-code runs additively (not in the else-if chain): an AWS policy
+    // JSON or a file mentioning a GCP primitive role is usually neither a
+    // Dockerfile nor a workflow. Self-guards and skips .tf internally.
+    iac.push(...scanIamPolicy(content, file.path))
 
     return {
       secrets: [...regexFindings, ...entropyFindings],
       code: [...codeFindings, ...astFindings, ...frameworkFindings],
       iac,
+      secretValues: regexMatches,
     }
   } catch {
-    return { secrets: [], code: [], iac: [] }
+    return { secrets: [], code: [], iac: [], secretValues: [] }
   }
 }
 
@@ -614,8 +659,8 @@ function matchPatterns(
   content: string,
   filePath: string,
   likelyTestFixture: boolean,
-): SecretFinding[] {
-  const findings: SecretFinding[] = []
+): SecretWithValue[] {
+  const findings: SecretWithValue[] = []
   const lines = content.split("\n")
 
   for (const pattern of SECRET_PATTERNS) {
@@ -640,14 +685,19 @@ function matchPatterns(
       }
 
       findings.push({
-        patternId: pattern.id,
-        patternName: pattern.name,
-        severity: pattern.severity,
-        description: pattern.description,
-        filePath,
-        lineNumber,
-        lineContent: maskLine(lineContent, match[0]),
-        likelyTestFixture,
+        finding: {
+          patternId: pattern.id,
+          patternName: pattern.name,
+          severity: pattern.severity,
+          description: pattern.description,
+          filePath,
+          lineNumber,
+          lineContent: maskLine(lineContent, match[0]),
+          likelyTestFixture,
+        },
+        // Raw matched value — kept transiently for optional liveness
+        // validation. NEVER persisted; consumed in scanRepo and dropped.
+        rawValue: match[0],
       })
 
       // Prevent infinite loops on zero-width matches

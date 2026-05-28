@@ -4,7 +4,7 @@
 
 > Lightweight GitHub security scanner for solo devs and small teams. Live at **[www.triagerook.com](https://www.triagerook.com)**.
 
-Scans your GitHub repos across nine detector families, run in parallel where independent — **60+ secret patterns**, sensitive files, **28 AST-based SAST rules**, dependencies across **npm, PyPI, Go, and RubyGems**, supply-chain misconfigurations, IaC checks for Dockerfile and GitHub Actions, and git-history replay — with no CLI, no config, and no pipelines to wire up. Sign in with GitHub or paste a public URL, then get a prioritized list of findings in under a minute. Every finding is one click from a **SARIF 2.1.0 export** ready to upload to GitHub Code Scanning.
+Scans your GitHub repos across ten detector families, run in parallel where independent — **60+ secret patterns**, sensitive files, **28 AST-based SAST rules**, dependencies across **npm, PyPI, Go, and RubyGems**, supply-chain misconfigurations, IaC checks for Dockerfile and GitHub Actions, and git-history replay — with no CLI, no config, and no pipelines to wire up. Sign in with GitHub or paste a public URL, then get a prioritized list of findings in under a minute. Every finding is one click from a **SARIF 2.1.0 export** ready to upload to GitHub Code Scanning.
 
 📖 The full rule catalog (170+ rules, every CWE) is published at [`/docs/rules`](https://www.triagerook.com/docs/rules). The SARIF integration guide lives at [`/docs/sarif`](https://www.triagerook.com/docs/sarif).
 
@@ -16,7 +16,7 @@ TriageRook is my attempt at the smallest useful security tool: scan a repo in on
 
 ## What TriageRook actually detects
 
-TriageRook runs nine independent detectors over your repo and aggregates the results into a single prioritized report.
+TriageRook runs ten independent detectors over your repo and aggregates the results into a single prioritized report.
 
 ### 1. Secrets in source code (60+ patterns)
 
@@ -68,10 +68,16 @@ Detection runs over JavaScript / TypeScript primarily. Python coverage extends t
 - **Go** — parses `go.mod` (direct + indirect requires, strips `+incompatible`). Queries OSV with ecosystem `Go`; advisories link to `pkg.go.dev/vuln/...` for the official Go vulnerability page when available.
 - **RubyGems** — parses `Gemfile.lock` for pinned versions (Gemfile alone is not authoritative because it carries constraints, not concrete versions). Queries OSV with ecosystem `RubyGems`, same advisory coverage `bundler-audit` uses.
 
+### 6b. Cloud IAM in code
+
+Over-privileged cloud IAM declared in code/config — the `chmod 777` of cloud permissions. TriageRook flags **AWS IAM policy documents** (in `*.json` or inline in source) with a wildcard action (`"Action": "*"`), service-wide wildcard (`"s3:*"`), wildcard resource (`"Resource": "*"`), or a public principal (`"Principal": "*"` / `{"AWS": "*"}`); and **GCP primitive roles** (`roles/owner`, `roles/editor`) wherever they appear. AWS rules require a real policy-document context (`Statement` + `Effect`) to avoid false positives on arbitrary JSON. HCL (`.tf`) is left to the Terraform layer. This is distinct from the org/repo IAM-posture scanner below — this is identity risk *in your code*.
+
 ### 7. CI / IaC / supply-chain misconfigurations
 
 - **Dockerfile** — container running as root, missing `USER` directive, `:latest` base tags, `ADD http(s)://`, secrets baked into `ENV`, `RUN curl | sh`, `chmod 777`, unpinned `apt install`
 - **GitHub Actions** — `pull_request_target` checking out PR head with secrets exposed (the s1ngularity / GhostAction vector), third-party actions not pinned to a full SHA, `run:` steps interpolating `${{ github.event.* }}` fields (script injection), workflow-level `permissions: write-all`
+- **Terraform** — public S3 ACLs and disabled public-access-block flags, security-group `ingress` open to `0.0.0.0/0` (and `::/0`), wildcard IAM `Action`/`Resource` (`*`), unencrypted storage (`storage_encrypted = false`), publicly accessible databases (`publicly_accessible = true`)
+- **Kubernetes** — manifests (detected by `apiVersion:` + `kind:`) with privileged containers, host namespaces (`hostNetwork`/`hostPID`/`hostIPC`), `allowPrivilegeEscalation`, running as root (`runAsUser: 0` / `runAsNonRoot: false`), mutable image tags (`:latest`/untagged), and dangerous added Linux capabilities (`SYS_ADMIN`, `NET_ADMIN`, `ALL`, …). Helm-templated lines are skipped to avoid noise.
 - **Lifecycle hook abuse (npm + PyPI)** -- `package.json` scripts (`preinstall`/`install`/`postinstall`/`prepare`) and Python `setup.py`/`pyproject.toml` build hooks running `curl | sh`, `base64` decode-and-execute, environment-variable exfiltration combined with network calls, or destructive `rm -rf` chains. Catches install-time supply-chain vectors used in recent npm and PyPI compromises.
 - **Typosquatting in dependency manifests** -- flags packages whose names are edit-distance-1 (`lodahs`, `expres`, `reqests`), edit-distance-2 prefix (`lodashes`), or case-fold variants (`Chalk`) of popular npm and PyPI registry names.
 
@@ -83,11 +89,19 @@ Beyond looking for specific findings, TriageRook grades how the repo is set up: 
 
 The angle a 10+ year IAM/IGA specialist actually cares about: identity and access risk at org and repo level. TriageRook surfaces org-level MFA enforcement (when `read:org` scope is granted), outside-collaborator permission levels, repo-level secret scoping, and authorship patterns that signal stale ownership. When a signal requires permissions the token does not have, TriageRook skips it and labels it as such rather than guessing. This is the slice of enterprise IAM tooling that solo devs and small teams have historically had no access to.
 
+### 10. Open-source license / compliance risk
+
+Legal risk, not security: a transitive GPL/AGPL dependency in a proprietary product, or a package with no license at all (which grants you no legal right to use it), is a real problem CVE scans never surface. TriageRook reads the `license` field recorded on every entry of `package-lock.json` (npm v2/v3) — **no extra network calls** — and flags **strong copyleft** (GPL/AGPL/SSPL), **weak copyleft** (LGPL/MPL/EPL/CDDL), **missing**, and **proprietary/UNLICENSED** licenses. Dual-licensed `(MIT OR GPL-3.0)` expressions with a permissive escape are treated as acceptable, and dev-only dependencies are skipped since they aren't redistributed. PyPI/Go/RubyGems license coverage (which needs per-package registry lookups) is on the roadmap.
+
 ## Beyond detection
 
 ### SARIF 2.1.0 export + GitHub Code Scanning
 
 Every saved scan is one click from a SARIF 2.1.0 export. Drop the file into `github/codeql-action/upload-sarif` and findings show up in your repo's `Security → Code scanning` tab next to CodeQL and Dependabot — with each result deep-linked back to its rule documentation. Anonymous scans at `/scan-public/<owner>/<repo>` can also export SARIF (generated client-side from the in-flight result). For public repos, the anonymous scan endpoint accepts `?format=sarif` directly — drop the [ready-made workflow](https://www.triagerook.com/workflows/triagerook.yml) at `.github/workflows/triagerook.yml` and every push gets scanned + uploaded with zero auth setup. Full setup guide with copy-pasteable workflow YAML at [`/docs/sarif`](https://www.triagerook.com/docs/sarif).
+
+### Secret liveness validation (opt-in)
+
+When enabled (`ENABLE_SECRET_VALIDATION=true`), authenticated scans additionally probe each detected provider secret — GitHub, GitLab, Stripe, OpenAI, Anthropic, SendGrid, Slack, npm — against a single read-only endpoint to mark it **live** or **revoked/inactive**, *without ever exposing or storing the value* (only the status). A confirmed-live credential is boosted to the top of the report; a rejected one is pushed down as almost certainly already rotated. This is the single biggest false-positive reducer for secret findings. It is **off by default** and **never** runs on the anonymous public-scan path — that path scans arbitrary repos, and TriageRook will not fire third-party API calls using strangers' leaked credentials. AWS keys are reported as unverifiable (validating them needs both key halves plus request signing).
 
 ### Auto-fix pull requests
 

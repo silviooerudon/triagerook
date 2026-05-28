@@ -30,6 +30,15 @@ export type SecretFinding = {
   commitSha?: string
   commitDate?: string
   commitAuthor?: string
+  // Liveness status from the secret-validation engine (lib/secret-validation.ts).
+  // Only the status is ever stored — never the secret value. Absent on scans
+  // where validation was disabled (the common case).
+  validation?:
+    | "active"
+    | "inactive"
+    | "unverifiable"
+    | "error"
+    | "skipped"
 }
 
 export type CodeVulnCategory =
@@ -101,6 +110,8 @@ export type IaCCategory =
   | "dockerfile"
   | "github-actions"
   | "terraform"
+  | "kubernetes"
+  | "iam-policy"
   | "npm-scripts"
   | "supply-chain"
 
@@ -140,6 +151,33 @@ export type DependencyFinding = {
     | "Pipfile"
     | "go.mod"
     | "Gemfile.lock"
+  isTransitive?: boolean
+}
+
+// License/compliance risk class for a dependency.
+//   copyleft-strong — GPL/AGPL: linking or network use can impose source-
+//                      disclosure obligations on the whole work.
+//   copyleft-weak   — LGPL/MPL/EPL/CDDL: file- or library-level reciprocity.
+//   missing         — no license declared: legally you have no right to use it.
+//   non-standard    — explicitly proprietary / UNLICENSED.
+export type LicenseRisk =
+  | "copyleft-strong"
+  | "copyleft-weak"
+  | "missing"
+  | "non-standard"
+
+export type LicenseFinding = {
+  package: string
+  version: string
+  ecosystem: DependencyEcosystem
+  // The raw SPDX id/expression as declared, or null when none was found.
+  license: string | null
+  risk: LicenseRisk
+  severity: Severity
+  description: string
+  // SPDX license page when we have a recognised id, else the registry page.
+  url: string
+  source?: DependencyFinding["source"]
   isTransitive?: boolean
 }
 

@@ -17,7 +17,7 @@ import {
   type Suppression,
   type SuppressionResult,
 } from "./suppressions"
-import type { DependencyFinding, DetectorHealth } from "./types"
+import type { DependencyFinding, LicenseFinding, DetectorHealth } from "./types"
 import { listSuppressions, toRuntimeSuppression } from "./db-suppressions"
 
 // Output shape that's intentionally a superset: callers pick what they need.
@@ -34,6 +34,7 @@ export type FullScanResult = {
     // them as optional + empty.
     goDependencies: DependencyFinding[]
     rubyDependencies: DependencyFinding[]
+    licenseFindings: LicenseFinding[]
   }
   assessment: RiskAssessment
   suppressionResult: SuppressionResult
@@ -68,6 +69,11 @@ export type RunFullScanOptions = {
   // are loaded and unioned with the in-repo .repoguardignore. The public
   // scan path passes null and only consumes the file source.
   userIdForDbSuppressions?: string | null
+  // When true, this scan path permits secret liveness validation (it still
+  // ANDs with the deployment-level ENABLE_SECRET_VALIDATION flag). The
+  // authenticated route opts in; the anonymous public route leaves it false so
+  // validation never fires third-party calls with arbitrary repos' secrets.
+  allowSecretValidation?: boolean
 }
 
 export async function runFullScan(
@@ -91,7 +97,9 @@ export async function runFullScan(
     iamResult,
     supplyChainResult,
   ] = await Promise.all([
-    scanRepo(accessToken, owner, repo, explicitBranch, pathPrefix),
+    scanRepo(accessToken, owner, repo, explicitBranch, pathPrefix, {
+      validateSecrets: options.allowSecretValidation ?? false,
+    }),
     scanDependencies(owner, repo, accessToken),
     scanPythonDependencies(owner, repo, accessToken),
     scanGoDependencies(owner, repo, accessToken),
@@ -107,6 +115,7 @@ export async function runFullScan(
     pythonDependencies: pythonResult.findings,
     goDependencies: goResult.findings,
     rubyDependencies: rubyResult.findings,
+    licenseFindings: npmResult.licenseFindings,
     iacFindings: [
       ...(secretsResult.iacFindings ?? []),
       ...npmResult.lifecycleIssues,

@@ -4,6 +4,7 @@ import type {
   IaCFinding,
   SensitiveFileFinding,
   DependencyFinding,
+  LicenseFinding,
 } from "./types"
 
 export type AnyFinding =
@@ -12,6 +13,7 @@ export type AnyFinding =
   | { kind: "iac"; data: IaCFinding }
   | { kind: "sensitive-file"; data: SensitiveFileFinding }
   | { kind: "dependency"; data: DependencyFinding }
+  | { kind: "license"; data: LicenseFinding }
 
 export type PrioritizedFinding = AnyFinding & {
   score: number
@@ -42,6 +44,10 @@ export const SEVERITY_BASE_POINTS = {
 export const TEST_FIXTURE_MULTIPLIER = 0.1
 export const TRANSITIVE_DEP_MULTIPLIER = 0.5
 export const HISTORY_SECRET_MULTIPLIER = 0.5
+// A provider-confirmed live secret is the highest-urgency finding; a rejected
+// (revoked/rotated) one barely matters. Applied only when validation ran.
+export const ACTIVE_SECRET_MULTIPLIER = 1.5
+export const INACTIVE_SECRET_MULTIPLIER = 0.15
 export const REPO_SCORE_CAP = 100
 
 // Score (== penalty) is compressed through log10 so large repos don't
@@ -86,7 +92,22 @@ export function scoreFinding(finding: AnyFinding): number {
     points *= HISTORY_SECRET_MULTIPLIER
   }
 
+  // Secret validation (when it ran) sharply changes priority: a confirmed-live
+  // credential is the most urgent thing in any scan, while one the provider
+  // rejected is almost certainly already revoked/rotated.
+  if (finding.kind === "secret") {
+    if (finding.data.validation === "active") points *= ACTIVE_SECRET_MULTIPLIER
+    else if (finding.data.validation === "inactive") points *= INACTIVE_SECRET_MULTIPLIER
+  }
+
   if (finding.kind === "dependency" && finding.data.isTransitive) {
+    points *= TRANSITIVE_DEP_MULTIPLIER
+  }
+
+  // A copyleft obligation flows through transitive deps too, but a transitive
+  // license risk is a lower priority to act on than a direct one — mirror the
+  // dependency discount so the prioritized list sorts direct deps first.
+  if (finding.kind === "license" && finding.data.isTransitive) {
     points *= TRANSITIVE_DEP_MULTIPLIER
   }
 
@@ -148,6 +169,7 @@ type ScanLikeShape = {
   pythonDependencies?: DependencyFinding[]
   goDependencies?: DependencyFinding[]
   rubyDependencies?: DependencyFinding[]
+  licenseFindings?: LicenseFinding[]
 }
 
 export function flattenScan(scan: ScanLikeShape): AnyFinding[] {
@@ -161,5 +183,6 @@ export function flattenScan(scan: ScanLikeShape): AnyFinding[] {
   for (const d of scan.pythonDependencies ?? []) out.push({ kind: "dependency", data: d })
   for (const d of scan.goDependencies ?? []) out.push({ kind: "dependency", data: d })
   for (const d of scan.rubyDependencies ?? []) out.push({ kind: "dependency", data: d })
+  for (const l of scan.licenseFindings ?? []) out.push({ kind: "license", data: l })
   return out
 }
