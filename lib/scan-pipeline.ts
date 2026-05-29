@@ -7,6 +7,7 @@ import { scanDependencies } from "./deps"
 import { scanPythonDependencies } from "./python-deps"
 import { scanGoDependencies } from "./go-deps"
 import { scanRubyDependencies } from "./ruby-deps"
+import { scanRegistryLicenses } from "./licenses-registry"
 import { assessPosture, type PostureResult } from "./posture"
 import { assessIAM, type IAMResult } from "./iam"
 import { assessSupplyChain, type SupplyChainResult } from "./supply-chain"
@@ -97,6 +98,7 @@ export async function runFullScan(
     postureResult,
     iamResult,
     supplyChainResult,
+    registryLicenseResult,
   ] = await Promise.all([
     scanRepo(accessToken, owner, repo, explicitBranch, pathPrefix, {
       validateSecrets: options.allowSecretValidation ?? false,
@@ -108,6 +110,9 @@ export async function runFullScan(
     assessPosture(owner, repo, accessToken),
     assessIAM(owner, repo, accessToken),
     assessSupplyChain(owner, repo, accessToken, explicitBranch),
+    // PyPI/Go/Ruby license enrichment via deps.dev (npm licenses come from
+    // npmResult, read straight from the lockfile). Bounded + degrades on its own.
+    scanRegistryLicenses(owner, repo, accessToken),
   ])
 
   const fullResult = {
@@ -116,7 +121,10 @@ export async function runFullScan(
     pythonDependencies: pythonResult.findings,
     goDependencies: goResult.findings,
     rubyDependencies: rubyResult.findings,
-    licenseFindings: npmResult.licenseFindings,
+    licenseFindings: [
+      ...npmResult.licenseFindings,
+      ...registryLicenseResult.findings,
+    ],
     iacFindings: [
       ...(secretsResult.iacFindings ?? []),
       ...npmResult.lifecycleIssues,
@@ -132,6 +140,7 @@ export async function runFullScan(
     ...(pythonResult.degraded ? [pythonResult.degraded] : []),
     ...(goResult.degraded ? [goResult.degraded] : []),
     ...(rubyResult.degraded ? [rubyResult.degraded] : []),
+    ...(registryLicenseResult.degraded ? [registryLicenseResult.degraded] : []),
   ]
 
   const flatFindings = flattenScan(fullResult)

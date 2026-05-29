@@ -17,6 +17,7 @@ const DETECTOR_LABELS: Record<DetectorHealth["detector"], string> = {
   osv: "Python (PyPI) vulnerabilities",
   "blob-fetch": "File contents",
   "suppressions-file": "Repo suppressions file",
+  "license-registry": "PyPI/Go/Ruby licenses",
 }
 
 export function DegradedBanner({

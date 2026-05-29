@@ -46,7 +46,7 @@ function stripPep440Specifier(raw: string): string {
   return ""
 }
 
-function parseRequirementsTxt(content: string): ParsedDep[] {
+export function parseRequirementsTxt(content: string): ParsedDep[] {
   const deps: ParsedDep[] = []
   const lines = content.split("\n")
   for (let raw of lines) {
@@ -69,7 +69,7 @@ function parseRequirementsTxt(content: string): ParsedDep[] {
   return deps
 }
 
-function parsePyprojectToml(content: string): ParsedDep[] {
+export function parsePyprojectToml(content: string): ParsedDep[] {
   // Minimal best-effort parser targeting PEP-621 and Poetry shapes. A full
   // TOML parser isn't worth shipping until we need more features.
   const deps: ParsedDep[] = []
@@ -117,7 +117,7 @@ function parsePyprojectToml(content: string): ParsedDep[] {
   return deps
 }
 
-function parsePipfile(content: string): ParsedDep[] {
+export function parsePipfile(content: string): ParsedDep[] {
   const deps: ParsedDep[] = []
   const blocks = content.match(/\[(?:dev-)?packages\]([\s\S]*?)(?=\n\[|$)/g) ?? []
   for (const block of blocks) {
