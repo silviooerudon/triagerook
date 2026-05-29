@@ -29,6 +29,7 @@ import {
 } from "./framework-detect"
 import { scanFrameworkRules } from "./framework-rules"
 import { scanBusinessLogic } from "./biz-logic"
+import { scanAiInsecure } from "./ai-insecure"
 import type {
   SecretFinding,
   SensitiveFileFinding,
@@ -621,6 +622,10 @@ async function scanFile(
     // Business-logic / broken-access-control layer (IDOR, mass assignment,
     // privilege escalation, payment tampering). Language-gated, comment-skipped.
     const bizLogicFindings = scanBusinessLogic(content, file.path, likelyTestFixture)
+    // AI-generated insecure-code tells (placeholder creds, deferred-security
+    // TODOs, "not for production" disclaimers, swallowed exceptions). Reads
+    // comment lines too; low/medium severity so it doesn't drown real vulns.
+    const aiInsecureFindings = scanAiInsecure(content, file.path, likelyTestFixture)
 
     const iac: IaCFinding[] = []
     if (isDockerfilePath(file.path)) {
@@ -648,7 +653,13 @@ async function scanFile(
 
     return {
       secrets: [...regexFindings, ...entropyFindings],
-      code: [...codeFindings, ...astFindings, ...frameworkFindings, ...bizLogicFindings],
+      code: [
+        ...codeFindings,
+        ...astFindings,
+        ...frameworkFindings,
+        ...bizLogicFindings,
+        ...aiInsecureFindings,
+      ],
       iac,
       secretValues: regexMatches,
     }
