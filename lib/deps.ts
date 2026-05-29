@@ -26,7 +26,7 @@ type LockfileV2Entry = {
   integrity?: string
 }
 
-type LockfileV2 = {
+export type LockfileV2 = {
   lockfileVersion?: number
   packages?: Record<string, LockfileV2Entry>
   dependencies?: Record<string, unknown>
@@ -137,7 +137,7 @@ function parsePackageJsonDeps(json: PackageJson): PkgRef[] {
   return out
 }
 
-function parseLockfile(json: LockfileV2): PkgRef[] {
+export function parseLockfile(json: LockfileV2): PkgRef[] {
   const out: PkgRef[] = []
 
   // npm v7+ / v8+ / v9+ format
@@ -149,8 +149,12 @@ function parseLockfile(json: LockfileV2): PkgRef[] {
       if (lastIdx < 0) continue
       const name = path.slice(lastIdx + "node_modules/".length)
       if (!entry?.version) continue
-      // Direct deps show up once; transitive ones are nested node_modules
-      const isTransitive = path.indexOf("node_modules/", lastIdx + 1) !== -1
+      // Direct deps show up once ("node_modules/foo"); transitive ones are
+      // nested ("node_modules/foo/node_modules/bar"), so "node_modules/"
+      // appears more than once — i.e. the first occurrence differs from the
+      // last. (The old `indexOf(..., lastIdx + 1)` searched *past* the last
+      // occurrence and so was always -1, marking everything direct.)
+      const isTransitive = path.indexOf("node_modules/") !== lastIdx
       out.push({
         name,
         version: entry.version,

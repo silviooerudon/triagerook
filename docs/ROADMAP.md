@@ -39,28 +39,43 @@ Arquitetura de plug-in (referência rápida):
 - **Não coberto de propósito:** hardcoded secrets em `.tf` — já cobertos pelos
   detectores de secret/entropia (evita double-report).
 
-### 1.2 Kubernetes / Helm IaC scanner
+### 1.2 Kubernetes / Helm IaC scanner ✅ FEITO (PR #90)
 - **O quê:** container como root, `privileged: true`, `hostNetwork`,
   `allowPrivilegeEscalation`, secrets em ConfigMap, `securityContext` ausente,
   imagens `:latest`, capabilities perigosas.
-- **Onde:** `lib/iac-k8s.ts`, dispatch por arquivo YAML com `kind:` k8s.
-  Adicionar `"kubernetes"` ao `IaCCategory`.
-- **Cuidado:** YAML multi-doc (`---`) e Helm templates (`{{ }}`) — no MVP,
-  pular arquivos que são template puro Helm.
-- **Esforço:** M.
+- **Entregue:** [`lib/iac-k8s.ts`](../lib/iac-k8s.ts) (`scanKubernetes`, 6 regras),
+  identificação por conteúdo via `looksLikeKubernetesManifest` (`apiVersion:` +
+  `kind:`), multi-doc aware, pula linhas de template Helm (`{{ }}`).
+  `"kubernetes"` adicionado ao `IaCCategory`; testes em
+  [`tests/iac-k8s.test.ts`](../tests/iac-k8s.test.ts).
 
-### 1.3 Licenças open source
-- **O quê:** GPL/AGPL/copyleft, pacotes sem licença, conflito de compatibilidade.
-- **Onde:** estender os detectores de deps (`lib/deps.ts` etc.) — o registro
-  npm/PyPI já retorna `license` no metadata; OSV não, então cruzar com
-  `registry.npmjs.org/<pkg>`. Novo tipo `LicenseFinding` + categoria.
-- **Esforço:** M. **Dependência:** 1 chamada extra de API por pacote (cachear).
+### 1.3 Licenças open source ✅ FEITO (PR #91)
+- **O quê:** GPL/AGPL/copyleft, pacotes sem licença, proprietário/UNLICENSED.
+- **Entregue:** [`lib/licenses.ts`](../lib/licenses.ts) (`classifyLicense` +
+  `scanNpmLicenses`) — lê o campo `license` das entradas `packages` do
+  `package-lock.json`, **zero rede**; dev deps puladas; expressão `OR` com escape
+  permissivo → ignorada. Novos tipos `LicenseFinding`/`LicenseRisk`.
+- **Pendente (follow-up):** estender para PyPI / Go / RubyGems.
 
 ---
 
 ## Fase 2 — Diferencial #1: Validação de secrets (corta falso-positivo)
 
-### 2.1 Secret validation engine
+### 2.1 Secret validation engine ✅ FEITO (PR #92) — desligado por padrão
+- **Entregue:** [`lib/secret-validation.ts`](../lib/secret-validation.ts)
+  (`validateSecrets`, `isSecretValidationEnabled`, `isVerifiable`). Validadores:
+  GitHub / GitLab / OpenAI / Anthropic / Stripe / SendGrid / Slack / npm; AWS =
+  `unverifiable`. `SecretFinding.validation?: "active" | "inactive" |
+  "unverifiable" | "error" | "skipped"`. Secret `active` → boost em
+  [`lib/risk.ts`](../lib/risk.ts) (`ACTIVE_SECRET_MULTIPLIER`).
+- **Gating de segurança:** duplo gate — env `ENABLE_SECRET_VALIDATION=true`
+  **E** flag por-chamada `allowSecretValidation` (só na rota autenticada, nunca
+  no path público). O valor do secret nunca é logado nem persistido — só o status.
+- **Para ativar em prod:** setar `ENABLE_SECRET_VALIDATION=true` na Vercel +
+  redeploy (ver passo a passo já entregue ao time).
+
+<details><summary>Especificação original (mantida para referência)</summary>
+
 - **O quê:** dado um secret detectado, dizer se **ainda está ativo** sem expor
   o valor — chamada read-only mínima ao provedor.
   - GitHub token → `GET /user` (ou `/rate_limit`)
@@ -81,11 +96,21 @@ Arquitetura de plug-in (referência rápida):
 - **Esforço:** L (1 validador por provedor, incremental). Começar com
   GitHub + AWS + Stripe (maior volume de leaks).
 
+</details>
+
 ---
 
 ## Fase 3 — Diferencial #2: IAM/permissões dentro do código
 
-### 3.1 IAM-in-code scanner
+### 3.1 IAM-in-code scanner ✅ FEITO (PR #93, refinado #96/#97)
+- **Entregue:** [`lib/iam-policy.ts`](../lib/iam-policy.ts) — regras de policy AWS
+  (exigem contexto `Statement` + `Effect`) + roles amplos GCP (`roles/owner`,
+  `roles/editor`). Refinado em #96 (exige contexto de atribuição p/ `roles/owner`,
+  pula `.tf/.tfvars/.md/.txt`) e #97 (de-prioriza findings em paths de
+  teste/fixture). Testes em [`tests/iam-policy.test.ts`](../tests/iam-policy.test.ts).
+
+<details><summary>Especificação original (mantida para referência)</summary>
+
 - **O quê:** detectar excesso de permissão *no código/config*, não só no GitHub:
   - AWS IAM policy com `"Action": "*"` / `"Resource": "*"` (em `.tf`, `.json`, SDK)
   - GCP service account com roles amplos (`roles/owner`, `roles/editor`)
@@ -96,11 +121,21 @@ Arquitetura de plug-in (referência rápida):
   de 1.1 + detector JSON para policies inline.
 - **Esforço:** M (depende de 1.1). Fica natural construir junto com Terraform.
 
+</details>
+
 ---
 
 ## Fase 4 — Diferencial #3: Context-aware SAST
 
-### 4.1 Framework detection + regras específicas
+### 4.1 Framework detection + regras específicas ✅ FEITO (PR #94)
+- **Entregue:** [`lib/framework-detect.ts`](../lib/framework-detect.ts)
+  (`detectFrameworks` a partir dos manifests) + [`lib/framework-rules.ts`](../lib/framework-rules.ts)
+  (12 regras gated por framework: Django/Flask/FastAPI/Express/NestJS/Spring/
+  Laravel/Rails). `"framework"` adicionado a `CodeVulnCategory`; layer `framework`
+  no catálogo (id `code/<id>`). Contexto de frameworks passado ao `scanFile`.
+
+<details><summary>Especificação original (mantida para referência)</summary>
+
 - **O quê:** entender Next.js / Express / Django / Spring / Laravel / NestJS e
   rodar regras de framework, não só AST genérico.
 - **Onde:** novo `lib/framework-detect.ts` (lê `package.json` /
@@ -112,26 +147,31 @@ Arquitetura de plug-in (referência rápida):
 - **Esforço:** L (é uma família que cresce regra a regra). Entregar a infra de
   detecção de framework primeiro, depois 2-3 regras de alto valor por framework.
 
+</details>
+
 ---
 
-## Fase 5 — Diferencial #4: Blast radius & Attack graph
+## Fase 5 — Diferencial #4: Blast radius & Attack graph ✅ FEITO (PR #95)
 
-> Depende de 2.1 (validação) e 3.1 (IAM-in-code) estarem maduros. É o topo da
-> pirâmide — maior esforço, maior diferenciação.
+**Entregue:** [`lib/attack-graph.ts`](../lib/attack-graph.ts)
+(`blastRadiusForSecret`, `buildAttackGraph`) — análise pura sobre os findings já
+coletados (sem I/O extra), roda em todo scan. Correlaciona secret + exposição
+cloud (IaC) → caminhos de ataque encadeados críticos; lê `validation`
+defensivamente (secret confirmado vivo eleva o caminho a `critical`); pula infra
+de teste/fixture (#97). Anexado a `fullResult.attackGraph`; UI no dashboard.
+
+<details><summary>Especificação original (5.1 + 5.2, mantida para referência)</summary>
 
 ### 5.1 Blast radius por finding
 - **O quê:** "essa AWS key dá acesso a S3 prod", "esse GitHub token pode push".
-  Derivado da validação: ao validar (2.1), capturar o **escopo/permissões**
-  retornado e anexar ao finding.
-- **Onde:** estende `secret-validation.ts` → `blastRadius?: string[]`.
-- **Esforço:** M (em cima de 2.1).
+- **Nota:** implementado como mapa estático `patternId → BlastRadius` (domínio +
+  capability + assets) em vez de capturar escopo da validação — funciona sem
+  depender de a validação estar ligada.
 
 ### 5.2 Attack graph do repositório
 - **O quê:** caminho `secret vazado → acesso cloud → bucket prod → dados`.
-  Grafo ligando findings (secret ativo) → recursos (do IaC/IAM) → impacto.
-- **Onde:** novo `lib/attack-graph.ts` que consome o `FullScanResult` agregado
-  e produz arestas; UI nova no dashboard.
-- **Esforço:** XL. Tratar como épico próprio depois das fases 2-3.
+
+</details>
 
 ---
 
@@ -145,17 +185,28 @@ Arquitetura de plug-in (referência rápida):
 
 ---
 
-## Ordem sugerida de execução
+## Ordem de execução — ✅ todas as fases entregues (PRs #89–#97)
 
-1. **1.1 Terraform** → fecha o maior gap do obrigatório e destrava 3.1/5.1.
-2. **2.1 Validação de secrets (GitHub+AWS+Stripe)** → corte brutal de FP, é o
-   "uau" mais barato para o usuário.
-3. **1.2 Kubernetes** → completa o IaC.
-4. **3.1 IAM-in-code** → reusa parser do Terraform.
-5. **1.3 Licenças** → compliance, fecha 100% do obrigatório.
-6. **4.1 Context-aware SAST** → família incremental, roda em paralelo às outras.
-7. **5.1 / 5.2 Blast radius + Attack graph** → épico final de diferenciação.
+1. ✅ **1.1 Terraform** (PR #89)
+2. ✅ **1.2 Kubernetes** (PR #90)
+3. ✅ **1.3 Licenças npm** (PR #91)
+4. ✅ **2.1 Validação de secrets** (PR #92, desligado por padrão)
+5. ✅ **3.1 IAM-in-code** (PR #93, refinado #96/#97)
+6. ✅ **4.1 Context-aware SAST** (PR #94)
+7. ✅ **5.1/5.2 Blast radius + Attack graph** (PR #95)
 
 Cada item: 1 branch, testes em `tests/`, catálogo de regras + README + `/docs/rules`
 atualizados, e checagem de que entra tanto no scan autenticado quanto no público
 (ambos passam por `runFullScan`).
+
+---
+
+## Follow-ups em aberto
+
+- **Licenças PyPI / Go / RubyGems** — `scanNpmLicenses` hoje só cobre npm; os
+  detectores de deps dessas ecossistemas já existem, falta o equivalente de
+  licença.
+- **Scanner de lógica de negócio** (IDOR, role escalation, bypass de aprovação) —
+  ver "Fora de escopo" acima; provável épico assistido por IA.
+- **Detector dedicado de código inseguro gerado por IA** — reavaliar como família
+  própria.
