@@ -145,6 +145,7 @@ function isActive(finding: AnyFinding): boolean {
 function cloudExposure(findings: AnyFinding[]): string | null {
   for (const f of findings) {
     if (f.kind !== "iac") continue
+    if (f.data.likelyTestFixture) continue // dummy infra in tests/fixtures
     const id = f.data.ruleId.toLowerCase()
     if (/s3-public|public-access|wildcard|world-ingress|publicly-accessible|iam-/.test(id)) {
       return f.data.ruleName

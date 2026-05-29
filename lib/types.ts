@@ -125,6 +125,11 @@ export type IaCFinding = {
   lineNumber: number | null
   lineContent: string | null
   remediation: string
+  // True when the file lives under a test/fixture/example path. Stamped by the
+  // scan dispatch (lib/scan.ts) so risk scoring de-prioritises it the same way
+  // it does for secret/code fixtures — a `privileged: true` Pod or wildcard
+  // IAM policy inside tests/fixtures/ is almost always a dummy, not live infra.
+  likelyTestFixture?: boolean
 }
 
 export type DependencyEcosystem = "npm" | "PyPI" | "Go" | "RubyGems"

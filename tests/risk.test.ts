@@ -50,6 +50,24 @@ function dep(severity: "critical" | "high" | "moderate" | "low", isTransitive = 
   }
 }
 
+function iac(severity: "critical" | "high" | "medium" | "low", likelyTestFixture = false): AnyFinding {
+  return {
+    kind: "iac",
+    data: {
+      ruleId: "tf-s3-public-acl",
+      ruleName: "x",
+      severity,
+      category: "terraform",
+      description: "x",
+      filePath: "main.tf",
+      lineNumber: 1,
+      lineContent: null,
+      remediation: "x",
+      likelyTestFixture,
+    },
+  }
+}
+
 describe("scoreFinding", () => {
   it("returns the base points for each severity", () => {
     expect(scoreFinding(secret("critical"))).toBe(SEVERITY_BASE_POINTS.critical)
@@ -62,6 +80,13 @@ describe("scoreFinding", () => {
     const f = secret("critical", { likelyTestFixture: true })
     expect(scoreFinding(f)).toBeCloseTo(
       SEVERITY_BASE_POINTS.critical * TEST_FIXTURE_MULTIPLIER,
+    )
+  })
+
+  it("applies the test-fixture multiplier to IaC findings too", () => {
+    expect(scoreFinding(iac("high"))).toBe(SEVERITY_BASE_POINTS.high)
+    expect(scoreFinding(iac("high", true))).toBeCloseTo(
+      SEVERITY_BASE_POINTS.high * TEST_FIXTURE_MULTIPLIER,
     )
   })
 

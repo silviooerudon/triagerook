@@ -636,6 +636,12 @@ async function scanFile(
     // Dockerfile nor a workflow. Self-guards and skips .tf internally.
     iac.push(...scanIamPolicy(content, file.path))
 
+    // Stamp the test-fixture flag so risk scoring de-prioritises IaC findings
+    // in test/fixture/example paths, consistent with secret/code findings.
+    if (likelyTestFixture) {
+      for (const f of iac) f.likelyTestFixture = true
+    }
+
     return {
       secrets: [...regexFindings, ...entropyFindings],
       code: [...codeFindings, ...astFindings, ...frameworkFindings],

@@ -430,12 +430,21 @@ export function IaCFindingsSection({ findings }: { findings: IaCFinding[] }) {
       {findings.map((f, i) => (
         <article
           key={i}
-          className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${severityAccentClass(f.severity)}`}
+          className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${
+            f.likelyTestFixture ? "opacity-60" : severityAccentClass(f.severity)
+          }`}
         >
           <header className="flex items-center gap-2 flex-wrap mb-1">
             <h3 className="font-semibold">{f.ruleName}</h3>
             <SeverityPill severity={f.severity} />
             <BadgePill label={iacCategoryLabel(f.category)} />
+            {f.likelyTestFixture && (
+              <BadgePill
+                label="Test fixture"
+                tone="warn"
+                title="Path looks like tests/fixtures/examples — probably dummy infra"
+              />
+            )}
           </header>
           <p className="text-sm text-slate-400 mb-3">{f.description}</p>
           {(f.lineContent || f.lineNumber) && (

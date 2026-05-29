@@ -150,13 +150,15 @@ function CodeFindingCard({ data }: { data: CodeFinding }) {
 }
 
 function IaCFindingCard({ data }: { data: IaCFinding }) {
+  const isFixture = data.likelyTestFixture ?? false
   return (
-    <CardShell severity={data.severity}>
+    <CardShell dim={isFixture} severity={isFixture ? undefined : data.severity}>
       <header className="flex items-center gap-2 flex-wrap mb-1">
         <h3 className="font-semibold">{data.ruleName}</h3>
         <SeverityPill severity={data.severity} />
         <KindBadge kind="iac" />
         <BadgePill label={iacCategoryLabel(data.category)} />
+        {isFixture && <FixtureBadge />}
       </header>
       <p className="text-sm text-slate-400 mb-3">{data.description}</p>
       {(data.lineContent || data.lineNumber) && (

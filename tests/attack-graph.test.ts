@@ -20,7 +20,7 @@ function secret(patternId: string, extra: Partial<SecretFinding> = {}): AnyFindi
   }
 }
 
-function iac(ruleId: string): AnyFinding {
+function iac(ruleId: string, likelyTestFixture = false): AnyFinding {
   const data: IaCFinding = {
     ruleId,
     ruleName: ruleId,
@@ -31,6 +31,7 @@ function iac(ruleId: string): AnyFinding {
     lineNumber: 1,
     lineContent: null,
     remediation: "",
+    likelyTestFixture,
   }
   return { kind: "iac", data }
 }
@@ -87,6 +88,19 @@ describe("buildAttackGraph", () => {
   it("emits a standalone exposure path when there's a public resource but no credential", () => {
     const g = buildAttackGraph([iac("tf-s3-public-access-block-disabled")])
     expect(g.paths.some((p) => p.title.includes("Public cloud resource"))).toBe(true)
+  })
+
+  it("ignores test-fixture IaC findings when correlating", () => {
+    // A wildcard-IAM finding in a test fixture must not chain a cloud key into
+    // a critical path, nor produce a standalone exposure path.
+    const chained = buildAttackGraph([
+      secret("aws-access-key"),
+      iac("tf-s3-public-acl", true),
+    ])
+    expect(chained.paths.some((p) => p.title.includes("cloud account"))).toBe(false)
+
+    const standalone = buildAttackGraph([iac("iam-aws-wildcard-action", true)])
+    expect(standalone.paths).toHaveLength(0)
   })
 
   it("returns an empty graph for a clean / non-correlating finding set", () => {
