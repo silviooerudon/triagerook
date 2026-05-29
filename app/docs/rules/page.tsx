@@ -28,6 +28,7 @@ const LAYER_ORDER: DetectorLayer[] = [
   "iac-kubernetes",
   "iac-iam",
   "framework",
+  "business-logic",
 ]
 
 const LAYER_BLURBS: Record<DetectorLayer, string> = {
@@ -50,6 +51,8 @@ const LAYER_BLURBS: Record<DetectorLayer, string> = {
     "Cloud IAM-in-code checks: AWS IAM policy documents with wildcard actions/resources or a public principal, and GCP primitive roles (roles/owner, roles/editor). Scans JSON/YAML/source; HCL is covered by the Terraform layer.",
   framework:
     "Context-aware rules that only fire when the repo actually uses the framework (Next.js, Express, NestJS, Django, Flask, FastAPI, Spring, Laravel, Rails). Catches framework-specific misconfig — DEBUG on, CSRF disabled, wildcard CORS — without false positives on unrelated code.",
+  "business-logic":
+    "Broken-access-control and business-logic flaws: IDOR (records fetched by client id with no ownership check), mass assignment (the whole request body written to an ORM), privilege escalation (role/admin set from input), and payment tampering (charge amount taken from the client). Framed as 'verify there's a check here' — conservative, because the authorization check may live a few lines away.",
 }
 
 const SEV_STYLES: Record<string, string> = {

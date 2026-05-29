@@ -63,6 +63,9 @@ export type CodeVulnCategory =
   | "timing-attack"
   | "xxe"
   | "framework"
+  | "access-control"
+  | "business-logic"
+  | "ai-generated"
 
 export type CodeFinding = {
   ruleId: string
