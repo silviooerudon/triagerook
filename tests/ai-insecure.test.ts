@@ -31,6 +31,16 @@ describe("scanAiInsecure — placeholder credentials", () => {
     expect(ids('password = "change-me"', "x.py")).toContain("ai-placeholder-credential")
   })
 
+  it("does NOT flag a bare run of x's (order-id / format placeholders)", () => {
+    // Regression: a generic `x{12,}` token flagged LLM-prompt format examples
+    // like "order ID (format: xxxx-xxxxxxxxxxxxxxxx)" on juice-shop (13 FPs).
+    expect(ids("// format: xxxx-xxxxxxxxxxxxxxxx", "routes/chat.ts")).not.toContain(
+      "ai-placeholder-credential",
+    )
+    // sk-prefixed placeholders are specific enough to keep.
+    expect(ids('const k = "sk-xxxxxxxx"')).toContain("ai-placeholder-credential")
+  })
+
   it("does NOT match 'change_me' as a substring of a longer identifier", () => {
     // Regression: django/django produced 39 false positives because
     // `change[-_]?me` matched the "change_me" prefix of "change_message".
