@@ -28,6 +28,7 @@ import {
   type Manifests,
 } from "./framework-detect"
 import { scanFrameworkRules } from "./framework-rules"
+import { scanBusinessLogic } from "./biz-logic"
 import type {
   SecretFinding,
   SensitiveFileFinding,
@@ -617,6 +618,9 @@ async function scanFile(
     // input flowing into a SQL/exec call across a few hops). Both emit
     // CodeFinding[] so downstream consumers don't care about the source.
     const astFindings = runAstRules(file.path, content, likelyTestFixture)
+    // Business-logic / broken-access-control layer (IDOR, mass assignment,
+    // privilege escalation, payment tampering). Language-gated, comment-skipped.
+    const bizLogicFindings = scanBusinessLogic(content, file.path, likelyTestFixture)
 
     const iac: IaCFinding[] = []
     if (isDockerfilePath(file.path)) {
@@ -644,7 +648,7 @@ async function scanFile(
 
     return {
       secrets: [...regexFindings, ...entropyFindings],
-      code: [...codeFindings, ...astFindings, ...frameworkFindings],
+      code: [...codeFindings, ...astFindings, ...frameworkFindings, ...bizLogicFindings],
       iac,
       secretValues: regexMatches,
     }

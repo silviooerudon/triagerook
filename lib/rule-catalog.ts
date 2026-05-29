@@ -8,6 +8,7 @@ import { K8S_RULES } from "./iac-k8s"
 import { TERRAFORM_RULES } from "./iac-terraform"
 import { IAM_POLICY_RULES } from "./iam-policy"
 import { FRAMEWORK_RULES } from "./framework-rules"
+import { BIZ_LOGIC_RULES } from "./biz-logic"
 
 // Side-effect import so the AST rule modules register themselves into
 // the runner before we enumerate them. Without this, listAstRules()
@@ -27,6 +28,7 @@ export type DetectorLayer =
   | "iac-kubernetes"
   | "iac-iam"
   | "framework"
+  | "business-logic"
 
 export type CatalogEntry = {
   id: string
@@ -98,6 +100,20 @@ export function getRuleCatalog(): readonly CatalogEntry[] {
       name: rule.name,
       severity: rule.severity,
       category: `framework:${rule.framework}`,
+      cwe: rule.cwe,
+      description: rule.description,
+      languages: rule.languages,
+    })
+  }
+
+  for (const rule of BIZ_LOGIC_RULES) {
+    out.push({
+      // Emitted as CodeFindings → SARIF id `code/<id>`, so the catalog id matches.
+      id: `code/${rule.id}`,
+      layer: "business-logic",
+      name: rule.name,
+      severity: rule.severity,
+      category: rule.category,
       cwe: rule.cwe,
       description: rule.description,
       languages: rule.languages,
@@ -269,4 +285,5 @@ export const LAYER_LABELS: Record<DetectorLayer, string> = {
   "iac-kubernetes": "Kubernetes",
   "iac-iam": "Cloud IAM",
   framework: "Framework-aware",
+  "business-logic": "Business logic",
 }
