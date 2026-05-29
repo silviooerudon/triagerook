@@ -84,13 +84,25 @@ describe("scanNpmLicenses", () => {
     expect(f.isTransitive).toBe(true)
   })
 
-  it("flags a dependency with no license field as missing", () => {
+  it("does NOT flag a dependency whose lockfile entry omits the license field", () => {
+    // Regression: npm lockfiles routinely omit `license` even for MIT/BSD
+    // packages (accepts, ansi-regex, normalize-path on OWASP/NodeGoat all
+    // came back null → 346 false "missing" findings). Absent-in-lockfile is
+    // unknown metadata, not "no license", so we skip it — consistent with the
+    // deps.dev path treating an empty license list as unknown.
     const lock = lockfile({
       "": { name: "root" },
       "node_modules/no-license": { version: "1.0.0" },
     })
-    const [f] = scanNpmLicenses(lock)
-    expect(f.risk).toBe("missing")
+    expect(scanNpmLicenses(lock)).toHaveLength(0)
+  })
+
+  it("still flags an explicitly proprietary (UNLICENSED) dependency", () => {
+    const lock = lockfile({
+      "": { name: "root" },
+      "node_modules/closed": { version: "1.0.0", license: "UNLICENSED" },
+    })
+    expect(scanNpmLicenses(lock)[0]?.risk).toBe("non-standard")
   })
 
   it("normalises an array license field", () => {

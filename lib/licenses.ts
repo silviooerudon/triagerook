@@ -188,6 +188,16 @@ export function scanNpmLicenses(lockfileContent: string): LicenseFinding[] {
     if (seen.has(key)) continue
 
     const license = normalizeLockfileLicense(entry.license)
+    // A lockfile that omits the `license` field is NOT evidence of "no license"
+    // — npm lockfiles (especially older v2/v3) routinely drop it even for
+    // MIT/BSD packages. Treating absent-in-lockfile as "missing" produced
+    // hundreds of false positives on real repos (e.g. accepts, ansi-regex,
+    // normalize-path on OWASP/NodeGoat — all MIT). So we skip unknown licenses
+    // here, consistent with the deps.dev path (lib/licenses-registry.ts), which
+    // treats an empty license list as unknown rather than missing. An
+    // explicitly proprietary string ("UNLICENSED") still arrives as a non-null
+    // value and is flagged.
+    if (license === null) continue
     const classification = classifyLicense(license)
     if (!classification) continue
 
