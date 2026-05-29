@@ -175,13 +175,14 @@ de teste/fixture (#97). Anexado a `fullResult.attackGraph`; UI no dashboard.
 
 ---
 
-## Fora de escopo por enquanto (registrar e revisitar)
+## Fora de escopo originalmente (registrado aqui, depois entregue)
 
 - **Scanner de lógica de negócio** (IDOR, role escalation, bypass de aprovação,
-  fluxo de pagamento): altíssimo valor, mas exige análise semântica profunda /
-  LLM. Candidato a um épico de pesquisa separado, provavelmente assistido por IA.
-- **Detector dedicado de "código inseguro gerado por IA":** hoje coberto só por
-  regras pontuais. Reavaliar se vira família própria depois da Fase 4.
+  fluxo de pagamento): foi marcado como "exige análise semântica profunda / LLM",
+  mas entregamos um MVP heurístico de alto sinal (PR #99) — ver follow-ups. Uma
+  versão assistida por LLM continua sendo candidato futuro para cobertura mais rica.
+- **Detector dedicado de "código inseguro gerado por IA":** virou família própria
+  (PR #100) — ver follow-ups.
 
 ---
 
@@ -201,12 +202,25 @@ atualizados, e checagem de que entra tanto no scan autenticado quanto no públic
 
 ---
 
-## Follow-ups em aberto
+## Follow-ups — todos entregues ✅
 
-- **Licenças PyPI / Go / RubyGems** — `scanNpmLicenses` hoje só cobre npm; os
-  detectores de deps dessas ecossistemas já existem, falta o equivalente de
-  licença.
-- **Scanner de lógica de negócio** (IDOR, role escalation, bypass de aprovação) —
-  ver "Fora de escopo" acima; provável épico assistido por IA.
-- **Detector dedicado de código inseguro gerado por IA** — reavaliar como família
-  própria.
+- ✅ **Licenças PyPI / Go / RubyGems** (PR #101) — [`lib/licenses-registry.ts`](../lib/licenses-registry.ts)
+  (`scanRegistryLicenses`). Os lockfiles desses ecossistemas não carregam
+  licença (ao contrário do npm), então enriquece via **deps.dev** (Google Open
+  Source Insights, mesma natureza benigna do OSV.dev): 1 GET por (pacote,
+  versão), bounded — cap global de 200 pacotes, concorrência 8, timeout 5s,
+  degradação graciosa (`DetectorHealth "license-registry"`) e nota explícita
+  quando o cap trunca. Reusa `classifyLicense`. Parsers Python exportados.
+- ✅ **Scanner de lógica de negócio** (PR #99) — [`lib/biz-logic.ts`](../lib/biz-logic.ts):
+  IDOR, mass assignment, privilege escalation, payment tampering. Categorias
+  `access-control`/`business-logic`, layer `business-logic`.
+- ✅ **Detector de código inseguro gerado por IA** (PR #100) — [`lib/ai-insecure.ts`](../lib/ai-insecure.ts):
+  credenciais placeholder, segurança adiada via TODO, disclaimers
+  "não-é-pra-produção", exceções engolidas. Categoria/layer `ai-generated`
+  (único layer que escaneia comentários).
+
+> Status: as 5 fases do roadmap + os 3 follow-ups estão implementados. Próximos
+> candidatos (não planejados): análise semântica profunda assistida por LLM para
+> lógica de negócio mais rica; distinção prod/dev de licenças em PyPI/Go/Ruby
+> (hoje todos os deps são checados, pois os manifests não marcam grupos de dev de
+> forma confiável).

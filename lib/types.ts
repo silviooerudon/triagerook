@@ -14,6 +14,7 @@ export type DetectorHealth = {
     | "osv"
     | "blob-fetch"
     | "suppressions-file"
+    | "license-registry"
   reason: string
 }
 
