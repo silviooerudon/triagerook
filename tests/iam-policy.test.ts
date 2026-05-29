@@ -76,6 +76,28 @@ describe("scanIamPolicy — GCP primitive roles", () => {
   it("does not flag a predefined role", () => {
     expect(scanIamPolicy(`role: roles/storage.objectViewer`, "iam.yaml")).toHaveLength(0)
   })
+
+  it("requires assignment context — prose / mentions are not flagged", () => {
+    // The string appears, but not assigned to a `role` key: this is how it
+    // shows up in docs, comments, and rule definitions, not live bindings.
+    expect(scanIamPolicy("`roles/owner` grants full control of the project", "notes.ts")).toHaveLength(0)
+    expect(scanIamPolicy("// avoid roles/editor where possible", "x.go")).toHaveLength(0)
+    expect(scanIamPolicy("const RE = /\\broles\\/owner\\b/", "detector.ts")).toHaveLength(0)
+  })
+
+  it("matches common assignment shapes (yaml, hcl-ish, json, gcloud flag)", () => {
+    expect(scanIamPolicy(`role: roles/owner`, "a.yaml").length).toBe(1)
+    expect(scanIamPolicy(`"role": "roles/owner"`, "a.json").length).toBe(1)
+    expect(scanIamPolicy(`--role=roles/owner`, "deploy.sh").length).toBe(1)
+  })
+})
+
+describe("scanIamPolicy — documentation files are skipped", () => {
+  it("does not flag IAM mentioned in markdown / text", () => {
+    expect(scanIamPolicy(`- role: roles/owner`, "README.md")).toHaveLength(0)
+    expect(scanIamPolicy(POLICY(`"Action": "*"`), "docs/guide.mdx")).toHaveLength(0)
+    expect(scanIamPolicy(`role = "roles/editor"`, "NOTES.txt")).toHaveLength(0)
+  })
 })
 
 describe("scanIamPolicy — scope", () => {

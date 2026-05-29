@@ -110,9 +110,21 @@ const WILDCARD_RESOURCE = /["']Resource["']\s*:\s*(?:\[\s*)?["']\*["']/
 const PUBLIC_PRINCIPAL =
   /["']Principal["']\s*:\s*(?:["']\*["']|\{\s*["']AWS["']\s*:\s*(?:\[\s*)?["']\*["'])/
 
-/** Returns true for paths this detector should NOT scan (owned elsewhere). */
+// GCP primitive roles are only meaningful when assigned to a `role` key —
+// `role: roles/owner`, `role = "roles/owner"`, `"role": "roles/owner"`,
+// `--role=roles/owner`. Requiring the assignment context (rather than matching
+// the bare string anywhere) keeps prose ("`roles/owner` grants everything"),
+// rule definitions, and comments that merely mention the role from being
+// flagged as if they were live bindings.
+const GCP_OWNER = /\broles?\b["']?\s*[:=]\s*\[?\s*["']?roles\/owner\b/i
+const GCP_EDITOR = /\broles?\b["']?\s*[:=]\s*\[?\s*["']?roles\/editor\b/i
+
+/** Returns true for paths this detector should NOT scan. */
 function isSkippedPath(path: string): boolean {
-  return /\.(tf|tfvars)$/i.test(path)
+  // .tf/.tfvars are owned by the Terraform scanner. Documentation files
+  // (markdown/rst/plain text) describe IAM in prose, not as live bindings —
+  // scanning them only produces false positives.
+  return /\.(tf|tfvars|md|mdx|markdown|rst|txt)$/i.test(path)
 }
 
 export function scanIamPolicy(content: string, filePath: string): IaCFinding[] {
@@ -139,11 +151,10 @@ export function scanIamPolicy(content: string, filePath: string): IaCFinding[] {
       }
     }
 
-    // GCP primitive roles are recognisable anywhere (JSON bindings, YAML,
-    // gcloud commands, source) without policy-doc context.
-    if (/\broles\/owner\b/.test(line)) {
+    // GCP primitive roles — only when assigned to a `role` key (see GCP_OWNER).
+    if (GCP_OWNER.test(line)) {
       findings.push(finding(RULES.gcpOwner, filePath, i, line))
-    } else if (/\broles\/editor\b/.test(line)) {
+    } else if (GCP_EDITOR.test(line)) {
       findings.push(finding(RULES.gcpEditor, filePath, i, line))
     }
   }
