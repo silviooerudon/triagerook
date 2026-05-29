@@ -42,7 +42,7 @@ export const AI_INSECURE_RULES: AiInsecureRule[] = [
     languages: ["js", "python"],
     mask: true,
     regex:
-      /(?:your[_-]?(?:api[_-]?key|secret|token|password|client[_-]?secret)|api[_-]?key[_-]?here|insert[_-]?(?:your[_-]?)?(?:api[_-]?)?key[_-]?here|replace[_-]?(?:this|with[_-]?your[_-]?\w+)|\bchange[-_]?me\b|<your[_-][a-z0-9_]+>|sk-x{6,}|x{12,}|placeholder[_-]?(?:api[_-]?)?(?:key|secret|token))/i,
+      /(?:your[_-]?(?:api[_-]?key|secret|token|password|client[_-]?secret)|api[_-]?key[_-]?here|insert[_-]?(?:your[_-]?)?(?:api[_-]?)?key[_-]?here|replace[_-]?(?:this|with[_-]?your[_-]?\w+)|\bchange[-_]?me\b|<your[_-][a-z0-9_]+>|sk-x{6,}|placeholder[_-]?(?:api[_-]?)?(?:key|secret|token))/i,
   },
   {
     id: "ai-todo-security",
