@@ -29,6 +29,7 @@ const LAYER_ORDER: DetectorLayer[] = [
   "iac-iam",
   "framework",
   "business-logic",
+  "ai-generated",
 ]
 
 const LAYER_BLURBS: Record<DetectorLayer, string> = {
@@ -53,6 +54,8 @@ const LAYER_BLURBS: Record<DetectorLayer, string> = {
     "Context-aware rules that only fire when the repo actually uses the framework (Next.js, Express, NestJS, Django, Flask, FastAPI, Spring, Laravel, Rails). Catches framework-specific misconfig — DEBUG on, CSRF disabled, wildcard CORS — without false positives on unrelated code.",
   "business-logic":
     "Broken-access-control and business-logic flaws: IDOR (records fetched by client id with no ownership check), mass assignment (the whole request body written to an ORM), privilege escalation (role/admin set from input), and payment tampering (charge amount taken from the client). Framed as 'verify there's a check here' — conservative, because the authorization check may live a few lines away.",
+  "ai-generated":
+    "Tell-tale signs of LLM-scaffolded code shipped without hardening: placeholder credentials left in literals, security controls deferred with a TODO, \"not for production\" disclaimers next to the missing check, and swallowed exceptions (bare except: pass / empty catch {}). Reads comment lines too; low/medium severity so these hygiene tells don't drown out real vulnerabilities.",
 }
 
 const SEV_STYLES: Record<string, string> = {

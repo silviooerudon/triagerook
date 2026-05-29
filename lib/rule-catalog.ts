@@ -9,6 +9,7 @@ import { TERRAFORM_RULES } from "./iac-terraform"
 import { IAM_POLICY_RULES } from "./iam-policy"
 import { FRAMEWORK_RULES } from "./framework-rules"
 import { BIZ_LOGIC_RULES } from "./biz-logic"
+import { AI_INSECURE_RULES } from "./ai-insecure"
 
 // Side-effect import so the AST rule modules register themselves into
 // the runner before we enumerate them. Without this, listAstRules()
@@ -29,6 +30,7 @@ export type DetectorLayer =
   | "iac-iam"
   | "framework"
   | "business-logic"
+  | "ai-generated"
 
 export type CatalogEntry = {
   id: string
@@ -111,6 +113,19 @@ export function getRuleCatalog(): readonly CatalogEntry[] {
       // Emitted as CodeFindings → SARIF id `code/<id>`, so the catalog id matches.
       id: `code/${rule.id}`,
       layer: "business-logic",
+      name: rule.name,
+      severity: rule.severity,
+      category: rule.category,
+      cwe: rule.cwe,
+      description: rule.description,
+      languages: rule.languages,
+    })
+  }
+
+  for (const rule of AI_INSECURE_RULES) {
+    out.push({
+      id: `code/${rule.id}`,
+      layer: "ai-generated",
       name: rule.name,
       severity: rule.severity,
       category: rule.category,
@@ -286,4 +301,5 @@ export const LAYER_LABELS: Record<DetectorLayer, string> = {
   "iac-iam": "Cloud IAM",
   framework: "Framework-aware",
   "business-logic": "Business logic",
+  "ai-generated": "AI-generated code",
 }

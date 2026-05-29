@@ -165,6 +165,8 @@ function howItRuns(layer: string): string {
       return "Gated on framework detection: the repo's manifests (package.json, requirements.txt, pom.xml, Gemfile, composer.json) are read to identify the stack, and the rule only runs against matching-language files when its framework is present."
     case "business-logic":
       return "Applied line-by-line on JS/TS and Python files (comments skipped). Flags input flowing into a trust decision — an ORM write, a privilege attribute, a charge amount, or a primary-key lookup — where an authorization/ownership check should exist. Conservative by design: confirm whether the check is present nearby."
+    case "ai-generated":
+      return "Applied line-by-line across source files, INCLUDING comments (the disclaimers and TODO markers are the signal). Matches placeholder credential literals, deferred-security TODO/FIXME comments, \"not for production\" disclaimers, and swallowed exceptions. The detector's own rule prose is skipped so the scanner doesn't flag itself."
     default:
       return "Detection layer not documented."
   }

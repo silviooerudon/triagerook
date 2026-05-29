@@ -34,6 +34,18 @@ lib/code-vulns.ts [rule=code/*] [reason="Detector self-reference: SAST rule desc
 # positives in regular code, so we suppress by path here instead.
 lib/ast/rules/** [rule=code/*] [reason="Detector self-reference: AST rule name/description copy"]
 
+# lib/biz-logic.ts is the business-logic / broken-access-control rule
+# library. Each rule's `description` names the very pattern it matches
+# ("`new Model(req.body)` lets the client populate every field…"), so the
+# detector flags its own copy. Same self-reference dynamic as code-vulns.ts.
+lib/biz-logic.ts [rule=code/*] [reason="Detector self-reference: business-logic rule descriptions"]
+
+# lib/ai-insecure.ts is the AI-generated-insecure-code rule library. This
+# layer also scans comments, so both its rule descriptions AND its module
+# header (which narrates "TODO-auth markers", "in a real application…")
+# match its own rules. Suppress the file's code findings by path.
+lib/ai-insecure.ts [rule=code/*] [reason="Detector self-reference: AI-insecure rule descriptions + comment-scanning header"]
+
 # scripts/patch-iam-d3-1-heredoc.py contains JavaScript embedded in a
 # Python heredoc. The JS-style `dataDocRe.exec()` and `heredocRe.exec()`
 # calls match the Python eval/exec rule erroneously.
