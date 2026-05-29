@@ -25,6 +25,22 @@ describe("scanAiInsecure — placeholder credentials", () => {
   it("does NOT flag a real-looking env read", () => {
     expect(ids("const key = process.env.API_KEY")).not.toContain("ai-placeholder-credential")
   })
+
+  it("matches the changeme/change-me placeholder as a whole token only", () => {
+    expect(ids('const pw = "changeme"')).toContain("ai-placeholder-credential")
+    expect(ids('password = "change-me"', "x.py")).toContain("ai-placeholder-credential")
+  })
+
+  it("does NOT match 'change_me' as a substring of a longer identifier", () => {
+    // Regression: django/django produced 39 false positives because
+    // `change[-_]?me` matched the "change_me" prefix of "change_message".
+    expect(ids("change_message = json.dumps(payload)", "models.py")).not.toContain(
+      "ai-placeholder-credential",
+    )
+    expect(ids("def construct_change_message(self, request):", "options.py")).not.toContain(
+      "ai-placeholder-credential",
+    )
+  })
 })
 
 describe("scanAiInsecure — deferred security TODO", () => {
