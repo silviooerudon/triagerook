@@ -121,6 +121,32 @@ function riskiestClassification(licenses: string[]) {
   return best ? { classification: best, license: bestLicense } : null
 }
 
+// Parse a successful deps.dev version response and turn its detected licenses
+// into a LicenseFinding (or null when none are risky / the list is empty).
+async function classifyResponse(
+  res: { json: () => Promise<unknown> },
+  dep: DepRef,
+): Promise<LicenseFinding | null> {
+  const body = (await res.json()) as DepsDevVersion
+  const licenses = Array.isArray(body.licenses) ? body.licenses.filter(Boolean) : []
+  // Empty = unknown license (NOT "missing"); avoid false missing-license noise.
+  if (licenses.length === 0) return null
+  const picked = riskiestClassification(licenses)
+  if (!picked) return null
+  const { classification, license } = picked
+  return {
+    package: dep.name,
+    version: dep.version,
+    ecosystem: dep.ecosystem,
+    license: licenses.length > 1 ? licenses.join(", ") : license,
+    risk: classification.risk,
+    severity: classification.severity,
+    description: classification.description,
+    url: classification.url || registryUrl(dep),
+    source: dep.source,
+  }
+}
+
 async function withTimeout<T>(p: (signal: AbortSignal) => Promise<T>): Promise<T> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
@@ -181,10 +207,15 @@ export type RegistryLicenseResult = {
  * Enrich PyPI/Go/Ruby dependencies with their license from deps.dev. Returns
  * license findings for risky licenses plus an optional degraded marker.
  *
- * `injectedDeps` lets the scan pipeline pass the deps already parsed by the
- * vulnerability scanners (scanPython/Go/RubyDependencies), so we don't re-fetch
- * and re-parse the same five manifests. When omitted (standalone use / tests),
- * we fetch and parse the manifests ourselves. Network is injected for testability.
+ * Two entry modes for one job:
+ *   - PRODUCTION: the scan pipeline passes `injectedDeps` (the deps already
+ *     parsed by scanPython/Go/RubyDependencies), so we don't re-fetch/re-parse
+ *     the same five manifests. This is the path that runs for real scans and is
+ *     covered by the "uses injected deps without fetching manifests" test.
+ *   - STANDALONE / tests: when `injectedDeps` is omitted, we fetch and parse the
+ *     manifests ourselves — reusing the SAME exported parsers (parseGoMod,
+ *     parseGemfileLock, parseRequirementsTxt, …) the vuln scanners use, so the
+ *     two modes can't diverge on parsing. Network is injected for testability.
  */
 export async function scanRegistryLicenses(
   owner: string,
@@ -242,15 +273,23 @@ export async function scanRegistryLicenses(
     withTimeout((signal) => fetchImpl(url, { cache: "no-store", signal }))
   const results = await mapWithConcurrency(toQuery, CONCURRENCY, async (dep) => {
     try {
-      let res = await getJson(depsDevUrl(dep))
+      const res = await getJson(depsDevUrl(dep))
       // Go v2+ modules that predate module-path versioning are indexed by
       // deps.dev only under their "+incompatible" version. parseGoMod strips
       // that suffix for OSV, so a 404 here may just be the missing suffix —
       // retry once with it before giving up (otherwise a copyleft +incompatible
-      // module is silently never license-checked).
+      // module is silently never license-checked). The retry is BEST-EFFORT: the
+      // primary 404 already means "no data", so a retry that 404s or errors must
+      // NOT count as a hard failure (that would inflate the degraded marker for
+      // Go v2+ only, asymmetrically vs. a plain 404).
       if (res.status === 404 && dep.ecosystem === "Go") {
         const incompatible = goIncompatibleVariant(dep.version)
-        if (incompatible) res = await getJson(depsDevUrl({ ...dep, version: incompatible }))
+        if (incompatible) {
+          const retry = await getJson(depsDevUrl({ ...dep, version: incompatible }))
+          if (!retry.ok) return null
+          return await classifyResponse(retry, dep)
+        }
+        return null
       }
       // 404 = package/version unknown to deps.dev; not a failure, just no data.
       if (res.status === 404) return null
@@ -258,25 +297,7 @@ export async function scanRegistryLicenses(
         failedCount++
         return null
       }
-      const body = (await res.json()) as DepsDevVersion
-      const licenses = Array.isArray(body.licenses) ? body.licenses.filter(Boolean) : []
-      // Empty = unknown license (NOT "missing"); avoid false missing-license noise.
-      if (licenses.length === 0) return null
-      const picked = riskiestClassification(licenses)
-      if (!picked) return null
-      const { classification, license } = picked
-      const finding: LicenseFinding = {
-        package: dep.name,
-        version: dep.version,
-        ecosystem: dep.ecosystem,
-        license: licenses.length > 1 ? licenses.join(", ") : license,
-        risk: classification.risk,
-        severity: classification.severity,
-        description: classification.description,
-        url: classification.url || registryUrl(dep),
-        source: dep.source,
-      }
-      return finding
+      return await classifyResponse(res, dep)
     } catch {
       failedCount++
       return null

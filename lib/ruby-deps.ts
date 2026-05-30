@@ -186,8 +186,9 @@ async function fetchOsvDetails(id: string): Promise<OsvVulnerability | null> {
 export type RubyDepsScanResult = {
   findings: DependencyFinding[]
   degraded: DetectorHealth | null
-  // Deduped+capped deps parsed from Gemfile.lock, exposed so the license scanner
-  // can reuse them instead of re-fetching/re-parsing (lib/licenses-registry.ts).
+  // Full deduped deps parsed from Gemfile.lock (NOT capped — the OSV cap is
+  // applied separately), exposed so the license scanner can reuse them instead
+  // of re-fetching/re-parsing, and report an accurate truncation count.
   parsedDeps: ParsedDep[]
 }
 
@@ -203,14 +204,15 @@ export async function scanRubyDependencies(
   if (parsed.length === 0) return { findings: [], degraded: null, parsedDeps: [] }
 
   const seen = new Set<string>()
-  const unique = parsed
-    .filter((d) => {
-      const key = `${d.name}@${d.version}`
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
-    .slice(0, MAX_PACKAGES)
+  // `deduped` is the full unique list (exposed as parsedDeps); `unique` is the
+  // OSV-capped subset.
+  const deduped = parsed.filter((d) => {
+    const key = `${d.name}@${d.version}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+  const unique = deduped.slice(0, MAX_PACKAGES)
 
   const batchBody = {
     queries: unique.map((d) => ({
@@ -236,7 +238,7 @@ export async function scanRubyDependencies(
         detector: "osv",
         reason: `OSV.dev unreachable (${msg.slice(0, 80)}). Ruby vulnerability scan skipped.`,
       },
-      parsedDeps: unique,
+      parsedDeps: deduped,
     }
   }
   if (!batchRes.ok) {
@@ -246,7 +248,7 @@ export async function scanRubyDependencies(
         detector: "osv",
         reason: `OSV.dev API returned ${batchRes.status}. Ruby vulnerability scan skipped.`,
       },
-      parsedDeps: unique,
+      parsedDeps: deduped,
     }
   }
   const batchJson = (await batchRes.json()) as OsvBatchResponse
@@ -261,7 +263,7 @@ export async function scanRubyDependencies(
     }
   })
 
-  if (idToPackages.size === 0) return { findings: [], degraded: null, parsedDeps: unique }
+  if (idToPackages.size === 0) return { findings: [], degraded: null, parsedDeps: deduped }
 
   const ids = Array.from(idToPackages.keys()).slice(0, 100)
   const details = await Promise.all(ids.map((id) => fetchOsvDetails(id)))
@@ -287,5 +289,5 @@ export async function scanRubyDependencies(
     }
   })
 
-  return { findings, degraded: null, parsedDeps: unique }
+  return { findings, degraded: null, parsedDeps: deduped }
 }

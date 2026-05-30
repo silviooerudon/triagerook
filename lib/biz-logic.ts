@@ -31,11 +31,14 @@ export type BizLogicRule = {
   suppress?: (line: string) => boolean
 }
 
-// Lines that pass request data into a logging / serialization / response sink
-// rather than a real ORM-write or charge. `{ amount: req.body.amount }` inside a
-// `logger.info(...)` is structured logging, not payment tampering.
-const LOGGING_OR_SERIALIZE_CONTEXT =
-  /\b(?:console|logger|log|winston|pino|bunyan)\b\s*\.|\.(?:debug|info|warn|warning|error|trace|log)\s*\(|\b(?:JSON\.stringify|res\.json|response\.json|ctx\.body\s*=)\b/
+// Lines that pass request data into a logging sink rather than a real charge —
+// `{ amount: req.body.amount }` inside `logger.info(...)` is structured logging,
+// not payment tampering. Deliberately narrow: only a call ON a well-known logger
+// object (or JSON.stringify), NOT a bare `.info(`/`.error(` method (which match
+// payment-SDK fluent chains like `gateway.charge({amount}).error(cb)`) and NOT
+// `res.json(...)` (which can wrap a real charge: `res.json(await charge({amount}))`).
+const LOGGING_CONTEXT =
+  /\b(?:console|logger|winston|pino|bunyan|log)\s*\.\s*(?:debug|info|warn|warning|error|trace|log|verbose)\s*\(|\bJSON\.stringify\s*\(/
 
 export const BIZ_LOGIC_RULES: BizLogicRule[] = [
   // ───────────────────────── Mass assignment ─────────────────────────
@@ -113,7 +116,7 @@ export const BIZ_LOGIC_RULES: BizLogicRule[] = [
     languages: ["js"],
     regex:
       /\b(?:amount|price|total|unit_amount|unitAmount|subtotal|discount|amount_cents|amountCents)\s*:\s*(?:req|request|ctx)\.(?:body|query|params)\b/,
-    suppress: (line) => LOGGING_OR_SERIALIZE_CONTEXT.test(line),
+    suppress: (line) => LOGGING_CONTEXT.test(line),
   },
   {
     id: "payment-amount-from-client-py",
@@ -126,7 +129,7 @@ export const BIZ_LOGIC_RULES: BizLogicRule[] = [
     languages: ["python"],
     regex:
       /\b(?:amount|price|total|unit_amount|subtotal|discount)\s*=\s*request\.(?:data|POST|GET|json)\b/,
-    suppress: (line) => LOGGING_OR_SERIALIZE_CONTEXT.test(line),
+    suppress: (line) => LOGGING_CONTEXT.test(line),
   },
 
   // ──────────────────── IDOR — direct object reference ────────────────────

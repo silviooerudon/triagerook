@@ -78,6 +78,17 @@ describe("scanBusinessLogic — payment tampering", () => {
       "payment-amount-from-client-js",
     )
   })
+
+  it("does NOT over-suppress a real charge wrapped in res.json or a fluent .error/.info", () => {
+    // The suppressor must only skip logging calls ON a logger object, not any
+    // line that happens to contain res.json / .error( / .info(.
+    expect(ids("return res.json(await charge({ amount: req.body.amount }))")).toContain(
+      "payment-amount-from-client-js",
+    )
+    expect(ids("gateway.charge({ amount: req.body.amount }).error(handleErr)")).toContain(
+      "payment-amount-from-client-js",
+    )
+  })
 })
 
 describe("scanBusinessLogic — IDOR", () => {

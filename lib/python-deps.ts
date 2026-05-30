@@ -231,9 +231,9 @@ async function fetchOsvDetails(id: string): Promise<OsvVulnerability | null> {
 export type PythonDepsScanResult = {
   findings: DependencyFinding[]
   degraded: DetectorHealth | null
-  // Deduped+capped deps parsed from requirements/pyproject/Pipfile, exposed so
-  // the license scanner can reuse them instead of re-fetching/re-parsing
-  // (lib/licenses-registry.ts). Each carries its own `source`.
+  // Full deduped deps parsed from requirements/pyproject/Pipfile (NOT capped —
+  // the OSV cap is applied separately), exposed so the license scanner can reuse
+  // them and report an accurate truncation count. Each carries its own `source`.
   parsedDeps: ParsedDep[]
 }
 
@@ -256,16 +256,16 @@ export async function scanPythonDependencies(
   if (parsed.length === 0) return { findings: [], degraded: null, parsedDeps: [] }
 
   // De-dupe: (name, version) pair, prefer first encountered (requirements.txt
-  // is most specific usually)
+  // is most specific usually). `deduped` is the full unique list (exposed as
+  // parsedDeps); `unique` is the OSV-capped subset.
   const seen = new Set<string>()
-  const unique = parsed
-    .filter((d) => {
-      const key = `${d.name}@${d.version}`
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
-    .slice(0, MAX_PACKAGES)
+  const deduped = parsed.filter((d) => {
+    const key = `${d.name}@${d.version}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+  const unique = deduped.slice(0, MAX_PACKAGES)
 
   // 1. Query OSV in batch to know which packages have any vulns
   const batchBody = {
@@ -292,7 +292,7 @@ export async function scanPythonDependencies(
         detector: "osv",
         reason: `OSV.dev unreachable (${msg.slice(0, 80)}). Python vulnerability scan skipped.`,
       },
-      parsedDeps: unique,
+      parsedDeps: deduped,
     }
   }
   if (!batchRes.ok) {
@@ -302,7 +302,7 @@ export async function scanPythonDependencies(
         detector: "osv",
         reason: `OSV.dev API returned ${batchRes.status}. Python vulnerability scan skipped.`,
       },
-      parsedDeps: unique,
+      parsedDeps: deduped,
     }
   }
   const batchJson = (await batchRes.json()) as OsvBatchResponse
@@ -318,7 +318,7 @@ export async function scanPythonDependencies(
     }
   })
 
-  if (idToPackages.size === 0) return { findings: [], degraded: null, parsedDeps: unique }
+  if (idToPackages.size === 0) return { findings: [], degraded: null, parsedDeps: deduped }
 
   // Cap details fetch at 100 to keep latency bounded
   const ids = Array.from(idToPackages.keys()).slice(0, 100)
@@ -345,5 +345,5 @@ export async function scanPythonDependencies(
     }
   })
 
-  return { findings, degraded: null, parsedDeps: unique }
+  return { findings, degraded: null, parsedDeps: deduped }
 }
