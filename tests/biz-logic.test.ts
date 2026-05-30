@@ -64,6 +64,20 @@ describe("scanBusinessLogic — payment tampering", () => {
       "payment-amount-from-client-js",
     )
   })
+
+  it("does NOT flag amount: req.body in a logging/serialization call", () => {
+    // Structured logging of a request field isn't payment tampering.
+    expect(ids("logger.info({ amount: req.body.amount, userId: req.user.id })")).not.toContain(
+      "payment-amount-from-client-js",
+    )
+    expect(ids("console.log({ price: req.body.price })")).not.toContain(
+      "payment-amount-from-client-js",
+    )
+    // but a real charge still fires
+    expect(ids("stripe.charges.create({ amount: req.body.amount })")).toContain(
+      "payment-amount-from-client-js",
+    )
+  })
 })
 
 describe("scanBusinessLogic — IDOR", () => {
@@ -87,9 +101,15 @@ describe("scanBusinessLogic — IDOR", () => {
 })
 
 describe("scanBusinessLogic — hygiene", () => {
-  it("skips comment lines", () => {
+  it("skips comment lines (language-aware)", () => {
     expect(ids("// const role = req.body.role")).toEqual([])
     expect(ids("# user.is_staff = request.data['x']", "views.py")).toEqual([])
+  })
+
+  it("does NOT treat a JS '#' line as a comment (ES private field)", () => {
+    // `#` is a comment in Python but a private class field in JS/TS, so a
+    // privilege assignment in a private field must still be scanned.
+    expect(ids("#role = req.body.role", "user.js")).toContain("privilege-from-client-js")
   })
 
   it("ignores non-code files", () => {

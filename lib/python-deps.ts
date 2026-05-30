@@ -231,6 +231,10 @@ async function fetchOsvDetails(id: string): Promise<OsvVulnerability | null> {
 export type PythonDepsScanResult = {
   findings: DependencyFinding[]
   degraded: DetectorHealth | null
+  // Deduped+capped deps parsed from requirements/pyproject/Pipfile, exposed so
+  // the license scanner can reuse them instead of re-fetching/re-parsing
+  // (lib/licenses-registry.ts). Each carries its own `source`.
+  parsedDeps: ParsedDep[]
 }
 
 export async function scanPythonDependencies(
@@ -249,7 +253,7 @@ export async function scanPythonDependencies(
   if (pyproject) parsed.push(...parsePyprojectToml(pyproject))
   if (pipfile) parsed.push(...parsePipfile(pipfile))
 
-  if (parsed.length === 0) return { findings: [], degraded: null }
+  if (parsed.length === 0) return { findings: [], degraded: null, parsedDeps: [] }
 
   // De-dupe: (name, version) pair, prefer first encountered (requirements.txt
   // is most specific usually)
@@ -288,6 +292,7 @@ export async function scanPythonDependencies(
         detector: "osv",
         reason: `OSV.dev unreachable (${msg.slice(0, 80)}). Python vulnerability scan skipped.`,
       },
+      parsedDeps: unique,
     }
   }
   if (!batchRes.ok) {
@@ -297,6 +302,7 @@ export async function scanPythonDependencies(
         detector: "osv",
         reason: `OSV.dev API returned ${batchRes.status}. Python vulnerability scan skipped.`,
       },
+      parsedDeps: unique,
     }
   }
   const batchJson = (await batchRes.json()) as OsvBatchResponse
@@ -312,7 +318,7 @@ export async function scanPythonDependencies(
     }
   })
 
-  if (idToPackages.size === 0) return { findings: [], degraded: null }
+  if (idToPackages.size === 0) return { findings: [], degraded: null, parsedDeps: unique }
 
   // Cap details fetch at 100 to keep latency bounded
   const ids = Array.from(idToPackages.keys()).slice(0, 100)
@@ -339,5 +345,5 @@ export async function scanPythonDependencies(
     }
   })
 
-  return { findings, degraded: null }
+  return { findings, degraded: null, parsedDeps: unique }
 }

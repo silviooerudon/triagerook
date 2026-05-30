@@ -71,15 +71,14 @@ export function classifyLicense(
 ): LicenseClassification | null {
   const license = (raw ?? "").trim()
 
-  if (!license) {
-    return {
-      risk: "missing",
-      severity: RISK_SEVERITY.missing,
-      description:
-        "This dependency declares no license. With no license, default copyright applies and you have no legal right to use, copy, or redistribute it.",
-      url: "https://choosealicense.com/no-permission/",
-    }
-  }
+  // No license string = UNKNOWN, not "missing". Manifests/lockfiles routinely
+  // omit license metadata for packages that are in fact licensed (the npm
+  // lockfile dropped it for hundreds of MIT packages; deps.dev returns an empty
+  // list for un-scanned versions). classifyLicense OWNS this distinction so the
+  // npm and deps.dev callers can't diverge again by each forgetting to guard —
+  // an empty/absent license never produces a finding. (The `missing` LicenseRisk
+  // remains a valid type for scans persisted before this change.)
+  if (!license) return null
 
   const upper = license.toUpperCase()
 
@@ -188,16 +187,9 @@ export function scanNpmLicenses(lockfileContent: string): LicenseFinding[] {
     if (seen.has(key)) continue
 
     const license = normalizeLockfileLicense(entry.license)
-    // A lockfile that omits the `license` field is NOT evidence of "no license"
-    // — npm lockfiles (especially older v2/v3) routinely drop it even for
-    // MIT/BSD packages. Treating absent-in-lockfile as "missing" produced
-    // hundreds of false positives on real repos (e.g. accepts, ansi-regex,
-    // normalize-path on OWASP/NodeGoat — all MIT). So we skip unknown licenses
-    // here, consistent with the deps.dev path (lib/licenses-registry.ts), which
-    // treats an empty license list as unknown rather than missing. An
-    // explicitly proprietary string ("UNLICENSED") still arrives as a non-null
-    // value and is flagged.
-    if (license === null) continue
+    // An absent OR empty-string license is unknown metadata, not "no license"
+    // (npm lockfiles drop it even for MIT/BSD packages — see classifyLicense).
+    // classifyLicense returns null for both, so no "missing" false positives.
     const classification = classifyLicense(license)
     if (!classification) continue
 

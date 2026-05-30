@@ -26,10 +26,14 @@ describe("classifyLicense", () => {
     expect(classifyLicense("LGPL-2.1")?.risk).toBe("copyleft-weak")
   })
 
-  it("flags missing license", () => {
-    expect(classifyLicense(null)?.risk).toBe("missing")
-    expect(classifyLicense("")?.risk).toBe("missing")
-    expect(classifyLicense("   ")?.risk).toBe("missing")
+  it("treats an absent/empty license as UNKNOWN (null), not 'missing'", () => {
+    // classifyLicense owns the unknown-vs-missing distinction so the npm and
+    // deps.dev paths can't diverge: absent/empty/whitespace metadata is not
+    // evidence of "no license" and must produce no finding.
+    expect(classifyLicense(null)).toBeNull()
+    expect(classifyLicense(undefined)).toBeNull()
+    expect(classifyLicense("")).toBeNull()
+    expect(classifyLicense("   ")).toBeNull()
   })
 
   it("flags proprietary / UNLICENSED as non-standard", () => {
@@ -93,6 +97,16 @@ describe("scanNpmLicenses", () => {
     const lock = lockfile({
       "": { name: "root" },
       "node_modules/no-license": { version: "1.0.0" },
+    })
+    expect(scanNpmLicenses(lock)).toHaveLength(0)
+  })
+
+  it("does NOT flag a dependency with an empty-string license field", () => {
+    // normalizeLockfileLicense returns "" (not null) for `license: ""`; the
+    // unknown-handling must live in classifyLicense so this is skipped too.
+    const lock = lockfile({
+      "": { name: "root" },
+      "node_modules/empty-lic": { version: "1.0.0", license: "" },
     })
     expect(scanNpmLicenses(lock)).toHaveLength(0)
   })

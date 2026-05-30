@@ -207,6 +207,9 @@ async function fetchOsvDetails(id: string): Promise<OsvVulnerability | null> {
 export type GoDepsScanResult = {
   findings: DependencyFinding[]
   degraded: DetectorHealth | null
+  // Deduped+capped deps parsed from go.mod, exposed so the license scanner can
+  // reuse them instead of re-fetching/re-parsing go.mod (lib/licenses-registry.ts).
+  parsedDeps: ParsedDep[]
 }
 
 export async function scanGoDependencies(
@@ -215,10 +218,10 @@ export async function scanGoDependencies(
   token: string | null,
 ): Promise<GoDepsScanResult> {
   const content = await fetchRepoFile(owner, repo, "go.mod", token)
-  if (!content) return { findings: [], degraded: null }
+  if (!content) return { findings: [], degraded: null, parsedDeps: [] }
 
   const parsed = parseGoMod(content)
-  if (parsed.length === 0) return { findings: [], degraded: null }
+  if (parsed.length === 0) return { findings: [], degraded: null, parsedDeps: [] }
 
   // De-dupe + cap before hitting OSV. OSV's batch endpoint accepts up
   // to ~1000 queries per call but our budget is tighter — keep the
@@ -258,6 +261,7 @@ export async function scanGoDependencies(
         detector: "osv",
         reason: `OSV.dev unreachable (${msg.slice(0, 80)}). Go vulnerability scan skipped.`,
       },
+      parsedDeps: unique,
     }
   }
   if (!batchRes.ok) {
@@ -267,6 +271,7 @@ export async function scanGoDependencies(
         detector: "osv",
         reason: `OSV.dev API returned ${batchRes.status}. Go vulnerability scan skipped.`,
       },
+      parsedDeps: unique,
     }
   }
   const batchJson = (await batchRes.json()) as OsvBatchResponse
@@ -281,7 +286,7 @@ export async function scanGoDependencies(
     }
   })
 
-  if (idToPackages.size === 0) return { findings: [], degraded: null }
+  if (idToPackages.size === 0) return { findings: [], degraded: null, parsedDeps: unique }
 
   const ids = Array.from(idToPackages.keys()).slice(0, 100)
   const details = await Promise.all(ids.map((id) => fetchOsvDetails(id)))
@@ -307,5 +312,5 @@ export async function scanGoDependencies(
     }
   })
 
-  return { findings, degraded: null }
+  return { findings, degraded: null, parsedDeps: unique }
 }

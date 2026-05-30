@@ -41,8 +41,12 @@ export const AI_INSECURE_RULES: AiInsecureRule[] = [
       "A credential literal is a generated placeholder (your-api-key, INSERT_API_KEY_HERE, <your-secret>, change-me, sk-xxxx…). AI assistants emit these so the snippet 'works', and they ship unchanged — either as a broken default in production or, worse, replaced inline with a real secret that then gets committed. Move it to an environment variable and fail fast when it's unset.",
     languages: ["js", "python"],
     mask: true,
+    // Every word-like token is \b-anchored on BOTH sides so it matches a whole
+    // placeholder, never a substring of a longer identifier (the change_me /
+    // x{12,} FP class — e.g. `placeholderKeyboard`, `your_tokenizer`,
+    // `replaceThisNode` must NOT match).
     regex:
-      /(?:your[_-]?(?:api[_-]?key|secret|token|password|client[_-]?secret)|api[_-]?key[_-]?here|insert[_-]?(?:your[_-]?)?(?:api[_-]?)?key[_-]?here|replace[_-]?(?:this|with[_-]?your[_-]?\w+)|\bchange[-_]?me\b|<your[_-][a-z0-9_]+>|sk-x{6,}|placeholder[_-]?(?:api[_-]?)?(?:key|secret|token))/i,
+      /(?:\byour[_-]?(?:api[_-]?key|secret|token|password|client[_-]?secret)\b|\bapi[_-]?key[_-]?here\b|\binsert[_-]?(?:your[_-]?)?(?:api[_-]?)?key[_-]?here\b|\breplace[_-]?(?:this|with[_-]?your[_-]?\w+)\b|\bchange[-_]?me\b|<your[_-][a-z0-9_]+>|\bsk-x{6,}\b|\bplaceholder[_-]?(?:api[_-]?)?(?:key|secret|token)\b)/i,
   },
   {
     id: "ai-todo-security",
@@ -77,7 +81,8 @@ export const AI_INSECURE_RULES: AiInsecureRule[] = [
     description:
       "A bare `except:`/`except Exception:` that only `pass`es hides every error — including auth failures, integrity-check failures, and security-relevant exceptions — letting the code continue in an unexpected state. Catch the specific exception and handle (or re-raise) it.",
     languages: ["python"],
-    regex: /^\s*except\b[^\n:]*:\s*pass\s*$/,
+    // Allow a trailing comment after `pass` (e.g. `except: pass  # ignore`).
+    regex: /^\s*except\b[^\n:]*:\s*pass\s*(?:#.*)?$/,
   },
   {
     id: "ai-empty-catch",
@@ -121,11 +126,14 @@ function ruleApplies(rule: AiInsecureRule, filePath: string): boolean {
   return lang !== null && rule.languages.includes(lang)
 }
 
-// The rule literals here are prose ("in a real application…") that also appears
-// in this detector's own `description:`/`name:` fields. Skip matches that sit
-// after such a property marker so TriageRook scanning itself doesn't flag its
-// own rule library. (Complements isLikelyScannerSelfReference, which only knows
-// about regex/pattern markers.)
+// This guard is intentionally specific to the AI-insecure layer: unlike the
+// code-vuln / business-logic / framework detectors (which skip comment lines),
+// this layer scans comments and prose, so its own `description:`/`name:` rule
+// copy — and prose-property fields in any scanned config/schema — match the
+// disclaimer/TODO regexes. The shared isLikelyScannerSelfReference deliberately
+// does NOT cover prose markers (broadening it risks FPs in the comment-skipping
+// layers — see .repoguardignore), so the prose guard lives here, where prose IS
+// scanned. Skip matches that sit after a string-property marker.
 const STRING_PROP_MARKER = /\b(?:description|name|reason|title|message|label|capability)\s*:\s*/i
 
 function isProseDefinition(line: string, matchOffset: number): boolean {
@@ -134,8 +142,17 @@ function isProseDefinition(line: string, matchOffset: number): boolean {
 
 const QUOTED_LITERAL = /(["'`])([^"'`\n]{6,})\1/g
 
+// High-confidence credential token shapes. Redacted even when UNQUOTED so a real
+// secret co-located with a placeholder match (e.g. `API_KEY = sk_live_real  #
+// change-me`) never survives into lineContent, which is persisted and returned.
+const SECRET_TOKEN =
+  /\b(?:sk-[A-Za-z0-9_-]{12,}|sk_(?:live|test)_[A-Za-z0-9]{12,}|ghp_[A-Za-z0-9]{20,}|gho_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{20,}|xox[baprs]-[0-9A-Za-z-]{10,})/g
+
 function maskLine(line: string): string {
-  const safe = line.trim().replace(QUOTED_LITERAL, (_m, q) => `${q}***REDACTED***${q}`)
+  const safe = line
+    .trim()
+    .replace(QUOTED_LITERAL, (_m, q) => `${q}***REDACTED***${q}`)
+    .replace(SECRET_TOKEN, "***REDACTED***")
   return safe.length > 200 ? safe.slice(0, 200) + "…" : safe
 }
 
