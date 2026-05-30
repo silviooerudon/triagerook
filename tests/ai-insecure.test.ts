@@ -31,6 +31,23 @@ describe("scanAiInsecure — placeholder credentials", () => {
     expect(ids('password = "change-me"', "x.py")).toContain("ai-placeholder-credential")
   })
 
+  it("matches an sk- placeholder where the x-run is followed by more chars", () => {
+    // Regression: `\bsk-x{6,}\b` (trailing \b) wrongly required a boundary after
+    // the x-run, missing the canonical `sk-xxxx<more>` placeholder shape. (Suffix
+    // kept obviously-fake so push-protection doesn't read it as a real key.)
+    expect(ids('const key = "sk-xxxxxxxxxxxxFAKEPLACEHOLDER"')).toContain(
+      "ai-placeholder-credential",
+    )
+  })
+
+  it("matches plural placeholder tokens without re-admitting longer words", () => {
+    expect(ids('const yourSecrets = load("your-secrets")')).toContain("ai-placeholder-credential")
+    expect(ids("placeholder_keys = {}", "x.py")).toContain("ai-placeholder-credential")
+    // still NOT matching the longer-word substrings
+    expect(ids("const placeholderKeyboard = init()")).not.toContain("ai-placeholder-credential")
+    expect(ids("secretary = User()", "x.py")).not.toContain("ai-placeholder-credential")
+  })
+
   it("does NOT substring-match placeholder tokens inside longer identifiers", () => {
     // Word-boundary regression: these must NOT fire ai-placeholder-credential.
     expect(ids("const placeholderKeyboardShortcut = registerKey()")).not.toContain(

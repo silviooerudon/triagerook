@@ -207,8 +207,9 @@ async function fetchOsvDetails(id: string): Promise<OsvVulnerability | null> {
 export type GoDepsScanResult = {
   findings: DependencyFinding[]
   degraded: DetectorHealth | null
-  // Deduped+capped deps parsed from go.mod, exposed so the license scanner can
-  // reuse them instead of re-fetching/re-parsing go.mod (lib/licenses-registry.ts).
+  // Full deduped deps parsed from go.mod (NOT capped — the OSV cap is applied
+  // separately), exposed so the license scanner can reuse them instead of
+  // re-fetching/re-parsing, and report an accurate truncation count.
   parsedDeps: ParsedDep[]
 }
 
@@ -228,14 +229,15 @@ export async function scanGoDependencies(
   // top MAX_PACKAGES so a monorepo with a giant go.mod doesn't eat
   // the whole function timeout.
   const seen = new Set<string>()
-  const unique = parsed
-    .filter((d) => {
-      const key = `${d.name}@${d.version}`
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
-    .slice(0, MAX_PACKAGES)
+  // `deduped` is the full unique list (exposed as parsedDeps for the license
+  // scanner so its truncation count is accurate); `unique` is capped for OSV.
+  const deduped = parsed.filter((d) => {
+    const key = `${d.name}@${d.version}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+  const unique = deduped.slice(0, MAX_PACKAGES)
 
   const batchBody = {
     queries: unique.map((d) => ({
@@ -261,7 +263,7 @@ export async function scanGoDependencies(
         detector: "osv",
         reason: `OSV.dev unreachable (${msg.slice(0, 80)}). Go vulnerability scan skipped.`,
       },
-      parsedDeps: unique,
+      parsedDeps: deduped,
     }
   }
   if (!batchRes.ok) {
@@ -271,7 +273,7 @@ export async function scanGoDependencies(
         detector: "osv",
         reason: `OSV.dev API returned ${batchRes.status}. Go vulnerability scan skipped.`,
       },
-      parsedDeps: unique,
+      parsedDeps: deduped,
     }
   }
   const batchJson = (await batchRes.json()) as OsvBatchResponse
@@ -286,7 +288,7 @@ export async function scanGoDependencies(
     }
   })
 
-  if (idToPackages.size === 0) return { findings: [], degraded: null, parsedDeps: unique }
+  if (idToPackages.size === 0) return { findings: [], degraded: null, parsedDeps: deduped }
 
   const ids = Array.from(idToPackages.keys()).slice(0, 100)
   const details = await Promise.all(ids.map((id) => fetchOsvDetails(id)))
@@ -312,5 +314,5 @@ export async function scanGoDependencies(
     }
   })
 
-  return { findings, degraded: null, parsedDeps: unique }
+  return { findings, degraded: null, parsedDeps: deduped }
 }

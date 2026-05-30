@@ -167,7 +167,13 @@ export type DependencyFinding = {
 //   copyleft-strong — GPL/AGPL: linking or network use can impose source-
 //                      disclosure obligations on the whole work.
 //   copyleft-weak   — LGPL/MPL/EPL/CDDL: file- or library-level reciprocity.
-//   missing         — no license declared: legally you have no right to use it.
+//   missing         — LEGACY / write-dead: no current detector emits this.
+//                      classifyLicense (lib/licenses.ts) returns null for an
+//                      absent/empty license (an omitted license is unknown
+//                      metadata, not "no rights" — see PR #102: treating it as
+//                      "missing" produced hundreds of false positives). Retained
+//                      only so scans persisted before that change still parse.
+//                      Do NOT wire new code to produce it without revisiting #102.
 //   non-standard    — explicitly proprietary / UNLICENSED.
 export type LicenseRisk =
   | "copyleft-strong"
