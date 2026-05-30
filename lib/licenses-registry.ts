@@ -43,7 +43,7 @@ export type FetchLike = (
   headers: { get: (name: string) => string | null }
 }>
 
-type DepRef = {
+export type DepRef = {
   name: string
   version: string
   ecosystem: Extract<DependencyEcosystem, "PyPI" | "Go" | "RubyGems">
@@ -80,6 +80,16 @@ function registryUrl(dep: DepRef): string {
 // vuln scanner strips it for OSV, so re-add it here when missing.
 function depsDevGoVersion(version: string): string {
   return /^v/.test(version) ? version : `v${version}`
+}
+
+// For a Go major-version >= 2 the module may be indexed only under its
+// "+incompatible" form. Returns that variant (e.g. "2.0.0" → "2.0.0+incompatible")
+// when eligible, or null when it can't apply (major < 2, or already suffixed).
+function goIncompatibleVariant(version: string): string | null {
+  if (/\+incompatible$/.test(version)) return null
+  const major = version.replace(/^v/, "").split(".")[0]
+  if (!/^\d+$/.test(major) || Number(major) < 2) return null
+  return `${version}+incompatible`
 }
 
 function depsDevUrl(dep: DepRef): string {
@@ -168,38 +178,48 @@ export type RegistryLicenseResult = {
 }
 
 /**
- * Fetch the PyPI/Go/Ruby manifests, parse them, and enrich each dependency
- * with its license from deps.dev. Returns license findings for risky licenses
- * plus an optional degraded marker. Network is injected for testability.
+ * Enrich PyPI/Go/Ruby dependencies with their license from deps.dev. Returns
+ * license findings for risky licenses plus an optional degraded marker.
+ *
+ * `injectedDeps` lets the scan pipeline pass the deps already parsed by the
+ * vulnerability scanners (scanPython/Go/RubyDependencies), so we don't re-fetch
+ * and re-parse the same five manifests. When omitted (standalone use / tests),
+ * we fetch and parse the manifests ourselves. Network is injected for testability.
  */
 export async function scanRegistryLicenses(
   owner: string,
   repo: string,
   token: string | null,
   fetchImpl: FetchLike = fetch as unknown as FetchLike,
+  injectedDeps?: DepRef[],
 ): Promise<RegistryLicenseResult> {
-  // 1. Fetch + parse every manifest in parallel.
-  const [requirements, pyproject, pipfile, goMod, gemfileLock] = await Promise.all([
-    fetchManifest(fetchImpl, owner, repo, "requirements.txt", token),
-    fetchManifest(fetchImpl, owner, repo, "pyproject.toml", token),
-    fetchManifest(fetchImpl, owner, repo, "Pipfile", token),
-    fetchManifest(fetchImpl, owner, repo, "go.mod", token),
-    fetchManifest(fetchImpl, owner, repo, "Gemfile.lock", token),
-  ])
-
-  const refs: DepRef[] = []
-  const pushAll = (
-    deps: { name: string; version: string }[],
-    ecosystem: DepRef["ecosystem"],
-    source: DepRef["source"],
-  ) => {
-    for (const d of deps) refs.push({ name: d.name, version: d.version, ecosystem, source })
+  // 1. Collect dep refs — from the caller's pre-parsed deps when available,
+  //    otherwise by fetching + parsing the manifests ourselves.
+  let refs: DepRef[]
+  if (injectedDeps) {
+    refs = injectedDeps
+  } else {
+    refs = []
+    const [requirements, pyproject, pipfile, goMod, gemfileLock] = await Promise.all([
+      fetchManifest(fetchImpl, owner, repo, "requirements.txt", token),
+      fetchManifest(fetchImpl, owner, repo, "pyproject.toml", token),
+      fetchManifest(fetchImpl, owner, repo, "Pipfile", token),
+      fetchManifest(fetchImpl, owner, repo, "go.mod", token),
+      fetchManifest(fetchImpl, owner, repo, "Gemfile.lock", token),
+    ])
+    const pushAll = (
+      deps: { name: string; version: string }[],
+      ecosystem: DepRef["ecosystem"],
+      source: DepRef["source"],
+    ) => {
+      for (const d of deps) refs.push({ name: d.name, version: d.version, ecosystem, source })
+    }
+    if (requirements) pushAll(parseRequirementsTxt(requirements), "PyPI", "requirements.txt")
+    if (pyproject) pushAll(parsePyprojectToml(pyproject), "PyPI", "pyproject.toml")
+    if (pipfile) pushAll(parsePipfile(pipfile), "PyPI", "Pipfile")
+    if (goMod) pushAll(parseGoMod(goMod), "Go", "go.mod")
+    if (gemfileLock) pushAll(parseGemfileLock(gemfileLock), "RubyGems", "Gemfile.lock")
   }
-  if (requirements) pushAll(parseRequirementsTxt(requirements), "PyPI", "requirements.txt")
-  if (pyproject) pushAll(parsePyprojectToml(pyproject), "PyPI", "pyproject.toml")
-  if (pipfile) pushAll(parsePipfile(pipfile), "PyPI", "Pipfile")
-  if (goMod) pushAll(parseGoMod(goMod), "Go", "go.mod")
-  if (gemfileLock) pushAll(parseGemfileLock(gemfileLock), "RubyGems", "Gemfile.lock")
 
   if (refs.length === 0) return { findings: [], degraded: null }
 
@@ -214,18 +234,28 @@ export async function scanRegistryLicenses(
   const truncatedCount = Math.max(0, unique.length - MAX_PACKAGES)
   const toQuery = unique.slice(0, MAX_PACKAGES)
 
-  // 3. Query deps.dev with bounded concurrency + per-request timeout. Track a
-  //    hard network failure so we can degrade rather than report a clean scan.
-  let hardFailure = false
+  // 3. Query deps.dev with bounded concurrency + per-request timeout. Count
+  //    hard failures (not just a boolean) so we can degrade accurately even
+  //    when SOME packages still resolved.
+  let failedCount = 0
+  const getJson = async (url: string) =>
+    withTimeout((signal) => fetchImpl(url, { cache: "no-store", signal }))
   const results = await mapWithConcurrency(toQuery, CONCURRENCY, async (dep) => {
     try {
-      const res = await withTimeout((signal) =>
-        fetchImpl(depsDevUrl(dep), { cache: "no-store", signal }),
-      )
+      let res = await getJson(depsDevUrl(dep))
+      // Go v2+ modules that predate module-path versioning are indexed by
+      // deps.dev only under their "+incompatible" version. parseGoMod strips
+      // that suffix for OSV, so a 404 here may just be the missing suffix —
+      // retry once with it before giving up (otherwise a copyleft +incompatible
+      // module is silently never license-checked).
+      if (res.status === 404 && dep.ecosystem === "Go") {
+        const incompatible = goIncompatibleVariant(dep.version)
+        if (incompatible) res = await getJson(depsDevUrl({ ...dep, version: incompatible }))
+      }
       // 404 = package/version unknown to deps.dev; not a failure, just no data.
       if (res.status === 404) return null
       if (!res.ok) {
-        hardFailure = true
+        failedCount++
         return null
       }
       const body = (await res.json()) as DepsDevVersion
@@ -248,27 +278,31 @@ export async function scanRegistryLicenses(
       }
       return finding
     } catch {
-      hardFailure = true
+      failedCount++
       return null
     }
   })
 
   const findings = results.filter((f): f is LicenseFinding => f !== null)
 
-  // 4. Build a degraded marker for hard failures and/or cap truncation, so the
-  //    UI never presents a partial license scan as comprehensive.
+  // 4. Build a degraded marker whenever ANY package was not fully checked —
+  //    a hard failure OR cap truncation — so a partial license scan never
+  //    silently reads as comprehensive. (A partial failure that still resolves
+  //    some findings must still warn about the ones it couldn't reach.)
   let degraded: DetectorHealth | null = null
-  if (hardFailure && findings.length === 0) {
-    degraded = {
-      detector: "license-registry",
-      reason:
-        "deps.dev unreachable. PyPI/Go/Ruby license scan skipped (npm licenses, read from the lockfile, are unaffected).",
-    }
-  } else if (truncatedCount > 0) {
-    degraded = {
-      detector: "license-registry",
-      reason: `License check capped at ${MAX_PACKAGES} packages; ${truncatedCount} PyPI/Go/Ruby dependencies were not license-checked.`,
-    }
+  const reasons: string[] = []
+  if (failedCount > 0) {
+    reasons.push(
+      `deps.dev did not respond for ${failedCount} package(s); their PyPI/Go/Ruby licenses were not checked (npm licenses, read from the lockfile, are unaffected).`,
+    )
+  }
+  if (truncatedCount > 0) {
+    reasons.push(
+      `License check capped at ${MAX_PACKAGES} packages; ${truncatedCount} PyPI/Go/Ruby dependencies were not license-checked.`,
+    )
+  }
+  if (reasons.length > 0) {
+    degraded = { detector: "license-registry", reason: reasons.join(" ") }
   }
 
   return { findings, degraded }

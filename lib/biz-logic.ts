@@ -27,7 +27,15 @@ export type BizLogicRule = {
   description: string
   languages: Language[]
   regex: RegExp
+  /** Optional FP filter: return true to suppress a match on this line. */
+  suppress?: (line: string) => boolean
 }
+
+// Lines that pass request data into a logging / serialization / response sink
+// rather than a real ORM-write or charge. `{ amount: req.body.amount }` inside a
+// `logger.info(...)` is structured logging, not payment tampering.
+const LOGGING_OR_SERIALIZE_CONTEXT =
+  /\b(?:console|logger|log|winston|pino|bunyan)\b\s*\.|\.(?:debug|info|warn|warning|error|trace|log)\s*\(|\b(?:JSON\.stringify|res\.json|response\.json|ctx\.body\s*=)\b/
 
 export const BIZ_LOGIC_RULES: BizLogicRule[] = [
   // ───────────────────────── Mass assignment ─────────────────────────
@@ -105,6 +113,7 @@ export const BIZ_LOGIC_RULES: BizLogicRule[] = [
     languages: ["js"],
     regex:
       /\b(?:amount|price|total|unit_amount|unitAmount|subtotal|discount|amount_cents|amountCents)\s*:\s*(?:req|request|ctx)\.(?:body|query|params)\b/,
+    suppress: (line) => LOGGING_OR_SERIALIZE_CONTEXT.test(line),
   },
   {
     id: "payment-amount-from-client-py",
@@ -117,6 +126,7 @@ export const BIZ_LOGIC_RULES: BizLogicRule[] = [
     languages: ["python"],
     regex:
       /\b(?:amount|price|total|unit_amount|subtotal|discount)\s*=\s*request\.(?:data|POST|GET|json)\b/,
+    suppress: (line) => LOGGING_OR_SERIALIZE_CONTEXT.test(line),
   },
 
   // ──────────────────── IDOR — direct object reference ────────────────────
@@ -177,13 +187,18 @@ export function scanBusinessLogic(
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
     const trimmed = line.trimStart()
-    // Skip comment lines — these are runtime-behaviour rules.
-    if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("#")) {
-      continue
-    }
+    // Skip comment lines (these are runtime-behaviour rules). Language-aware:
+    // `#` is a comment in Python but an ES private class field in JS/TS
+    // (`#role = req.body.role`), so only treat `#` as a comment for Python.
+    const isComment =
+      trimmed.startsWith("//") ||
+      trimmed.startsWith("*") ||
+      (language === "python" && trimmed.startsWith("#"))
+    if (isComment) continue
     for (const rule of applicable) {
       const m = rule.regex.exec(line)
       if (!m) continue
+      if (rule.suppress?.(line)) continue
       if (isLikelyScannerSelfReference(line, m.index)) continue
       findings.push({
         ruleId: rule.id,

@@ -115,6 +115,72 @@ describe("scanRegistryLicenses", () => {
     expect(degraded?.detector).toBe("license-registry")
   })
 
+  it("still degrades on a PARTIAL failure even when some licenses resolved", async () => {
+    // Regression: a 500 for one package + a resolved copyleft for another must
+    // not read as a comprehensive scan.
+    const fetchImpl = makeFetch({
+      manifests: {
+        "go.mod": "require (\n\texample.com/ok v1.0.0\n\texample.com/bad v1.0.0\n)\n",
+      },
+      depsDev: { "go/example.com/ok": ["GPL-3.0"], "go/example.com/bad": "error" },
+    })
+    const { findings, degraded } = await scanRegistryLicenses("o", "r", null, fetchImpl)
+    expect(findings).toHaveLength(1)
+    expect(degraded?.detector).toBe("license-registry")
+  })
+
+  it("retries Go v2+ modules with the +incompatible suffix on 404", async () => {
+    const seen: string[] = []
+    const base = makeFetch({
+      manifests: { "go.mod": "require example.com/m v2.3.4\n" },
+      // only the +incompatible variant resolves
+      depsDev: { "go/example.com/m": "error" },
+    })
+    const fetchImpl: FetchLike = async (url, init) => {
+      if (url.includes("api.deps.dev")) {
+        seen.push(url)
+        if (/v2\.3\.4%2Bincompatible$/.test(url)) {
+          return {
+            ok: true, status: 200,
+            json: async () => ({ licenses: ["GPL-3.0"] }),
+            text: async () => "", headers: { get: () => null },
+          }
+        }
+        // primary (no suffix) → 404
+        return {
+          ok: false, status: 404,
+          json: async () => ({}), text: async () => "", headers: { get: () => null },
+        }
+      }
+      return base(url, init)
+    }
+    const { findings } = await scanRegistryLicenses("o", "r", null, fetchImpl)
+    expect(seen.some((u) => /v2\.3\.4%2Bincompatible$/.test(u))).toBe(true)
+    expect(findings).toHaveLength(1)
+    expect(findings[0].risk).toBe("copyleft-strong")
+  })
+
+  it("uses injected deps without fetching manifests", async () => {
+    let manifestFetches = 0
+    const fetchImpl: FetchLike = async (url) => {
+      if (url.includes("contents/")) manifestFetches++
+      if (url.includes("api.deps.dev")) {
+        return {
+          ok: true, status: 200,
+          json: async () => ({ licenses: ["AGPL-3.0"] }),
+          text: async () => "", headers: { get: () => null },
+        }
+      }
+      return { ok: false, status: 404, json: async () => ({}), text: async () => "", headers: { get: () => null } }
+    }
+    const { findings } = await scanRegistryLicenses("o", "r", null, fetchImpl, [
+      { name: "somepkg", version: "1.0.0", ecosystem: "PyPI", source: "requirements.txt" },
+    ])
+    expect(manifestFetches).toBe(0)
+    expect(findings).toHaveLength(1)
+    expect(findings[0].ecosystem).toBe("PyPI")
+  })
+
   it("returns nothing when there are no PyPI/Go/Ruby manifests", async () => {
     const fetchImpl = makeFetch({ manifests: {} })
     const { findings, degraded } = await scanRegistryLicenses("o", "r", null, fetchImpl)

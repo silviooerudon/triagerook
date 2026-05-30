@@ -31,6 +31,31 @@ describe("scanAiInsecure — placeholder credentials", () => {
     expect(ids('password = "change-me"', "x.py")).toContain("ai-placeholder-credential")
   })
 
+  it("does NOT substring-match placeholder tokens inside longer identifiers", () => {
+    // Word-boundary regression: these must NOT fire ai-placeholder-credential.
+    expect(ids("const placeholderKeyboardShortcut = registerKey()")).not.toContain(
+      "ai-placeholder-credential",
+    )
+    expect(ids("import { your_tokenizer } from './nlp'")).not.toContain(
+      "ai-placeholder-credential",
+    )
+    expect(ids("function replaceThisNode(n) { return n }")).not.toContain(
+      "ai-placeholder-credential",
+    )
+  })
+
+  it("redacts an unquoted real secret token from lineContent", () => {
+    const out = scanAiInsecure("API_KEY = sk_live_abcdefABCDEF123456  # change-me", "x.py", false)
+    const f = out.find((x) => x.ruleId === "ai-placeholder-credential")
+    expect(f).toBeTruthy()
+    expect(f?.lineContent).not.toContain("sk_live_abcdefABCDEF123456")
+    expect(f?.lineContent).toContain("REDACTED")
+  })
+
+  it("flags bare except: pass even with a trailing comment", () => {
+    expect(ids("    except: pass  # ignore errors", "x.py")).toContain("ai-bare-except-pass")
+  })
+
   it("does NOT flag a bare run of x's (order-id / format placeholders)", () => {
     // Regression: a generic `x{12,}` token flagged LLM-prompt format examples
     // like "order ID (format: xxxx-xxxxxxxxxxxxxxxx)" on juice-shop (13 FPs).
