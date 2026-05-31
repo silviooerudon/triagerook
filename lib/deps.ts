@@ -46,6 +46,9 @@ type PkgRef = {
   name: string
   version: string
   isTransitive: boolean
+  // True when the package is only a (dev/test/build) dependency, not shipped to
+  // runtime. Used to de-prioritize its vulnerabilities in risk scoring.
+  isDev: boolean
   source: "package.json" | "package-lock.json"
 }
 
@@ -122,16 +125,18 @@ function cleanVersion(spec: string): string {
 
 function parsePackageJsonDeps(json: PackageJson): PkgRef[] {
   const out: PkgRef[] = []
-  const sections = [
-    json.dependencies ?? {},
-    json.devDependencies ?? {},
-    json.optionalDependencies ?? {},
+  // [section, isDev]: devDependencies are dev; optionalDependencies ship at
+  // runtime when present, so treat them as prod.
+  const sections: Array<[Record<string, string>, boolean]> = [
+    [json.dependencies ?? {}, false],
+    [json.devDependencies ?? {}, true],
+    [json.optionalDependencies ?? {}, false],
   ]
-  for (const section of sections) {
+  for (const [section, isDev] of sections) {
     for (const [name, spec] of Object.entries(section)) {
       const version = cleanVersion(spec)
       if (!version) continue
-      out.push({ name, version, isTransitive: false, source: "package.json" })
+      out.push({ name, version, isTransitive: false, isDev, source: "package.json" })
     }
   }
   return out
@@ -159,6 +164,7 @@ export function parseLockfile(json: LockfileV2): PkgRef[] {
         name,
         version: entry.version,
         isTransitive,
+        isDev: Boolean(entry.dev),
         source: "package-lock.json",
       })
     }
@@ -168,12 +174,17 @@ export function parseLockfile(json: LockfileV2): PkgRef[] {
   if (out.length === 0 && json.dependencies) {
     const walk = (deps: Record<string, unknown>, depth: number) => {
       for (const [name, raw] of Object.entries(deps)) {
-        const entry = raw as { version?: string; dependencies?: Record<string, unknown> }
+        const entry = raw as {
+          version?: string
+          dev?: boolean
+          dependencies?: Record<string, unknown>
+        }
         if (entry?.version) {
           out.push({
             name,
             version: entry.version,
             isTransitive: depth > 0,
+            isDev: Boolean(entry.dev),
             source: "package-lock.json",
           })
         }
@@ -196,7 +207,10 @@ function dedupe(refs: PkgRef[]): PkgRef[] {
       seen.set(key, ref)
       continue
     }
+    // Prefer the more-severe classification: a package that's BOTH a direct
+    // and a transitive dep is direct; one that's both prod and dev is prod.
     if (existing.isTransitive && !ref.isTransitive) seen.set(key, ref)
+    else if (existing.isDev && !ref.isDev) seen.set(key, { ...existing, isDev: false })
   }
   return Array.from(seen.values()).slice(0, MAX_PACKAGES)
 }
@@ -274,6 +288,7 @@ async function queryNpmAudit(refs: PkgRef[]): Promise<NpmAuditResult> {
           url: adv.url,
           source: ref?.source,
           isTransitive: ref?.isTransitive,
+          isDev: ref?.isDev,
         })
       }
     }

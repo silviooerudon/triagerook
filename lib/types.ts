@@ -174,6 +174,11 @@ export type DependencyFinding = {
     | "build.gradle"
     | "composer.lock"
   isTransitive?: boolean
+  // True when the package is only a dev/test/build dependency (not shipped to
+  // runtime). Risk scoring de-prioritizes its vulnerabilities. Currently
+  // populated for npm (from package.json sections + the lockfile `dev` flag);
+  // absent/undefined for ecosystems that don't yet distinguish dev deps.
+  isDev?: boolean
 }
 
 // License/compliance risk class for a dependency.
