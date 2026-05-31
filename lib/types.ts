@@ -114,6 +114,7 @@ export type IaCCategory =
   | "dockerfile"
   | "github-actions"
   | "terraform"
+  | "cloudformation"
   | "kubernetes"
   | "iam-policy"
   | "npm-scripts"

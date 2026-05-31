@@ -6,6 +6,7 @@ import { FILE_RULES } from "./sensitive-files"
 import { DOCKER_RULES, ACTIONS_RULES } from "./iac"
 import { K8S_RULES } from "./iac-k8s"
 import { TERRAFORM_RULES } from "./iac-terraform"
+import { CLOUDFORMATION_RULES } from "./iac-cloudformation"
 import { IAM_POLICY_RULES } from "./iam-policy"
 import { FRAMEWORK_RULES } from "./framework-rules"
 import { BIZ_LOGIC_RULES } from "./biz-logic"
@@ -26,6 +27,7 @@ export type DetectorLayer =
   | "iac-dockerfile"
   | "iac-github-actions"
   | "iac-terraform"
+  | "iac-cloudformation"
   | "iac-kubernetes"
   | "iac-iam"
   | "framework"
@@ -215,6 +217,19 @@ export function getRuleCatalog(): readonly CatalogEntry[] {
     })
   }
 
+  for (const rule of CLOUDFORMATION_RULES) {
+    out.push({
+      id: `iac/cloudformation/${rule.id}`,
+      layer: "iac-cloudformation",
+      name: rule.name,
+      severity: rule.severity,
+      category: "iac-cloudformation",
+      cwe: null,
+      description: rule.description,
+      remediation: rule.remediation,
+    })
+  }
+
   for (const rule of K8S_RULES) {
     out.push({
       id: `iac/kubernetes/${rule.id}`,
@@ -313,6 +328,7 @@ export const LAYER_LABELS: Record<DetectorLayer, string> = {
   "iac-dockerfile": "Dockerfile",
   "iac-github-actions": "GitHub Actions",
   "iac-terraform": "Terraform",
+  "iac-cloudformation": "CloudFormation",
   "iac-kubernetes": "Kubernetes",
   "iac-iam": "Cloud IAM",
   framework: "Framework-aware",

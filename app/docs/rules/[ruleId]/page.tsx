@@ -157,6 +157,8 @@ function howItRuns(layer: string): string {
       return "Run against Dockerfiles detected by path or basename. Line-based checks with remediation guidance."
     case "iac-github-actions":
       return "Run against `.github/workflows/*.yml` files. Targets the published patterns behind real-world breaches (GhostAction, s1ngularity, tj-actions/changed-files)."
+    case "iac-cloudformation":
+      return "Run against YAML/JSON files that look like CloudFormation templates (AWSTemplateFormatVersion, or Resources + an AWS:: type). Line-based checks; the security-group rule tracks ingress-vs-egress context. Non-template YAML/JSON is skipped."
     case "iac-kubernetes":
       return "Run against YAML files that look like Kubernetes manifests (top-level `apiVersion:` + `kind:`). Line-based checks across multi-document files; Helm-templated lines are skipped."
     case "iac-iam":
