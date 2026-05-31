@@ -116,6 +116,7 @@ export type IaCCategory =
   | "terraform"
   | "cloudformation"
   | "kubernetes"
+  | "helm"
   | "iam-policy"
   | "npm-scripts"
   | "supply-chain"

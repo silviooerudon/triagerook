@@ -5,6 +5,7 @@ import { SECRET_PATTERNS } from "./secret-patterns"
 import { FILE_RULES } from "./sensitive-files"
 import { DOCKER_RULES, ACTIONS_RULES } from "./iac"
 import { K8S_RULES } from "./iac-k8s"
+import { HELM_RULES } from "./iac-helm"
 import { TERRAFORM_RULES } from "./iac-terraform"
 import { CLOUDFORMATION_RULES } from "./iac-cloudformation"
 import { IAM_POLICY_RULES } from "./iam-policy"
@@ -29,6 +30,7 @@ export type DetectorLayer =
   | "iac-terraform"
   | "iac-cloudformation"
   | "iac-kubernetes"
+  | "iac-helm"
   | "iac-iam"
   | "framework"
   | "business-logic"
@@ -243,6 +245,19 @@ export function getRuleCatalog(): readonly CatalogEntry[] {
     })
   }
 
+  for (const rule of HELM_RULES) {
+    out.push({
+      id: `iac/helm/${rule.id}`,
+      layer: "iac-helm",
+      name: rule.name,
+      severity: rule.severity,
+      category: "iac-helm",
+      cwe: null,
+      description: rule.description,
+      remediation: rule.remediation,
+    })
+  }
+
   for (const rule of IAM_POLICY_RULES) {
     out.push({
       id: `iac/iam/${rule.id}`,
@@ -330,6 +345,7 @@ export const LAYER_LABELS: Record<DetectorLayer, string> = {
   "iac-terraform": "Terraform",
   "iac-cloudformation": "CloudFormation",
   "iac-kubernetes": "Kubernetes",
+  "iac-helm": "Helm",
   "iac-iam": "Cloud IAM",
   framework: "Framework-aware",
   "business-logic": "Business logic",

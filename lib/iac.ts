@@ -333,6 +333,51 @@ export const ACTIONS_RULES: ActionsRule[] = [
       return findings
     },
   },
+  {
+    id: "gha-hardcoded-secret-env",
+    name: "Hardcoded secret in workflow env",
+    severity: "high",
+    description:
+      "A secret-named workflow/step `env:` value is set to a literal instead of a `${{ secrets.* }}` reference. Anything committed here lands in the repo history and the build logs, and is visible to every fork PR run.",
+    remediation:
+      "Store the value as a repository/organization Actions secret and reference it as `${{ secrets.NAME }}`. Rotate any value already committed.",
+    scan: (content, filePath) => {
+      const findings: IaCFinding[] = []
+      const lines = content.split("\n")
+      // A secret-shaped env KEY: VALUE assignment. We flag only when VALUE is a
+      // committed literal — `${{ secrets.X }}` (and any ${{ }} expression) is
+      // the CORRECT pattern and must never be flagged. Shell/env indirection
+      // ($FOO) and empty/placeholder-blank values are also skipped.
+      const KEY =
+        /^\s*([A-Z0-9_]*(?:API_?KEY|TOKEN|SECRET|PASSWORD|PASSWD|ACCESS_?KEY|PRIVATE_?KEY|CLIENT_?SECRET)[A-Z0-9_]*)\s*:\s*(.+?)\s*$/i
+      for (let i = 0; i < lines.length; i++) {
+        const m = lines[i].match(KEY)
+        if (!m) continue
+        let value = m[2].trim()
+        if (value.startsWith("#")) continue // comment, no value
+        // Strip one layer of surrounding quotes.
+        const quoted = value.match(/^(['"])([\s\S]*)\1$/)
+        if (quoted) value = quoted[2]
+        if (!value) continue // empty / placeholder blank
+        if (value.includes("${{")) continue // ${{ secrets.X }} — correct usage
+        if (value.startsWith("$")) continue // $ENV / shell indirection, not a literal
+        findings.push({
+          ruleId: "gha-hardcoded-secret-env",
+          ruleName: "Hardcoded secret in workflow env",
+          severity: "high",
+          category: "github-actions",
+          description:
+            "A secret-named workflow/step `env:` value is set to a literal instead of a `${{ secrets.* }}` reference. Anything committed here lands in the repo history and the build logs, and is visible to every fork PR run.",
+          filePath,
+          lineNumber: i + 1,
+          lineContent: lines[i].trim().slice(0, 200),
+          remediation:
+            "Store the value as a repository/organization Actions secret and reference it as `${{ secrets.NAME }}`. Rotate any value already committed.",
+        })
+      }
+      return findings
+    },
+  },
 ]
 
 export function scanGithubActions(
