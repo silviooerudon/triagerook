@@ -2,19 +2,20 @@
 
 import { useEffect, useState } from "react"
 import type { PrioritizedFinding } from "@/lib/risk"
+import type { FixKind } from "@/lib/fix-engines"
 import { useModalFocus } from "./use-modal-focus"
 
 type Patch = { path: string; content: string }
 
 type PreviewResponse = {
-  kind: "dep-bump" | "secret-extract"
+  kind: FixKind
   summary: string
   patches: Patch[]
   baseBranch: string
 }
 
 type CreatedPrResponse = {
-  kind: "dep-bump" | "secret-extract"
+  kind: FixKind
   summary: string
   prUrl: string
   prNumber: number

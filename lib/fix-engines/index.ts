@@ -1,8 +1,17 @@
 import type { PrioritizedFinding, AnyFinding } from "@/lib/risk"
 import { applyDepBump, deriveSafeVersion } from "./dep-bump"
 import { applySecretExtract } from "./secret-extract"
+import {
+  applyDockerfileBaseImageBump,
+  dockerfileBumpSupported,
+} from "./dockerfile-baseimage"
+import { applyGhaPermissionsFix } from "./gha-permissions"
 
-export type FixKind = "dep-bump" | "secret-extract"
+export type FixKind =
+  | "dep-bump"
+  | "secret-extract"
+  | "dockerfile-baseimage-bump"
+  | "gha-permissions-fix"
 
 export type RunFixInput = {
   finding: PrioritizedFinding | AnyFinding
@@ -59,6 +68,16 @@ export function findingSupportsFix(
     return "secret-extract"
   }
 
+  if (finding.kind === "iac") {
+    const d = finding.data
+    if (d.likelyTestFixture) return null
+    if (d.ruleId === "dockerfile-base-image-eol") {
+      return dockerfileBumpSupported(d.lineContent) ? "dockerfile-baseimage-bump" : null
+    }
+    if (d.ruleId === "gha-permissions-write-all") return "gha-permissions-fix"
+    return null
+  }
+
   return null
 }
 
@@ -84,6 +103,36 @@ export function runFixEngine(input: RunFixInput): RunFixResult {
     }
   }
 
+  if (kind === "dockerfile-baseimage-bump") {
+    if (input.finding.kind !== "iac") {
+      throw new Error("dockerfile-baseimage-bump expects an iac finding")
+    }
+    const result = applyDockerfileBaseImageBump({
+      finding: input.finding.data,
+      fileContent: input.fileContent,
+    })
+    return {
+      kind,
+      patches: result.patches,
+      summary: `Bump end-of-life base image to ${result.newRef}`,
+    }
+  }
+
+  if (kind === "gha-permissions-fix") {
+    if (input.finding.kind !== "iac") {
+      throw new Error("gha-permissions-fix expects an iac finding")
+    }
+    const result = applyGhaPermissionsFix({
+      finding: input.finding.data,
+      fileContent: input.fileContent,
+    })
+    return {
+      kind,
+      patches: result.patches,
+      summary: "Replace permissions: write-all with least-privilege contents: read",
+    }
+  }
+
   if (input.finding.kind !== "secret" && input.finding.kind !== "code") {
     throw new Error("secret-extract expects a secret or code finding")
   }
@@ -105,4 +154,10 @@ export function runFixEngine(input: RunFixInput): RunFixResult {
   }
 }
 
-export { deriveSafeVersion, applyDepBump, applySecretExtract }
+export {
+  deriveSafeVersion,
+  applyDepBump,
+  applySecretExtract,
+  applyDockerfileBaseImageBump,
+  applyGhaPermissionsFix,
+}
