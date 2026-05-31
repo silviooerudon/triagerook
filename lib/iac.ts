@@ -1,4 +1,5 @@
 import type { IaCFinding, Severity } from "./types"
+import { scanDockerBaseImages } from "./docker-baseimage"
 
 export type DockerRule = {
   id: string
@@ -141,6 +142,10 @@ export function scanDockerfile(
       remediation: rule.remediation,
     })
   }
+  // End-of-life base-image detection emits one finding per EOL FROM line
+  // (multi-stage builds can have several), so it lives outside the single-
+  // index DOCKER_RULES model.
+  findings.push(...scanDockerBaseImages(content, filePath))
   return findings
 }
 

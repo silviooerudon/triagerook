@@ -173,6 +173,22 @@ export function getRuleCatalog(): readonly CatalogEntry[] {
     })
   }
 
+  // Emitted by scanDockerBaseImages (outside the single-index DOCKER_RULES
+  // model), so it's listed here explicitly. Severity is dynamic per how long
+  // past EOL the image is; we advertise the worst case.
+  out.push({
+    id: `iac/dockerfile/dockerfile-base-image-eol`,
+    layer: "iac-dockerfile",
+    name: "End-of-life base image",
+    severity: "high",
+    category: "iac-dockerfile",
+    cwe: "CWE-1104",
+    description:
+      "A base image past its end-of-life no longer receives security updates, so unpatched OS/runtime CVEs accumulate in every layer built on it.",
+    remediation:
+      "Upgrade to a currently-supported release of the base image and rebuild; pin to a digest once on a supported tag.",
+  })
+
   for (const rule of ACTIONS_RULES) {
     out.push({
       id: `iac/actions/${rule.id}`,
