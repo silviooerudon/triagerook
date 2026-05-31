@@ -134,6 +134,8 @@ export type AllFindings = {
   pythonDependencies: DependencyFinding[]
   goDependencies: DependencyFinding[]
   rubyDependencies: DependencyFinding[]
+  jvmDependencies: DependencyFinding[]
+  phpDependencies: DependencyFinding[]
   licenseFindings: LicenseFinding[]
 }
 
@@ -152,6 +154,8 @@ export function countBySeverity(all: AllFindings) {
   for (const f of all.pythonDependencies) bump(f.severity)
   for (const f of all.goDependencies) bump(f.severity)
   for (const f of all.rubyDependencies) bump(f.severity)
+  for (const f of all.jvmDependencies) bump(f.severity)
+  for (const f of all.phpDependencies) bump(f.severity)
   for (const f of all.licenseFindings) bump(f.severity)
   return buckets
 }
@@ -167,6 +171,8 @@ export function totalCount(all: AllFindings) {
     all.pythonDependencies.length +
     all.goDependencies.length +
     all.rubyDependencies.length +
+    all.jvmDependencies.length +
+    all.phpDependencies.length +
     all.licenseFindings.length
   )
 }

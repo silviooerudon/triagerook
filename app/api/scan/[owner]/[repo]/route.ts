@@ -95,6 +95,8 @@ export async function POST(
       pythonVulnsCount,
       goVulnsCount,
       rubyVulnsCount,
+      jvmVulnsCount,
+      phpVulnsCount,
       degraded,
     } = await runFullScan(
       accessToken,
@@ -114,11 +116,16 @@ export async function POST(
       files_scanned: fullResult.filesScanned,
       secrets_count: fullResult.findings.length,
       // deps_count is a single rolled-up number across every supported
-      // ecosystem (npm + PyPI + Go + RubyGems). The per-ecosystem
-      // counts aren't persisted separately yet — readers that need
-      // a breakdown derive it from prioritized_findings.
+      // ecosystem (npm + PyPI + Go + RubyGems + Maven + Composer). The
+      // per-ecosystem counts aren't persisted separately yet — readers
+      // that need a breakdown derive it from prioritized_findings.
       deps_count:
-        npmVulnsCount + pythonVulnsCount + goVulnsCount + rubyVulnsCount,
+        npmVulnsCount +
+        pythonVulnsCount +
+        goVulnsCount +
+        rubyVulnsCount +
+        jvmVulnsCount +
+        phpVulnsCount,
       risk_score: assessment.score,
       // Persisted from migration 006 to lock the user-visible breakdown +
       // prioritized list against future rule changes and to make scan-diff

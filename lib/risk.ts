@@ -169,6 +169,8 @@ type ScanLikeShape = {
   pythonDependencies?: DependencyFinding[]
   goDependencies?: DependencyFinding[]
   rubyDependencies?: DependencyFinding[]
+  jvmDependencies?: DependencyFinding[]
+  phpDependencies?: DependencyFinding[]
   licenseFindings?: LicenseFinding[]
 }
 
@@ -183,6 +185,8 @@ export function flattenScan(scan: ScanLikeShape): AnyFinding[] {
   for (const d of scan.pythonDependencies ?? []) out.push({ kind: "dependency", data: d })
   for (const d of scan.goDependencies ?? []) out.push({ kind: "dependency", data: d })
   for (const d of scan.rubyDependencies ?? []) out.push({ kind: "dependency", data: d })
+  for (const d of scan.jvmDependencies ?? []) out.push({ kind: "dependency", data: d })
+  for (const d of scan.phpDependencies ?? []) out.push({ kind: "dependency", data: d })
   for (const l of scan.licenseFindings ?? []) out.push({ kind: "license", data: l })
   return out
 }
