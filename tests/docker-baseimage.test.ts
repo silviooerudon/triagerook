@@ -51,6 +51,23 @@ describe("scanDockerBaseImages — EOL detection", () => {
     expect(ids("FROM ubuntu:24.04")).toEqual([])
   })
 
+  it("does NOT flag current Ubuntu LTS (jammy/noble) today, but flags them past their EOL", () => {
+    // Inert until their dated EOL — future-proofed in the map.
+    expect(ids("FROM ubuntu:jammy")).toEqual([])
+    expect(ids("FROM ubuntu:22.04")).toEqual([])
+    expect(ids("FROM ubuntu:noble")).toEqual([])
+    const after = new Date("2028-01-01") // past jammy (2027-04), before noble (2029-04)
+    expect(
+      scanDockerBaseImages("FROM ubuntu:jammy", "Dockerfile", after).map((f) => f.ruleId),
+    ).toContain("dockerfile-base-image-eol")
+    expect(
+      scanDockerBaseImages("FROM ubuntu:22.04", "Dockerfile", after).map((f) => f.ruleId),
+    ).toContain("dockerfile-base-image-eol")
+    expect(
+      scanDockerBaseImages("FROM ubuntu:noble", "Dockerfile", after),
+    ).toEqual([]) // noble still supported in 2028
+  })
+
   it("does NOT flag an untagged image (handled by the :latest rule)", () => {
     expect(ids("FROM node")).toEqual([])
   })

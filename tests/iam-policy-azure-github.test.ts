@@ -45,8 +45,20 @@ describe("scanIamPolicy — GitHub OAuth/PAT scopes", () => {
     )
   })
 
+  it("flags the CLI --scope(s) flag form (space-separated)", () => {
+    expect(ids('gh auth login --scopes "admin:org,repo"', "setup.sh")).toContain(
+      "iam-github-broad-oauth-scope",
+    )
+    expect(ids("gh auth refresh --scope delete_repo", "ci.sh")).toContain(
+      "iam-github-broad-oauth-scope",
+    )
+  })
+
   it("does NOT flag benign scopes", () => {
     expect(ids('scope: "read:org repo:status"', "auth.ts")).not.toContain(
+      "iam-github-broad-oauth-scope",
+    )
+    expect(ids("gh auth login --scopes read:org", "setup.sh")).not.toContain(
       "iam-github-broad-oauth-scope",
     )
   })

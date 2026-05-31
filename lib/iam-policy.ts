@@ -171,9 +171,22 @@ const AZURE_ROLE_CONTRIBUTOR =
 const AZURE_CUSTOM_ROLE_WILDCARD = /["']Actions["']\s*:\s*\[\s*["']\*["']/
 
 // GitHub OAuth/PAT scope assignment that includes a high-privilege scope.
-// Requires a scope(s) key so prose mentioning these tokens isn't flagged.
-const GITHUB_BROAD_SCOPE =
-  /\bscopes?\b["']?\s*[:=][^\n]*\b(?:delete_repo|admin:org|admin:enterprise|admin:repo_hook|admin:public_key|admin:gpg_key|site_admin)\b/i
+// Requires a scope(s) key (key:value / key=value form) so prose mentioning
+// these tokens isn't flagged.
+const DANGEROUS_GH_SCOPES =
+  "delete_repo|admin:org|admin:enterprise|admin:repo_hook|admin:public_key|admin:gpg_key|site_admin"
+const GITHUB_BROAD_SCOPE = new RegExp(
+  `\\bscopes?\\b["']?\\s*[:=][^\\n]*\\b(?:${DANGEROUS_GH_SCOPES})\\b`,
+  "i",
+)
+// CLI form: `gh auth login --scopes "admin:org"` / `--scope delete_repo`.
+// The space separator that `[:=]` rejects above is valid here because the
+// match is anchored on the literal `--scope(s)` flag, which prose never uses —
+// so allowing whitespace can't false-positive the way a bare `scope ...` would.
+const GITHUB_BROAD_SCOPE_CLI = new RegExp(
+  `--scopes?\\s+["']?[^"'\\n]*\\b(?:${DANGEROUS_GH_SCOPES})\\b`,
+  "i",
+)
 
 function looksLikeAzure(content: string): boolean {
   return /Microsoft\.Authorization|roleDefinition|AssignableScopes|az\s+role\s+assignment|azurerm_role|RoleAssignment|roleAssignments/i.test(
@@ -235,8 +248,8 @@ export function scanIamPolicy(content: string, filePath: string): IaCFinding[] {
       findings.push(finding(RULES.azureCustomRoleWildcard, filePath, i, line))
     }
 
-    // GitHub over-broad OAuth/PAT scope request.
-    if (GITHUB_BROAD_SCOPE.test(line)) {
+    // GitHub over-broad OAuth/PAT scope request (key:value or --flag form).
+    if (GITHUB_BROAD_SCOPE.test(line) || GITHUB_BROAD_SCOPE_CLI.test(line)) {
       findings.push(finding(RULES.githubBroadScope, filePath, i, line))
     }
   }
