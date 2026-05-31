@@ -350,9 +350,17 @@ export const ACTIONS_RULES: ActionsRule[] = [
       // ($FOO) and empty/placeholder-blank values are also skipped.
       const KEY =
         /^\s*([A-Z0-9_]*(?:API_?KEY|TOKEN|SECRET|PASSWORD|PASSWD|ACCESS_?KEY|PRIVATE_?KEY|CLIENT_?SECRET)[A-Z0-9_]*)\s*:\s*(.+?)\s*$/i
+      // Secret-NAMED keys that are actually config/reference knobs, not the
+      // secret itself: TOKEN_EXPIRY, PASSWORD_MIN_LENGTH, API_KEY_HEADER,
+      // SECRET_NAME (a k8s ref), ACCESS_KEY_ID (the id isn't the secret), …
+      // The presence of one of these words anywhere in the key means it's a
+      // setting, so don't treat its value as a leaked credential.
+      const CONFIG_KEY =
+        /(?:^|_)(?:LENGTH|EXPIR\w*|TIMEOUT|TTL|LIMIT|COUNT|MAX|MIN|SIZE|ENABLED|DISABLED|HEADER|NAME|ID|PREFIX|SUFFIX|ROTATION|INTERVAL|DAYS|HOURS|SECONDS|MS|URL|URI|ENDPOINT|PATH|FILE|TYPE|FORMAT|VERSION|ISSUER|AUDIENCE|ALGORITHM)S?(?:$|_)/i
       for (let i = 0; i < lines.length; i++) {
         const m = lines[i].match(KEY)
         if (!m) continue
+        if (CONFIG_KEY.test(m[1])) continue // secret-named, but a setting not a value
         let value = m[2].trim()
         if (value.startsWith("#")) continue // comment, no value
         // Strip one layer of surrounding quotes.
@@ -361,6 +369,10 @@ export const ACTIONS_RULES: ActionsRule[] = [
         if (!value) continue // empty / placeholder blank
         if (value.includes("${{")) continue // ${{ secrets.X }} — correct usage
         if (value.startsWith("$")) continue // $ENV / shell indirection, not a literal
+        // A real hardcoded secret is an opaque string, never a bare number or
+        // boolean — those are config values that slipped a secret-ish name.
+        if (/^\d+$/.test(value)) continue
+        if (/^(?:true|false|null|yes|no|on|off)$/i.test(value)) continue
         findings.push({
           ruleId: "gha-hardcoded-secret-env",
           ruleName: "Hardcoded secret in workflow env",

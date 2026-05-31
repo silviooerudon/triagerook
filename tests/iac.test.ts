@@ -125,4 +125,26 @@ jobs:
     const ids = scanGithubActions(wf, ".github/workflows/ci.yml").map((f) => f.ruleId)
     expect(ids).not.toContain("gha-hardcoded-secret-env")
   })
+
+  it("does NOT flag secret-named CONFIG keys or numeric/boolean values", () => {
+    const wf = [
+      "env:",
+      "  TOKEN_EXPIRY: 3600",
+      "  PASSWORD_MIN_LENGTH: 8",
+      "  API_KEY_HEADER: X-Api-Key",
+      "  SECRET_NAME: my-k8s-secret", // k8s reference, not the value
+      "  AWS_ACCESS_KEY_ID: AKIAEXAMPLE", // the ID isn't the secret
+      "  SECRET_ROTATION_ENABLED: true",
+      "  API_TOKEN_TTL: 300",
+    ].join("\n")
+    const ids = scanGithubActions(wf, ".github/workflows/ci.yml").map((f) => f.ruleId)
+    expect(ids).not.toContain("gha-hardcoded-secret-env")
+  })
+
+  it("still flags real hardcoded secrets (incl. SECRET_KEY) despite the config guard", () => {
+    const wf =
+      "env:\n  DB_PASSWORD: p@ssw0rd123\n  SECRET_KEY: 8f3b9c2a1e7d4f6b\n  JWT_SECRET: 'hunter2hunter2'\n"
+    const ids = scanGithubActions(wf, ".github/workflows/ci.yml").map((f) => f.ruleId)
+    expect(ids.filter((id) => id === "gha-hardcoded-secret-env").length).toBe(3)
+  })
 })
