@@ -219,8 +219,44 @@ atualizados, e checagem de que entra tanto no scan autenticado quanto no públic
   "não-é-pra-produção", exceções engolidas. Categoria/layer `ai-generated`
   (único layer que escaneia comentários).
 
-> Status: as 5 fases do roadmap + os 3 follow-ups estão implementados. Próximos
-> candidatos (não planejados): análise semântica profunda assistida por LLM para
-> lógica de negócio mais rica; distinção prod/dev de licenças em PyPI/Go/Ruby
-> (hoje todos os deps são checados, pois os manifests não marcam grupos de dev de
-> forma confiável).
+---
+
+## Onda de fechamento de gaps de mercado — entregue ✅ (PRs #107–#110)
+
+Auditoria cruzando a lista "o que um scanner de repositório precisa cobrir"
+(3 tiers) contra a base. Tudo que faltava foi fechado:
+
+- ✅ **SCA Maven/Gradle + Composer** (PR #107) — núcleo OSV compartilhado
+  ([`lib/osv.ts`](../lib/osv.ts)) + [`lib/jvm-deps.ts`](../lib/jvm-deps.ts)
+  (`pom.xml`/`build.gradle` → OSV `Maven`) + [`lib/php-deps.ts`](../lib/php-deps.ts)
+  (`composer.lock` → OSV `Packagist`).
+- ✅ **Docker base-image EOL** (PR #107) — [`lib/docker-baseimage.ts`](../lib/docker-baseimage.ts).
+  Proxy estático do "CVE de imagem"; ampliado com Ubuntu LTS jammy/noble (PR #108).
+- ✅ **CloudFormation** (PR #107) — [`lib/iac-cloudformation.ts`](../lib/iac-cloudformation.ts)
+  (YAML+JSON, espelha as regras do Terraform).
+- ✅ **Helm dedicado** (PR #109) — [`lib/iac-helm.ts`](../lib/iac-helm.ts)
+  (defaults inseguros em `values*.yaml`, que o scanner K8s pula).
+- ✅ **Supply-chain registry-backed** (PR #107) — dependency-confusion,
+  recently-published, suspicious-maintainer ([`lib/supply-chain-registry.ts`](../lib/supply-chain-registry.ts)).
+- ✅ **Posture extras** (PR #107) — secret-scanning + push-protection,
+  least-privilege do `GITHUB_TOKEN`, release provenance; score renormalizado
+  para "percentual dos sinais avaliáveis".
+- ✅ **IAM Azure + GitHub** (PR #107) — Azure RBAC Owner/Contributor + custom
+  wildcard, e escopos amplos de OAuth/PAT do GitHub ([`lib/iam-policy.ts`](../lib/iam-policy.ts));
+  forma CLI `--scope` adicionada (PR #108).
+- ✅ **Priorização de risco** (PR #107) — desconto dev-dep + boost de rota
+  pública em [`lib/risk.ts`](../lib/risk.ts).
+- ✅ **Fix-engines novos** (PR #109) — secret hardcoded em workflow `env:`;
+  e auto-PR de bump de base-image EOL + `permissions: write-all` →
+  least-privilege ([`lib/fix-engines/`](../lib/fix-engines/)).
+- ✅ **Ingestão de Trivy SARIF** (PR #110) — CVE de pacote de SO da imagem,
+  via relatório commitado ([`lib/trivy-sarif.ts`](../lib/trivy-sarif.ts),
+  [`docs/container-scanning.md`](./container-scanning.md)).
+
+> Status: as 5 fases do roadmap + os 3 follow-ups + a onda de fechamento de
+> gaps (#107–#110) estão implementados. A lista de mercado (3 tiers) está
+> integralmente coberta. O que resta é a **camada de comercialização**
+> (monitoramento contínuo via webhook, contas de time, repos privados,
+> billing) — não cobertura de detecção. Candidatos não planejados que seguem
+> de fora: análise de lógica de negócio assistida por LLM; CVE de layer via
+> scanner próprio (hoje feito por ingestão de Trivy, sem infra nossa).
