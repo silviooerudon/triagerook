@@ -110,16 +110,21 @@ const EOL_RULES: EolRule[] = [
   {
     image: "ubuntu",
     eolDate: (tag) => {
+      // Codenames + their numeric equivalents. Current LTS (jammy 22.04,
+      // noble 24.04) carry their future EOL dates — inert until then because
+      // scanDockerBaseImages compares the date against scan time, but they
+      // future-proof detection so the scanner flags them automatically when
+      // support ends rather than needing a code change.
       const byName: Record<string, string> = {
         trusty: "2019-04-30", xenial: "2021-04-30", bionic: "2023-05-31",
-        focal: "2025-04-30",
+        focal: "2025-04-30", jammy: "2027-04-21", noble: "2029-04-30",
       }
       for (const [name, date] of Object.entries(byName)) {
         if (tag.startsWith(name)) return date
       }
       const map: Record<string, string> = {
         "14.04": "2019-04-30", "16.04": "2021-04-30", "18.04": "2023-05-31",
-        "20.04": "2025-04-30",
+        "20.04": "2025-04-30", "22.04": "2027-04-21", "24.04": "2029-04-30",
       }
       const v = tag.match(/^(\d+\.\d+)/)?.[1]
       return v ? map[v] ?? null : null
