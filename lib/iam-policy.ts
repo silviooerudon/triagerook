@@ -76,6 +76,42 @@ const RULES = {
       "`roles/editor` is a broad primitive role granting write access to almost all resources. Prefer predefined or custom roles scoped to the task.",
     remediation: "Replace `roles/editor` with narrower predefined role(s).",
   },
+  azureOwner: {
+    id: "iam-azure-rbac-owner",
+    name: "Azure RBAC Owner role assigned",
+    severity: "high",
+    description:
+      "The Azure built-in `Owner` role grants full access to all resources in the scope, including the right to delegate access to others. At subscription or resource-group scope this is the cloud-permissions equivalent of administrator — a compromise of the identity is a compromise of everything in scope.",
+    remediation:
+      "Assign the least-privilege built-in role the identity needs (e.g. `Reader`, a service-specific Contributor) instead of `Owner`, and narrow the assignable scope.",
+  },
+  azureContributor: {
+    id: "iam-azure-rbac-contributor",
+    name: "Azure RBAC Contributor role assigned",
+    severity: "medium",
+    description:
+      "The Azure built-in `Contributor` role grants full management of all resources in the scope (everything except granting access). It's broader than most workloads need and removes the blast-radius boundary.",
+    remediation:
+      "Assign a service-specific built-in role (e.g. `Storage Blob Data Contributor`) scoped to the resource the identity actually uses.",
+  },
+  azureCustomRoleWildcard: {
+    id: "iam-azure-custom-role-wildcard",
+    name: "Azure custom role grants wildcard actions (*)",
+    severity: "high",
+    description:
+      'An Azure custom role definition with `"Actions": ["*"]` grants every control-plane operation in the assignable scope — effectively Owner-level management access.',
+    remediation:
+      'Enumerate the specific `Actions` the role needs (e.g. `Microsoft.Storage/storageAccounts/read`) instead of `"*"`.',
+  },
+  githubBroadScope: {
+    id: "iam-github-broad-oauth-scope",
+    name: "GitHub OAuth/PAT requests an over-broad scope",
+    severity: "medium",
+    description:
+      "Requesting a high-privilege GitHub scope (`delete_repo`, `admin:org`, `admin:enterprise`, `admin:repo_hook`, `site_admin`) gives the resulting token administrative reach far beyond typical app needs. A leaked token with these scopes can delete repos, reconfigure the org, or tamper with webhooks.",
+    remediation:
+      "Request only the minimal scopes the integration needs (e.g. `read:org`, `repo:status`), and prefer fine-grained PATs / GitHub App permissions over classic broad scopes.",
+  },
 } satisfies Record<string, IamPolicyRule>
 
 function finding(
@@ -119,6 +155,32 @@ const PUBLIC_PRINCIPAL =
 const GCP_OWNER = /\broles?\b["']?\s*[:=]\s*\[?\s*["']?roles\/owner\b/i
 const GCP_EDITOR = /\broles?\b["']?\s*[:=]\s*\[?\s*["']?roles\/editor\b/i
 
+// Azure. Built-in role GUIDs are globally unique, so they're authoritative on
+// their own. The friendly names "Owner"/"Contributor" are common English
+// words, so those only fire inside an Azure RBAC context (see looksLikeAzure)
+// and only when assigned to a role key (roleDefinitionName / role / --role).
+const AZURE_OWNER_GUID = /\b8e3af657-a8ff-443c-a75c-2fe8c4bcb635\b/i
+const AZURE_CONTRIBUTOR_GUID = /\bb24988ac-6180-42a0-ab88-20f7382dd24c\b/i
+// Separator allows `:`/`=` (JSON/Bicep) or whitespace (CLI: `--role Owner`).
+const AZURE_ROLE_OWNER =
+  /(?:roleDefinitionName|roleName|--role|["']?role["']?)\s*[:=\s]\s*\[?\s*["']?Owner\b/i
+const AZURE_ROLE_CONTRIBUTOR =
+  /(?:roleDefinitionName|roleName|--role|["']?role["']?)\s*[:=\s]\s*\[?\s*["']?Contributor\b/i
+// Azure custom-role definitions use a capital-A "Actions" array (distinct from
+// the AWS lowercase-singular "Action"); gated on Azure context.
+const AZURE_CUSTOM_ROLE_WILDCARD = /["']Actions["']\s*:\s*\[\s*["']\*["']/
+
+// GitHub OAuth/PAT scope assignment that includes a high-privilege scope.
+// Requires a scope(s) key so prose mentioning these tokens isn't flagged.
+const GITHUB_BROAD_SCOPE =
+  /\bscopes?\b["']?\s*[:=][^\n]*\b(?:delete_repo|admin:org|admin:enterprise|admin:repo_hook|admin:public_key|admin:gpg_key|site_admin)\b/i
+
+function looksLikeAzure(content: string): boolean {
+  return /Microsoft\.Authorization|roleDefinition|AssignableScopes|az\s+role\s+assignment|azurerm_role|RoleAssignment|roleAssignments/i.test(
+    content,
+  )
+}
+
 /** Returns true for paths this detector should NOT scan. */
 function isSkippedPath(path: string): boolean {
   // .tf/.tfvars are owned by the Terraform scanner. Documentation files
@@ -132,6 +194,7 @@ export function scanIamPolicy(content: string, filePath: string): IaCFinding[] {
   const findings: IaCFinding[] = []
   const lines = content.split("\n")
   const awsContext = looksLikeAwsPolicy(content)
+  const azureContext = looksLikeAzure(content)
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
@@ -156,6 +219,25 @@ export function scanIamPolicy(content: string, filePath: string): IaCFinding[] {
       findings.push(finding(RULES.gcpOwner, filePath, i, line))
     } else if (GCP_EDITOR.test(line)) {
       findings.push(finding(RULES.gcpEditor, filePath, i, line))
+    }
+
+    // Azure RBAC. GUIDs are authoritative anywhere; friendly names need an
+    // Azure context. Owner outranks Contributor on the same line.
+    if (AZURE_OWNER_GUID.test(line) || (azureContext && AZURE_ROLE_OWNER.test(line))) {
+      findings.push(finding(RULES.azureOwner, filePath, i, line))
+    } else if (
+      AZURE_CONTRIBUTOR_GUID.test(line) ||
+      (azureContext && AZURE_ROLE_CONTRIBUTOR.test(line))
+    ) {
+      findings.push(finding(RULES.azureContributor, filePath, i, line))
+    }
+    if (azureContext && AZURE_CUSTOM_ROLE_WILDCARD.test(line)) {
+      findings.push(finding(RULES.azureCustomRoleWildcard, filePath, i, line))
+    }
+
+    // GitHub over-broad OAuth/PAT scope request.
+    if (GITHUB_BROAD_SCOPE.test(line)) {
+      findings.push(finding(RULES.githubBroadScope, filePath, i, line))
     }
   }
 

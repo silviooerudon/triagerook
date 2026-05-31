@@ -52,7 +52,7 @@ const LAYER_BLURBS: Record<DetectorLayer, string> = {
   "iac-kubernetes":
     "Kubernetes manifest checks: privileged containers, host namespaces, privilege escalation, running as root, mutable image tags, dangerous Linux capabilities. Helm-templated lines are skipped.",
   "iac-iam":
-    "Cloud IAM-in-code checks: AWS IAM policy documents with wildcard actions/resources or a public principal, and GCP primitive roles (roles/owner, roles/editor). Scans JSON/YAML/source; HCL is covered by the Terraform layer.",
+    "Cloud IAM-in-code checks: AWS IAM policy documents with wildcard actions/resources or a public principal, GCP primitive roles (roles/owner, roles/editor), Azure RBAC Owner/Contributor assignments + wildcard custom roles, and over-broad GitHub OAuth/PAT scopes (delete_repo, admin:org, …). Scans JSON/YAML/source; HCL is covered by the Terraform layer.",
   framework:
     "Context-aware rules that only fire when the repo actually uses the framework (Next.js, Express, NestJS, Django, Flask, FastAPI, Spring, Laravel, Rails). Catches framework-specific misconfig — DEBUG on, CSRF disabled, wildcard CORS — without false positives on unrelated code.",
   "business-logic":
