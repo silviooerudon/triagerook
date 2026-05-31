@@ -10,11 +10,17 @@
 import { detectTyposquatting } from "./supply-chain-typo";
 import { detectPostInstallNpm } from "./supply-chain-pi-npm";
 import { detectPostInstallPython } from "./supply-chain-pi-py";
+import { detectRegistrySignals, type FetchLike } from "./supply-chain-registry";
 import { buildGitHubHeaders } from "./github-fetch";
 
 export type SupplyChainSeverity = "HIGH" | "MEDIUM" | "LOW";
 
-export type SupplyChainCategoryId = "typosquatting" | "postinstall";
+export type SupplyChainCategoryId =
+  | "typosquatting"
+  | "postinstall"
+  | "dependency-confusion"
+  | "recently-published"
+  | "suspicious-maintainer";
 
 export type SupplyChainLevel =
   | "excellent"
@@ -93,6 +99,10 @@ export function buildCategoryBreakdown(
 
 export interface SupplyChainScanInput {
   files: Map<string, string>;
+  // When provided, the registry-backed detector runs (dependency confusion,
+  // recently-published, suspicious maintainer) using this fetch. Left undefined
+  // by offline unit tests so scanSupplyChain stays network-free there.
+  fetchImpl?: FetchLike;
 }
 
 function isManifest(path: string, manifest: string): boolean {
@@ -129,6 +139,12 @@ export async function scanSupplyChain(
   const piPyResult = await detectPostInstallPython(input.files);
   findings.push(...piPyResult.findings);
 
+  // E6: registry-backed signals (only when a fetch is supplied).
+  if (input.fetchImpl) {
+    const registryResult = await detectRegistrySignals(input.files, input.fetchImpl);
+    findings.push(...registryResult.findings);
+  }
+
   const score = computeScore(findings);
   const level = levelFromScore(score);
 
@@ -138,6 +154,9 @@ export async function scanSupplyChain(
     categories: [
       buildCategoryBreakdown("typosquatting", findings),
       buildCategoryBreakdown("postinstall", findings),
+      buildCategoryBreakdown("dependency-confusion", findings),
+      buildCategoryBreakdown("recently-published", findings),
+      buildCategoryBreakdown("suspicious-maintainer", findings),
     ],
     findings,
     scanned: {
@@ -203,7 +222,9 @@ export async function assessSupplyChain(
   const files = new Map<string, string>(
     entries.filter((e): e is [string, string] => e !== null),
   );
-  return scanSupplyChain({ files });
+  // The npm registry needs no auth — pass plain fetch so the registry-backed
+  // signals run on the real scan path (offline unit tests omit it).
+  return scanSupplyChain({ files, fetchImpl: fetch as unknown as FetchLike });
 }
 
 export const __testHelpers = {
