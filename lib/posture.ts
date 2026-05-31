@@ -72,6 +72,9 @@ const W = {
 
   signedCommits: 10,
   mfaOrg: 5,
+  secretScanning: 6,
+  workflowPermissions: 5,
+  releaseProvenance: 4,
 } as const
 
 type BranchProtectionDetails = {
@@ -81,6 +84,9 @@ type BranchProtectionDetails = {
 }
 
 type MfaState = "enforced" | "not-enforced" | "na-user-repo" | "unknown"
+type SecretScanningState = "enabled" | "disabled" | "unknown"
+type WorkflowPermState = "read" | "write" | "unknown"
+type ReleaseProvenanceState = "present" | "absent" | "unknown"
 
 type RawSignals = {
   branchProtected: boolean
@@ -94,6 +100,9 @@ type RawSignals = {
   gitignoreContent: string | null
   signedCommitsRatio: number | null // 0..1 or null if undeterminable
   mfaState: MfaState
+  secretScanning: SecretScanningState
+  workflowPerms: WorkflowPermState
+  releaseProvenance: ReleaseProvenanceState
   rulesetSignals: RulesetSignals | null
   degraded: boolean
 }
@@ -113,6 +122,9 @@ const QUICK_WIN_COPY: Record<string, string> = {
   "gitignore-basics": "Add node_modules and .env to .gitignore",
   "signed-commits": "Sign commits (verified by GitHub)",
   "mfa-org": "Enable two-factor enforcement on the organization",
+  "secret-scanning": "Enable GitHub secret scanning + push protection",
+  "workflow-permissions": "Set default GITHUB_TOKEN permissions to read-only",
+  "release-provenance": "Sign releases / publish build provenance (SLSA, cosign, npm --provenance)",
 }
 
 async function fetchRepoFile(
@@ -288,6 +300,104 @@ async function fetchMfaState(
   if (orgJson.two_factor_requirement_enabled === true) return "enforced"
   if (orgJson.two_factor_requirement_enabled === false) return "not-enforced"
   return "unknown"
+}
+
+// GitHub secret scanning + push-protection status lives on the repo object's
+// security_and_analysis block, which is only returned to principals with admin
+// (or for some public repos). Absent block → "unknown" (we genuinely can't see
+// it), not "disabled".
+async function fetchSecretScanning(
+  owner: string,
+  repo: string,
+  token: string | null,
+): Promise<SecretScanningState> {
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+    headers: buildGitHubHeaders(token, "application/vnd.github+json"),
+    cache: "no-store",
+  })
+  if (!res.ok) {
+    const retry = parseGitHubRateLimit(res)
+    if (retry !== null) throw new GitHubRateLimitError(retry)
+    return "unknown"
+  }
+  const j = (await res.json()) as {
+    security_and_analysis?: {
+      secret_scanning?: { status?: string }
+      secret_scanning_push_protection?: { status?: string }
+    }
+  }
+  const sa = j.security_and_analysis
+  if (!sa) return "unknown"
+  const on =
+    sa.secret_scanning?.status === "enabled" ||
+    sa.secret_scanning_push_protection?.status === "enabled"
+  return on ? "enabled" : "disabled"
+}
+
+// Default GITHUB_TOKEN permission for workflows. "read" is least-privilege;
+// "write" means every workflow starts with write access to the repo. Needs
+// admin on the repo's Actions settings → "unknown" otherwise.
+async function fetchWorkflowPermissions(
+  owner: string,
+  repo: string,
+  token: string | null,
+): Promise<WorkflowPermState> {
+  const res = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/actions/permissions/workflow`,
+    {
+      headers: buildGitHubHeaders(token, "application/vnd.github+json"),
+      cache: "no-store",
+    },
+  )
+  if (!res.ok) {
+    const retry = parseGitHubRateLimit(res)
+    if (retry !== null) throw new GitHubRateLimitError(retry)
+    return "unknown"
+  }
+  const j = (await res.json()) as { default_workflow_permissions?: string }
+  if (j.default_workflow_permissions === "read") return "read"
+  if (j.default_workflow_permissions === "write") return "write"
+  return "unknown"
+}
+
+// Markers that a workflow signs releases / emits build provenance.
+const PROVENANCE_MARKERS =
+  /attest-build-provenance|provenance:\s*true|--provenance|cosign\s+sign|sigstore|slsa-github-generator|attestations:\s*write/i
+
+// Release integrity: does any workflow publish provenance / sign releases?
+// No workflows directory → "unknown" (nothing to assess). Workflows exist but
+// none sign → "absent" (an actionable gap). Bounded to 8 workflow fetches.
+async function fetchReleaseProvenance(
+  owner: string,
+  repo: string,
+  token: string | null,
+): Promise<ReleaseProvenanceState> {
+  const res = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/contents/.github/workflows`,
+    {
+      headers: buildGitHubHeaders(token, "application/vnd.github+json"),
+      cache: "no-store",
+    },
+  )
+  if (res.status === 404) return "unknown"
+  if (!res.ok) {
+    const retry = parseGitHubRateLimit(res)
+    if (retry !== null) throw new GitHubRateLimitError(retry)
+    return "unknown"
+  }
+  const list = (await res.json()) as Array<{ name: string; path: string; type: string }>
+  if (!Array.isArray(list)) return "unknown"
+  const ymls = list
+    .filter((f) => f.type === "file" && /\.ya?ml$/i.test(f.name))
+    .slice(0, 8)
+  if (ymls.length === 0) return "unknown"
+  const contents = await Promise.all(
+    ymls.map((f) => fetchRepoFile(owner, repo, f.path, token)),
+  )
+  for (const c of contents) {
+    if (c && PROVENANCE_MARKERS.test(c)) return "present"
+  }
+  return "absent"
 }
 
 async function softFail<T>(
@@ -540,6 +650,33 @@ export function computeScore(raw: RawSignals): PostureResult {
       satisfied: mfaSatisfied,
       unknown: mfaUnknown,
     },
+    {
+      id: "secret-scanning",
+      category: "governance",
+      label: "Secret scanning + push protection enabled",
+      pointsEarned: raw.secretScanning === "enabled" ? W.secretScanning : 0,
+      pointsMax: W.secretScanning,
+      satisfied: raw.secretScanning === "enabled",
+      unknown: raw.secretScanning === "unknown",
+    },
+    {
+      id: "workflow-permissions",
+      category: "governance",
+      label: "Default GITHUB_TOKEN permissions are read-only",
+      pointsEarned: raw.workflowPerms === "read" ? W.workflowPermissions : 0,
+      pointsMax: W.workflowPermissions,
+      satisfied: raw.workflowPerms === "read",
+      unknown: raw.workflowPerms === "unknown",
+    },
+    {
+      id: "release-provenance",
+      category: "governance",
+      label: "Releases are signed / publish build provenance",
+      pointsEarned: raw.releaseProvenance === "present" ? W.releaseProvenance : 0,
+      pointsMax: W.releaseProvenance,
+      satisfied: raw.releaseProvenance === "present",
+      unknown: raw.releaseProvenance === "unknown",
+    },
   ]
 
   const sumPoints = (signals: PostureSignal[]) =>
@@ -578,7 +715,19 @@ export function computeScore(raw: RawSignals): PostureResult {
     },
   ]
 
-  const score = breakdown.reduce((acc, c) => acc + c.pointsEarned, 0)
+  // Score = percent of *assessable* points earned. Signals we couldn't
+  // determine (unknown=true — e.g. admin-only secret-scanning status on a
+  // public scan, or N/A signals like MFA on a user repo) are excluded from
+  // both numerator and denominator, so they neither penalize nor inflate.
+  // This also keeps adding new (often-admin-only) signals from capping every
+  // repo below an A. Pre-normalization weights summed to 100, so for a repo
+  // with every signal assessable the score is unchanged.
+  const allForScore = [...branchSignals, ...docSignals, ...depSignals, ...govSignals]
+  const earnedPoints = allForScore.reduce((acc, s) => acc + s.pointsEarned, 0)
+  const assessableMax = allForScore
+    .filter((s) => !s.unknown)
+    .reduce((acc, s) => acc + s.pointsMax, 0)
+  const score = assessableMax > 0 ? Math.round((earnedPoints / assessableMax) * 100) : 100
   const grade = gradeFromScore(score)
 
   // Quick wins: only signals that are unsatisfied AND assessable. Unknown
@@ -651,6 +800,9 @@ export async function assessPosture(
     gitignore,
     signedRatio,
     mfaState,
+    secretScanning,
+    workflowPerms,
+    releaseProvenance,
     rulesetSignals,
   ] = await Promise.all([
     softFail(fetchBranch(owner, repo, "main", accessToken), null, degradedFlag),
@@ -676,6 +828,21 @@ export async function assessPosture(
     softFail(fetchRepoFile(owner, repo, ".gitignore", accessToken), null, degradedFlag),
     softFail(fetchSignedCommitsRatio(owner, repo, accessToken), null, degradedFlag),
     softFail(fetchMfaState(owner, repo, accessToken), "unknown" as MfaState, degradedFlag),
+    softFail(
+      fetchSecretScanning(owner, repo, accessToken),
+      "unknown" as SecretScanningState,
+      degradedFlag,
+    ),
+    softFail(
+      fetchWorkflowPermissions(owner, repo, accessToken),
+      "unknown" as WorkflowPermState,
+      degradedFlag,
+    ),
+    softFail(
+      fetchReleaseProvenance(owner, repo, accessToken),
+      "unknown" as ReleaseProvenanceState,
+      degradedFlag,
+    ),
     softFail(assessRulesetSignals(owner, repo, "main", accessToken), null, degradedFlag),
   ])
 
@@ -691,6 +858,9 @@ export async function assessPosture(
     gitignoreContent: gitignore,
     signedCommitsRatio: signedRatio,
     mfaState: mfaState,
+    secretScanning,
+    workflowPerms,
+    releaseProvenance,
     rulesetSignals: rulesetSignals,
     degraded: degradedFlag.value,
   }

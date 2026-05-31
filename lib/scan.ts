@@ -20,6 +20,7 @@ import {
 } from "./iac"
 import { scanKubernetes } from "./iac-k8s"
 import { isTerraformPath, scanTerraform } from "./iac-terraform"
+import { scanCloudFormation } from "./iac-cloudformation"
 import { scanIamPolicy } from "./iam-policy"
 import {
   detectFrameworks,
@@ -635,10 +636,14 @@ async function scanFile(
     } else if (isTerraformPath(file.path)) {
       iac.push(...scanTerraform(content, file.path))
     } else if (/\.ya?ml$/i.test(file.path)) {
-      // Kubernetes manifests aren't path-identifiable, so scanKubernetes
-      // self-guards on content (apiVersion: + kind:) and returns [] for
-      // non-manifest YAML.
+      // Kubernetes manifests and CloudFormation templates aren't path-
+      // identifiable, so both self-guard on content (apiVersion:+kind: /
+      // AWSTemplateFormatVersion or Resources+AWS::) and return [] otherwise.
       iac.push(...scanKubernetes(content, file.path))
+      iac.push(...scanCloudFormation(content, file.path))
+    } else if (/\.json$/i.test(file.path)) {
+      // CloudFormation templates are also authored in JSON; self-guards.
+      iac.push(...scanCloudFormation(content, file.path))
     }
     // IAM-in-code runs additively (not in the else-if chain): an AWS policy
     // JSON or a file mentioning a GCP primitive role is usually neither a

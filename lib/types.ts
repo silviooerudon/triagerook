@@ -114,6 +114,7 @@ export type IaCCategory =
   | "dockerfile"
   | "github-actions"
   | "terraform"
+  | "cloudformation"
   | "kubernetes"
   | "iam-policy"
   | "npm-scripts"
@@ -136,7 +137,16 @@ export type IaCFinding = {
   likelyTestFixture?: boolean
 }
 
-export type DependencyEcosystem = "npm" | "PyPI" | "Go" | "RubyGems"
+export type DependencyEcosystem =
+  | "npm"
+  | "PyPI"
+  | "Go"
+  | "RubyGems"
+  // Maven covers both Maven (pom.xml) and Gradle (build.gradle*) — they
+  // resolve the same Maven-coordinate artifacts and share OSV's "Maven"
+  // ecosystem. Composer is PHP (composer.lock → OSV "Packagist").
+  | "Maven"
+  | "Composer"
 
 export type DependencyFinding = {
   package: string
@@ -160,7 +170,15 @@ export type DependencyFinding = {
     | "Pipfile"
     | "go.mod"
     | "Gemfile.lock"
+    | "pom.xml"
+    | "build.gradle"
+    | "composer.lock"
   isTransitive?: boolean
+  // True when the package is only a dev/test/build dependency (not shipped to
+  // runtime). Risk scoring de-prioritizes its vulnerabilities. Currently
+  // populated for npm (from package.json sections + the lockfile `dev` flag);
+  // absent/undefined for ecosystems that don't yet distinguish dev deps.
+  isDev?: boolean
 }
 
 // License/compliance risk class for a dependency.

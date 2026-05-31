@@ -43,6 +43,14 @@ export const SEVERITY_BASE_POINTS = {
 
 export const TEST_FIXTURE_MULTIPLIER = 0.1
 export const TRANSITIVE_DEP_MULTIPLIER = 0.5
+// A dev/test/build-only dependency isn't shipped to runtime, so a vuln in it
+// is lower priority than the same vuln in a production dependency.
+export const DEV_DEP_MULTIPLIER = 0.4
+// A finding in an HTTP-exposed file (route/controller/handler/api) is directly
+// reachable by an attacker, so it's higher priority than the same issue in
+// internal/util code. A modest boost — reachability raises urgency without
+// dwarfing the severity base.
+export const PUBLIC_ROUTE_MULTIPLIER = 1.3
 export const HISTORY_SECRET_MULTIPLIER = 0.5
 // A provider-confirmed live secret is the highest-urgency finding; a rejected
 // (revoked/rotated) one barely matters. Applied only when validation ran.
@@ -80,6 +88,20 @@ export function compressScore(rawTotal: number): number {
   return Math.min(REPO_SCORE_CAP, compressed)
 }
 
+// Heuristic: is this file an HTTP-exposed entrypoint (route/controller/handler/
+// endpoint/api), where a vulnerability is directly reachable by a remote
+// attacker? Matches common framework conventions across ecosystems:
+//   - Next.js app router: app/**/route.ts, pages/api/**
+//   - Express/Nest/Rails/Laravel: routes/, controllers/, handlers/, endpoints/
+//   - filename markers: *.controller.*, *.route(s).*, *.handler.*, *.resolver.*
+export function isPublicRouteFile(filePath: string): boolean {
+  const p = filePath.toLowerCase()
+  if (/(^|\/)(routes?|controllers?|handlers?|endpoints?|resolvers?)\//.test(p)) return true
+  if (/(^|\/)pages\/api\//.test(p) || /(^|\/)app\/.*\/route\.[tj]sx?$/.test(p)) return true
+  if (/\.(controller|route|routes|handler|resolver|endpoint)\.[a-z]+$/.test(p)) return true
+  return false
+}
+
 export function scoreFinding(finding: AnyFinding): number {
   const sev = finding.data.severity as keyof typeof SEVERITY_BASE_POINTS
   let points = SEVERITY_BASE_POINTS[sev] ?? 0
@@ -102,6 +124,17 @@ export function scoreFinding(finding: AnyFinding): number {
 
   if (finding.kind === "dependency" && finding.data.isTransitive) {
     points *= TRANSITIVE_DEP_MULTIPLIER
+  }
+
+  // Dev-only dependency: not shipped to runtime, lower priority.
+  if (finding.kind === "dependency" && finding.data.isDev) {
+    points *= DEV_DEP_MULTIPLIER
+  }
+
+  // Reachability: a code finding in an HTTP-exposed file is more urgent than
+  // the same issue buried in internal code.
+  if (finding.kind === "code" && isPublicRouteFile(finding.data.filePath)) {
+    points *= PUBLIC_ROUTE_MULTIPLIER
   }
 
   // A copyleft obligation flows through transitive deps too, but a transitive
@@ -169,6 +202,8 @@ type ScanLikeShape = {
   pythonDependencies?: DependencyFinding[]
   goDependencies?: DependencyFinding[]
   rubyDependencies?: DependencyFinding[]
+  jvmDependencies?: DependencyFinding[]
+  phpDependencies?: DependencyFinding[]
   licenseFindings?: LicenseFinding[]
 }
 
@@ -183,6 +218,8 @@ export function flattenScan(scan: ScanLikeShape): AnyFinding[] {
   for (const d of scan.pythonDependencies ?? []) out.push({ kind: "dependency", data: d })
   for (const d of scan.goDependencies ?? []) out.push({ kind: "dependency", data: d })
   for (const d of scan.rubyDependencies ?? []) out.push({ kind: "dependency", data: d })
+  for (const d of scan.jvmDependencies ?? []) out.push({ kind: "dependency", data: d })
+  for (const d of scan.phpDependencies ?? []) out.push({ kind: "dependency", data: d })
   for (const l of scan.licenseFindings ?? []) out.push({ kind: "license", data: l })
   return out
 }

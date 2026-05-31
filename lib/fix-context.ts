@@ -52,6 +52,7 @@ export type FixContextOutcome =
 function resolveTargetPath(finding: PrioritizedFinding): string | null {
   if (finding.kind === "dependency") return finding.data.source ?? null
   if (finding.kind === "secret" || finding.kind === "code") return finding.data.filePath
+  if (finding.kind === "iac") return finding.data.filePath
   return null
 }
 

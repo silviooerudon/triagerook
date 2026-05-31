@@ -37,6 +37,8 @@ type ScanResultFull = ScanResult & {
   pythonDependencies?: DependencyFinding[]
   goDependencies?: DependencyFinding[]
   rubyDependencies?: DependencyFinding[]
+  jvmDependencies?: DependencyFinding[]
+  phpDependencies?: DependencyFinding[]
 }
 
 type SavedScan = {
@@ -143,6 +145,8 @@ function SavedScanView({ scan }: { scan: SavedScan }) {
     pythonDependencies: scan.result.pythonDependencies ?? [],
     goDependencies: scan.result.goDependencies ?? [],
     rubyDependencies: scan.result.rubyDependencies ?? [],
+    jvmDependencies: scan.result.jvmDependencies ?? [],
+    phpDependencies: scan.result.phpDependencies ?? [],
     licenseFindings: scan.result.licenseFindings ?? [],
   }
 
@@ -188,6 +192,8 @@ function SavedScanView({ scan }: { scan: SavedScan }) {
       <DependenciesSection findings={all.pythonDependencies} label="Python" />
       <DependenciesSection findings={all.goDependencies} label="Go" />
       <DependenciesSection findings={all.rubyDependencies} label="Ruby" />
+      <DependenciesSection findings={all.jvmDependencies} label="Java" />
+      <DependenciesSection findings={all.phpDependencies} label="PHP" />
       <LicensesSection findings={all.licenseFindings} />
       <IaCFindingsSection findings={all.iacFindings} />
       <SecretsSection findings={all.historySecrets} sourceLabel="history" />

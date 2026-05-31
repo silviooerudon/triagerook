@@ -50,6 +50,8 @@ function iacCategoryLabel(cat: IaCFinding["category"]): string {
       return "GitHub Actions"
     case "terraform":
       return "Terraform"
+    case "cloudformation":
+      return "CloudFormation"
     case "kubernetes":
       return "Kubernetes"
     case "iam-policy":

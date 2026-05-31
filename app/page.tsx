@@ -42,7 +42,7 @@ const DETECTORS: Array<{
   {
     id: "06",
     name: "deps",
-    desc: "npm package-lock.json against the npm advisories bulk API; PyPI requirements/pyproject/Pipfile against OSV.dev.",
+    desc: "npm package-lock.json against the npm advisories bulk API; PyPI/Go/RubyGems/Maven (pom.xml + Gradle)/Composer against OSV.dev.",
     refs: "npm + OSV.dev",
   },
   {

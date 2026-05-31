@@ -7,6 +7,8 @@ import { scanDependencies } from "./deps"
 import { scanPythonDependencies } from "./python-deps"
 import { scanGoDependencies } from "./go-deps"
 import { scanRubyDependencies } from "./ruby-deps"
+import { scanJvmDependencies } from "./jvm-deps"
+import { scanPhpDependencies } from "./php-deps"
 import { scanRegistryLicenses, type DepRef } from "./licenses-registry"
 import { assessPosture, type PostureResult } from "./posture"
 import { assessIAM, type IAMResult } from "./iam"
@@ -36,6 +38,9 @@ export type FullScanResult = {
     // them as optional + empty.
     goDependencies: DependencyFinding[]
     rubyDependencies: DependencyFinding[]
+    // JVM = Maven (pom.xml) + Gradle (build.gradle*); PHP = Composer.
+    jvmDependencies: DependencyFinding[]
+    phpDependencies: DependencyFinding[]
     licenseFindings: LicenseFinding[]
   }
   assessment: RiskAssessment
@@ -47,6 +52,8 @@ export type FullScanResult = {
   pythonVulnsCount: number
   goVulnsCount: number
   rubyVulnsCount: number
+  jvmVulnsCount: number
+  phpVulnsCount: number
   // Aggregated soft-failure markers from every detector that returned an
   // empty result for a known reason (rate limit, registry outage). The
   // UI renders a yellow banner so "0 findings" doesn't look like
@@ -124,6 +131,8 @@ export async function runFullScan(
     pythonResult,
     goResult,
     rubyResult,
+    jvmResult,
+    phpResult,
     postureResult,
     iamResult,
     supplyChainResult,
@@ -136,6 +145,8 @@ export async function runFullScan(
     pythonP,
     goP,
     rubyP,
+    scanJvmDependencies(owner, repo, accessToken),
+    scanPhpDependencies(owner, repo, accessToken),
     assessPosture(owner, repo, accessToken),
     assessIAM(owner, repo, accessToken),
     assessSupplyChain(owner, repo, accessToken, explicitBranch),
@@ -148,6 +159,8 @@ export async function runFullScan(
     pythonDependencies: pythonResult.findings,
     goDependencies: goResult.findings,
     rubyDependencies: rubyResult.findings,
+    jvmDependencies: jvmResult.findings,
+    phpDependencies: phpResult.findings,
     licenseFindings: [
       ...npmResult.licenseFindings,
       ...registryLicenseResult.findings,
@@ -167,6 +180,8 @@ export async function runFullScan(
     ...(pythonResult.degraded ? [pythonResult.degraded] : []),
     ...(goResult.degraded ? [goResult.degraded] : []),
     ...(rubyResult.degraded ? [rubyResult.degraded] : []),
+    ...(jvmResult.degraded ? [jvmResult.degraded] : []),
+    ...(phpResult.degraded ? [phpResult.degraded] : []),
     ...(registryLicenseResult.degraded ? [registryLicenseResult.degraded] : []),
   ]
 
@@ -217,6 +232,8 @@ export async function runFullScan(
     pythonVulnsCount: pythonResult.findings.length,
     goVulnsCount: goResult.findings.length,
     rubyVulnsCount: rubyResult.findings.length,
+    jvmVulnsCount: jvmResult.findings.length,
+    phpVulnsCount: phpResult.findings.length,
     degraded: aggregateDegraded.length > 0 ? aggregateDegraded : undefined,
   }
 }

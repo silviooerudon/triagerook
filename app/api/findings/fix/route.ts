@@ -110,6 +110,11 @@ function buildPrBody(
     lines.push(`- Severity: ${d.severity}`)
     lines.push(`- Location: \`${d.filePath}:${d.lineNumber}\``)
     if (d.cwe) lines.push(`- CWE: ${d.cwe}`)
+  } else if (finding.kind === "iac") {
+    const d = finding.data
+    lines.push(`- Rule: ${d.ruleName}`)
+    lines.push(`- Severity: ${d.severity}`)
+    lines.push(`- Location: \`${d.filePath}${d.lineNumber ? `:${d.lineNumber}` : ""}\``)
   }
 
   lines.push("")
@@ -124,6 +129,13 @@ function buildPrBody(
   if (kind === "secret-extract") {
     lines.push("- Set the new env var in your deployment (Vercel, etc).")
     lines.push("- Rotate the leaked secret — extracting to env does not invalidate the old value.")
+  }
+  if (kind === "dockerfile-baseimage-bump") {
+    lines.push("- Rebuild the image and run your test suite — a major base-image bump can change system libraries.")
+    lines.push("- Re-pin to a digest once you've confirmed the new tag.")
+  }
+  if (kind === "gha-permissions-fix") {
+    lines.push("- If any step needs a write scope (e.g. `contents: write` to push, `packages: write` to publish), add just that grant back.")
   }
 
   lines.push("")

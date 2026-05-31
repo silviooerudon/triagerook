@@ -6,6 +6,7 @@ import { FILE_RULES } from "./sensitive-files"
 import { DOCKER_RULES, ACTIONS_RULES } from "./iac"
 import { K8S_RULES } from "./iac-k8s"
 import { TERRAFORM_RULES } from "./iac-terraform"
+import { CLOUDFORMATION_RULES } from "./iac-cloudformation"
 import { IAM_POLICY_RULES } from "./iam-policy"
 import { FRAMEWORK_RULES } from "./framework-rules"
 import { BIZ_LOGIC_RULES } from "./biz-logic"
@@ -26,6 +27,7 @@ export type DetectorLayer =
   | "iac-dockerfile"
   | "iac-github-actions"
   | "iac-terraform"
+  | "iac-cloudformation"
   | "iac-kubernetes"
   | "iac-iam"
   | "framework"
@@ -173,6 +175,22 @@ export function getRuleCatalog(): readonly CatalogEntry[] {
     })
   }
 
+  // Emitted by scanDockerBaseImages (outside the single-index DOCKER_RULES
+  // model), so it's listed here explicitly. Severity is dynamic per how long
+  // past EOL the image is; we advertise the worst case.
+  out.push({
+    id: `iac/dockerfile/dockerfile-base-image-eol`,
+    layer: "iac-dockerfile",
+    name: "End-of-life base image",
+    severity: "high",
+    category: "iac-dockerfile",
+    cwe: "CWE-1104",
+    description:
+      "A base image past its end-of-life no longer receives security updates, so unpatched OS/runtime CVEs accumulate in every layer built on it.",
+    remediation:
+      "Upgrade to a currently-supported release of the base image and rebuild; pin to a digest once on a supported tag.",
+  })
+
   for (const rule of ACTIONS_RULES) {
     out.push({
       id: `iac/actions/${rule.id}`,
@@ -193,6 +211,19 @@ export function getRuleCatalog(): readonly CatalogEntry[] {
       name: rule.name,
       severity: rule.severity,
       category: "iac-terraform",
+      cwe: null,
+      description: rule.description,
+      remediation: rule.remediation,
+    })
+  }
+
+  for (const rule of CLOUDFORMATION_RULES) {
+    out.push({
+      id: `iac/cloudformation/${rule.id}`,
+      layer: "iac-cloudformation",
+      name: rule.name,
+      severity: rule.severity,
+      category: "iac-cloudformation",
       cwe: null,
       description: rule.description,
       remediation: rule.remediation,
@@ -297,6 +328,7 @@ export const LAYER_LABELS: Record<DetectorLayer, string> = {
   "iac-dockerfile": "Dockerfile",
   "iac-github-actions": "GitHub Actions",
   "iac-terraform": "Terraform",
+  "iac-cloudformation": "CloudFormation",
   "iac-kubernetes": "Kubernetes",
   "iac-iam": "Cloud IAM",
   framework: "Framework-aware",
