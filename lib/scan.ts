@@ -21,6 +21,7 @@ import {
 import { scanKubernetes } from "./iac-k8s"
 import { isTerraformPath, scanTerraform } from "./iac-terraform"
 import { scanCloudFormation } from "./iac-cloudformation"
+import { isHelmValuesPath, scanHelmValues } from "./iac-helm"
 import { scanIamPolicy } from "./iam-policy"
 import {
   detectFrameworks,
@@ -641,6 +642,12 @@ async function scanFile(
       // AWSTemplateFormatVersion or Resources+AWS::) and return [] otherwise.
       iac.push(...scanKubernetes(content, file.path))
       iac.push(...scanCloudFormation(content, file.path))
+      // Helm chart values aren't K8s manifests (no apiVersion+kind), so the
+      // K8s scanner skips them; the dedicated Helm scanner catches insecure
+      // chart defaults. Path-gated to values*.yaml.
+      if (isHelmValuesPath(file.path)) {
+        iac.push(...scanHelmValues(content, file.path))
+      }
     } else if (/\.json$/i.test(file.path)) {
       // CloudFormation templates are also authored in JSON; self-guards.
       iac.push(...scanCloudFormation(content, file.path))

@@ -161,6 +161,8 @@ function howItRuns(layer: string): string {
       return "Run against YAML/JSON files that look like CloudFormation templates (AWSTemplateFormatVersion, or Resources + an AWS:: type). Line-based checks; the security-group rule tracks ingress-vs-egress context. Non-template YAML/JSON is skipped."
     case "iac-kubernetes":
       return "Run against YAML files that look like Kubernetes manifests (top-level `apiVersion:` + `kind:`). Line-based checks across multi-document files; Helm-templated lines are skipped."
+    case "iac-helm":
+      return "Run against Helm chart values files (values.yaml / values-*.yaml), which aren't rendered manifests so the Kubernetes layer skips them. Line-based checks for insecure chart defaults that propagate into every rendered workload."
     case "iac-iam":
       return "Run against JSON/YAML/source files. AWS IAM rules require a policy-document context (Statement + Effect); GCP primitive roles are matched anywhere. HCL is left to the Terraform layer."
     case "framework":

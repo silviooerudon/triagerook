@@ -112,4 +112,17 @@ jobs:
     const findings = scanGithubActions(workflow, ".github/workflows/ci.yml")
     expect(findings.some((f) => f.ruleId === "gha-pull-request-target-checkout-head")).toBe(false)
   })
+
+  it("flags a hardcoded secret literal in workflow env", () => {
+    const wf = "env:\n  API_KEY: sk-live-abcdef123456\n  AWS_SECRET_ACCESS_KEY: 'wJalrXUtnFEMI'\n"
+    const ids = scanGithubActions(wf, ".github/workflows/ci.yml").map((f) => f.ruleId)
+    expect(ids.filter((id) => id === "gha-hardcoded-secret-env").length).toBe(2)
+  })
+
+  it("does NOT flag a secret sourced from ${{ secrets.* }} or empty/indirection", () => {
+    const wf =
+      "env:\n  API_KEY: \${{ secrets.API_KEY }}\n  TOKEN: \"\"\n  CLIENT_SECRET: $CLIENT_SECRET\n  NODE_ENV: production\n"
+    const ids = scanGithubActions(wf, ".github/workflows/ci.yml").map((f) => f.ruleId)
+    expect(ids).not.toContain("gha-hardcoded-secret-env")
+  })
 })

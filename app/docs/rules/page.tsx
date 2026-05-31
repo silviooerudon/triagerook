@@ -27,6 +27,7 @@ const LAYER_ORDER: DetectorLayer[] = [
   "iac-terraform",
   "iac-cloudformation",
   "iac-kubernetes",
+  "iac-helm",
   "iac-iam",
   "framework",
   "business-logic",
@@ -51,6 +52,8 @@ const LAYER_BLURBS: Record<DetectorLayer, string> = {
     "CloudFormation template checks (YAML + JSON): public S3 buckets, security groups open to 0.0.0.0/0, wildcard IAM actions/resources, unencrypted or publicly accessible storage. Self-guards on AWSTemplateFormatVersion / Resources + AWS:: so non-template YAML/JSON is skipped.",
   "iac-kubernetes":
     "Kubernetes manifest checks: privileged containers, host namespaces, privilege escalation, running as root, mutable image tags, dangerous Linux capabilities. Helm-templated lines are skipped.",
+  "iac-helm":
+    "Helm chart values.yaml checks: insecure defaults that flow into rendered workloads — privileged containers, run-as-root, host namespaces, privilege escalation, mutable image tags. Runs on values*.yaml, which the Kubernetes scanner skips because they aren't rendered manifests.",
   "iac-iam":
     "Cloud IAM-in-code checks: AWS IAM policy documents with wildcard actions/resources or a public principal, GCP primitive roles (roles/owner, roles/editor), Azure RBAC Owner/Contributor assignments + wildcard custom roles, and over-broad GitHub OAuth/PAT scopes (delete_repo, admin:org, …). Scans JSON/YAML/source; HCL is covered by the Terraform layer.",
   framework:

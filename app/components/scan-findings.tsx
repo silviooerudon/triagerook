@@ -417,6 +417,8 @@ function iacCategoryLabel(cat: IaCFinding["category"]): string {
       return "CloudFormation"
     case "kubernetes":
       return "Kubernetes"
+    case "helm":
+      return "Helm"
     case "iam-policy":
       return "Cloud IAM"
     case "npm-scripts":
