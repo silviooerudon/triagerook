@@ -9,7 +9,10 @@ import type { IaCFinding } from "@/lib/types"
 // distros (centos) return unsupported so we never propose a risky distro
 // switch automatically.
 
-const CURRENT_TAG: Record<string, string> = {
+// Exported so a test can assert these bump targets are not themselves EOL per
+// lib/docker-baseimage.ts — the two dated tables live in different files and
+// would otherwise silently drift (recommending a bump to an already-EOL tag).
+export const CURRENT_TAG: Record<string, string> = {
   node: "22",
   python: "3.12",
   ruby: "3.3",

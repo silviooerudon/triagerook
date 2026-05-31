@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest"
 import { findingSupportsFix, runFixEngine } from "@/lib/fix-engines"
-import { dockerfileBumpSupported } from "@/lib/fix-engines/dockerfile-baseimage"
+import {
+  dockerfileBumpSupported,
+  CURRENT_TAG,
+} from "@/lib/fix-engines/dockerfile-baseimage"
+import { scanDockerBaseImages } from "@/lib/docker-baseimage"
 import type { IaCFinding } from "@/lib/types"
 import type { AnyFinding } from "@/lib/risk"
 
@@ -67,6 +71,22 @@ describe("dockerfile-baseimage-bump engine", () => {
   it("is not offered for a test-fixture finding", () => {
     expect(findingSupportsFix(iac({ likelyTestFixture: true }))).toBeNull()
   })
+})
+
+describe("CURRENT_TAG bump targets are not themselves EOL", () => {
+  // Tripwire tying the bump-target table (this engine) to the EOL table
+  // (docker-baseimage scanner). If a future maintainer marks one of these
+  // versions EOL without bumping the recommendation, this fails — preventing
+  // the auto-fix from silently proposing a bump to an already-EOL tag.
+  // Checked against a far-future date so a target that's CURRENTLY fine but
+  // already has a published EOL date is also caught.
+  const FAR_FUTURE = new Date("2027-06-01")
+  for (const [image, version] of Object.entries(CURRENT_TAG)) {
+    it(`${image}:${version} is not flagged EOL`, () => {
+      const findings = scanDockerBaseImages(`FROM ${image}:${version}`, "Dockerfile", FAR_FUTURE)
+      expect(findings).toEqual([])
+    })
+  }
 })
 
 describe("gha-permissions-fix engine", () => {
