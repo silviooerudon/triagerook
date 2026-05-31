@@ -42,8 +42,8 @@ const DETECTORS: Array<{
   {
     id: "06",
     name: "deps",
-    desc: "npm package-lock.json against the npm advisories bulk API; PyPI/Go/RubyGems/Maven (pom.xml + Gradle)/Composer against OSV.dev.",
-    refs: "npm + OSV.dev",
+    desc: "npm package-lock.json against the npm advisories bulk API; PyPI/Go/RubyGems/Maven (pom.xml + Gradle)/Composer against OSV.dev; container OS-package CVEs ingested from a committed Trivy SARIF report.",
+    refs: "npm + OSV.dev + Trivy",
   },
   {
     id: "07",

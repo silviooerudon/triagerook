@@ -15,6 +15,7 @@ export type DetectorHealth = {
     | "blob-fetch"
     | "suppressions-file"
     | "license-registry"
+    | "container-scan"
   reason: string
 }
 
@@ -148,6 +149,10 @@ export type DependencyEcosystem =
   // ecosystem. Composer is PHP (composer.lock → OSV "Packagist").
   | "Maven"
   | "Composer"
+  // Container = OS-level packages (apt/apk/rpm) from a built image, ingested
+  // from a Trivy SARIF report committed in the repo. Distinct from the
+  // lockfile-driven ecosystems above, which cover application dependencies.
+  | "Container"
 
 export type DependencyFinding = {
   package: string
@@ -174,6 +179,7 @@ export type DependencyFinding = {
     | "pom.xml"
     | "build.gradle"
     | "composer.lock"
+    | "trivy-sarif"
   isTransitive?: boolean
   // True when the package is only a dev/test/build dependency (not shipped to
   // runtime). Risk scoring de-prioritizes its vulnerabilities. Currently
