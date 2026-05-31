@@ -41,12 +41,15 @@ export const AI_INSECURE_RULES: AiInsecureRule[] = [
       "A credential literal is a generated placeholder (your-api-key, INSERT_API_KEY_HERE, <your-secret>, change-me, sk-xxxx…). AI assistants emit these so the snippet 'works', and they ship unchanged — either as a broken default in production or, worse, replaced inline with a real secret that then gets committed. Move it to an environment variable and fail fast when it's unset.",
     languages: ["js", "python"],
     mask: true,
-    // Every word-like token is \b-anchored on BOTH sides so it matches a whole
-    // placeholder, never a substring of a longer identifier (the change_me /
-    // x{12,} FP class — e.g. `placeholderKeyboard`, `your_tokenizer`,
-    // `replaceThisNode` must NOT match).
+    // Word-like tokens are \b-anchored so they match a whole placeholder, not a
+    // substring of a longer identifier (the change_me / x{12,} FP class —
+    // `placeholderKeyboard`, `your_tokenizer`, `replaceThisNode` must NOT match).
+    // A trailing `s?` keeps plural placeholders (`your-secrets`, `placeholder_keys`)
+    // matching without re-admitting `...keyboard`/`...secretary`. The `sk-x{6,}`
+    // token is deliberately NOT trailing-\b-anchored: real OpenAI placeholders are
+    // `sk-xxxx<more chars>` (no boundary after the x-run).
     regex:
-      /(?:\byour[_-]?(?:api[_-]?key|secret|token|password|client[_-]?secret)\b|\bapi[_-]?key[_-]?here\b|\binsert[_-]?(?:your[_-]?)?(?:api[_-]?)?key[_-]?here\b|\breplace[_-]?(?:this|with[_-]?your[_-]?\w+)\b|\bchange[-_]?me\b|<your[_-][a-z0-9_]+>|\bsk-x{6,}\b|\bplaceholder[_-]?(?:api[_-]?)?(?:key|secret|token)\b)/i,
+      /(?:\byour[_-]?(?:api[_-]?key|secret|token|password|client[_-]?secret)s?\b|\bapi[_-]?key[_-]?here\b|\binsert[_-]?(?:your[_-]?)?(?:api[_-]?)?key[_-]?here\b|\breplace[_-]?(?:this|with[_-]?your[_-]?\w+)\b|\bchange[-_]?me\b|<your[_-][a-z0-9_]+>|\bsk-x{6,}|\bplaceholder[_-]?(?:api[_-]?)?(?:key|secret|token)s?\b)/i,
   },
   {
     id: "ai-todo-security",
@@ -145,14 +148,21 @@ const QUOTED_LITERAL = /(["'`])([^"'`\n]{6,})\1/g
 // High-confidence credential token shapes. Redacted even when UNQUOTED so a real
 // secret co-located with a placeholder match (e.g. `API_KEY = sk_live_real  #
 // change-me`) never survives into lineContent, which is persisted and returned.
+// NOTE: this is a deliberately small subset of lib/secret-patterns.ts (the
+// canonical "what a secret looks like" registry) covering the highest-volume
+// leak shapes. If you add/retune a provider prefix there, mirror it here so
+// redaction coverage doesn't drift behind detection coverage.
 const SECRET_TOKEN =
   /\b(?:sk-[A-Za-z0-9_-]{12,}|sk_(?:live|test)_[A-Za-z0-9]{12,}|ghp_[A-Za-z0-9]{20,}|gho_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{20,}|xox[baprs]-[0-9A-Za-z-]{10,})/g
 
-function maskLine(line: string): string {
-  const safe = line
+function maskLine(line: string, matched?: string): string {
+  let safe = line
     .trim()
     .replace(QUOTED_LITERAL, (_m, q) => `${q}***REDACTED***${q}`)
     .replace(SECRET_TOKEN, "***REDACTED***")
+  // Redact the matched placeholder itself when it survived the above (e.g. an
+  // unquoted `your-api-key`), so a mask:true finding never echoes the literal.
+  if (matched && safe.includes(matched)) safe = safe.split(matched).join("***REDACTED***")
   return safe.length > 200 ? safe.slice(0, 200) + "…" : safe
 }
 
@@ -186,7 +196,7 @@ export function scanAiInsecure(
         cwe: rule.cwe,
         filePath,
         lineNumber: i + 1,
-        lineContent: rule.mask ? maskLine(line) : line.trim().slice(0, 200),
+        lineContent: rule.mask ? maskLine(line, m[0]) : line.trim().slice(0, 200),
         likelyTestFixture,
       })
     }

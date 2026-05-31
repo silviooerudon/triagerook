@@ -160,6 +160,26 @@ describe("scanRegistryLicenses", () => {
     expect(findings[0].risk).toBe("copyleft-strong")
   })
 
+  it("does NOT mark degraded when a Go v2+ +incompatible RETRY fails (benign 404)", async () => {
+    // The primary 404 already means 'no data'; a best-effort retry failure must
+    // not asymmetrically inflate the degraded marker for Go v2+ only.
+    const base = makeFetch({ manifests: { "go.mod": "require example.com/m v2.0.0\n" } })
+    const fetchImpl: FetchLike = async (url, init) => {
+      if (url.includes("api.deps.dev")) {
+        // primary AND +incompatible retry both fail (404 / 500)
+        const status = /incompatible/.test(url) ? 500 : 404
+        return {
+          ok: false, status,
+          json: async () => ({}), text: async () => "", headers: { get: () => null },
+        }
+      }
+      return base(url, init)
+    }
+    const { findings, degraded } = await scanRegistryLicenses("o", "r", null, fetchImpl)
+    expect(findings).toHaveLength(0)
+    expect(degraded).toBeNull()
+  })
+
   it("uses injected deps without fetching manifests", async () => {
     let manifestFetches = 0
     const fetchImpl: FetchLike = async (url) => {

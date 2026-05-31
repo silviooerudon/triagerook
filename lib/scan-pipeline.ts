@@ -78,6 +78,17 @@ export type RunFullScanOptions = {
   allowSecretValidation?: boolean
 }
 
+// Map a dependency scanner's parsed deps into the license scanner's DepRef
+// shape, tagging the ecosystem. The per-ecosystem `source` literals
+// (requirements.txt / go.mod / Gemfile.lock / …) are all members of
+// DependencyFinding["source"], so they widen cleanly into DepRef["source"].
+function toRegistryDeps(
+  deps: { name: string; version: string; source: NonNullable<DependencyFinding["source"]> }[],
+  ecosystem: DepRef["ecosystem"],
+): DepRef[] {
+  return deps.map((d) => ({ name: d.name, version: d.version, ecosystem, source: d.source }))
+}
+
 export async function runFullScan(
   accessToken: string | null,
   owner: string,
@@ -89,6 +100,24 @@ export async function runFullScan(
   // signals so they ignore the prefix — only the file scan obeys it.
   pathPrefix?: string,
 ): Promise<FullScanResult> {
+  // PyPI/Go/Ruby license enrichment via deps.dev reuses the deps the three
+  // dependency scanners already parsed (no manifest re-fetch). It chains off
+  // ONLY those three promises — not the whole batch — so its deps.dev fan-out
+  // overlaps scanRepo/posture/IAM instead of running serially after them. The
+  // `.then` makes the "license scan needs the parsed deps first" ordering
+  // structural rather than a comment. (npm licenses come from npmResult, read
+  // straight from the lockfile — zero network.)
+  const pythonP = scanPythonDependencies(owner, repo, accessToken)
+  const goP = scanGoDependencies(owner, repo, accessToken)
+  const rubyP = scanRubyDependencies(owner, repo, accessToken)
+  const registryLicenseP = Promise.all([pythonP, goP, rubyP]).then(([py, go, ruby]) =>
+    scanRegistryLicenses(owner, repo, accessToken, undefined, [
+      ...toRegistryDeps(py.parsedDeps, "PyPI"),
+      ...toRegistryDeps(go.parsedDeps, "Go"),
+      ...toRegistryDeps(ruby.parsedDeps, "RubyGems"),
+    ]),
+  )
+
   const [
     secretsResult,
     npmResult,
@@ -98,36 +127,20 @@ export async function runFullScan(
     postureResult,
     iamResult,
     supplyChainResult,
+    registryLicenseResult,
   ] = await Promise.all([
     scanRepo(accessToken, owner, repo, explicitBranch, pathPrefix, {
       validateSecrets: options.allowSecretValidation ?? false,
     }),
     scanDependencies(owner, repo, accessToken),
-    scanPythonDependencies(owner, repo, accessToken),
-    scanGoDependencies(owner, repo, accessToken),
-    scanRubyDependencies(owner, repo, accessToken),
+    pythonP,
+    goP,
+    rubyP,
     assessPosture(owner, repo, accessToken),
     assessIAM(owner, repo, accessToken),
     assessSupplyChain(owner, repo, accessToken, explicitBranch),
+    registryLicenseP,
   ])
-
-  // PyPI/Go/Ruby license enrichment via deps.dev. Runs AFTER the deps scanners
-  // so it can reuse the deps they already parsed (no manifest re-fetch). npm
-  // licenses come from npmResult, read straight from the lockfile (zero network).
-  const registryDeps: DepRef[] = [
-    ...pythonResult.parsedDeps.map((d) => ({
-      name: d.name, version: d.version, ecosystem: "PyPI" as const, source: d.source,
-    })),
-    ...goResult.parsedDeps.map((d) => ({
-      name: d.name, version: d.version, ecosystem: "Go" as const, source: d.source,
-    })),
-    ...rubyResult.parsedDeps.map((d) => ({
-      name: d.name, version: d.version, ecosystem: "RubyGems" as const, source: d.source,
-    })),
-  ]
-  const registryLicenseResult = await scanRegistryLicenses(
-    owner, repo, accessToken, undefined, registryDeps,
-  )
 
   const fullResult = {
     ...secretsResult,
