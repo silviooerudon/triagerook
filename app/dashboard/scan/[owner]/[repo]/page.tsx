@@ -45,6 +45,7 @@ type ScanResultFull = ScanResult & {
   rubyDependencies?: DependencyFinding[]
   jvmDependencies?: DependencyFinding[]
   phpDependencies?: DependencyFinding[]
+  containerDependencies?: DependencyFinding[]
   riskScore?: number
   riskBreakdown?: RiskBreakdown
   prioritized?: PrioritizedFinding[]
@@ -165,6 +166,7 @@ function ScanResultView({
     rubyDependencies: result.rubyDependencies ?? [],
     jvmDependencies: result.jvmDependencies ?? [],
     phpDependencies: result.phpDependencies ?? [],
+    containerDependencies: result.containerDependencies ?? [],
     licenseFindings: result.licenseFindings ?? [],
   }
 
@@ -224,6 +226,7 @@ function ScanResultView({
       <DependenciesSection findings={all.rubyDependencies} label="Ruby" />
       <DependenciesSection findings={all.jvmDependencies} label="Java" />
       <DependenciesSection findings={all.phpDependencies} label="PHP" />
+      <DependenciesSection findings={all.containerDependencies} label="Container image" />
       <LicensesSection findings={all.licenseFindings} />
       <IaCFindingsSection findings={all.iacFindings} />
       <SecretsSection findings={all.historySecrets} sourceLabel="history" />

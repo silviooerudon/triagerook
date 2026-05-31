@@ -39,6 +39,7 @@ type ScanResultFull = ScanResult & {
   rubyDependencies?: DependencyFinding[]
   jvmDependencies?: DependencyFinding[]
   phpDependencies?: DependencyFinding[]
+  containerDependencies?: DependencyFinding[]
 }
 
 type SavedScan = {
@@ -147,6 +148,7 @@ function SavedScanView({ scan }: { scan: SavedScan }) {
     rubyDependencies: scan.result.rubyDependencies ?? [],
     jvmDependencies: scan.result.jvmDependencies ?? [],
     phpDependencies: scan.result.phpDependencies ?? [],
+    containerDependencies: scan.result.containerDependencies ?? [],
     licenseFindings: scan.result.licenseFindings ?? [],
   }
 
@@ -194,6 +196,7 @@ function SavedScanView({ scan }: { scan: SavedScan }) {
       <DependenciesSection findings={all.rubyDependencies} label="Ruby" />
       <DependenciesSection findings={all.jvmDependencies} label="Java" />
       <DependenciesSection findings={all.phpDependencies} label="PHP" />
+      <DependenciesSection findings={all.containerDependencies} label="Container image" />
       <LicensesSection findings={all.licenseFindings} />
       <IaCFindingsSection findings={all.iacFindings} />
       <SecretsSection findings={all.historySecrets} sourceLabel="history" />

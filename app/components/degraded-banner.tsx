@@ -18,6 +18,7 @@ const DETECTOR_LABELS: Record<DetectorHealth["detector"], string> = {
   "blob-fetch": "File contents",
   "suppressions-file": "Repo suppressions file",
   "license-registry": "PyPI/Go/Ruby licenses",
+  "container-scan": "Container image CVEs (Trivy)",
 }
 
 export function DegradedBanner({
