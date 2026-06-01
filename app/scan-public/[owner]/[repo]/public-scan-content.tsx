@@ -246,7 +246,7 @@ function SignInCTA() {
       <h2 className="text-xl font-semibold mb-2">Liked this scan?</h2>
       <p className="text-slate-400 text-sm mb-5 max-w-md mx-auto">
         Sign in to scan unlimited repos, save history, diff against previous
-        scans, and unlock the auto-fix PR feature. Free during beta.
+        scans, and unlock the auto-fix PR feature. Free.
       </p>
       <a
         href="/signin"

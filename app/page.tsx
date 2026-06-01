@@ -88,7 +88,7 @@ const FAQ: Array<{ q: string; a: string }> = [
   },
   {
     q: "Is TriageRook free?",
-    a: "Yes, fully free during the current beta. I'm still figuring out what people value enough to pay for — feedback is very welcome.",
+    a: "Yes, fully free. Feedback is very welcome.",
   },
   {
     q: "Where does my data live?",
@@ -166,12 +166,6 @@ export default async function Home() {
                 faq
               </a>
               <Link
-                href="/pricing"
-                className="hidden md:inline hover:text-slate-100 transition"
-              >
-                pricing
-              </Link>
-              <Link
                 href="/about"
                 className="hidden md:inline hover:text-slate-100 transition"
               >
@@ -207,7 +201,7 @@ export default async function Home() {
             <div className="md:col-span-8">
               <div className="font-mono text-xs text-amber-400 mb-8 flex items-center gap-2.5">
                 <span className="inline-block w-1.5 h-1.5 bg-amber-400 animate-pulse" />
-                v0.9 · free during beta · no card required
+                v0.9 · free · no card required
               </div>
               <h1 className="font-display text-5xl md:text-7xl font-bold tracking-tight leading-[0.95] mb-8 text-balance">
                 see what
@@ -400,7 +394,7 @@ export default async function Home() {
               />
               <WhyCard
                 title="yours"
-                desc="No upsell to enterprise. No mandatory SSO. No usage gating during beta. The scan you'd actually run."
+                desc="No upsell to enterprise. No mandatory SSO. No usage gating. The scan you'd actually run."
               />
             </div>
           </div>
@@ -463,12 +457,6 @@ export default async function Home() {
                   className="hover:text-amber-400 transition"
                 >
                   about
-                </Link>
-                <Link
-                  href="/pricing"
-                  className="hover:text-amber-400 transition"
-                >
-                  pricing
                 </Link>
                 <Link
                   href="/security"

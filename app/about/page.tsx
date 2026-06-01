@@ -69,8 +69,8 @@ export default function AboutPage() {
             Status
           </h2>
           <p className="text-slate-300 leading-relaxed">
-            Beta - free during validation. No SLA. Source code closed for now,
-            planning to open the detectors.
+            Free. No SLA. Source code closed for now, planning to open the
+            detectors.
           </p>
         </section>
       </article>
