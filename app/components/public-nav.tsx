@@ -23,6 +23,12 @@ export function PublicNav() {
             pricing
           </Link>
           <Link
+            href="/compare"
+            className="hidden md:inline hover:text-slate-100 transition"
+          >
+            compare
+          </Link>
+          <Link
             href="/about"
             className="hidden md:inline hover:text-slate-100 transition"
           >
