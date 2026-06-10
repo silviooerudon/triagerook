@@ -106,7 +106,7 @@ const FAQ: Array<{ q: string; a: string }> = [
 
 const STAT_BAR: Array<{ value: string; label: string }> = [
   { value: "9", label: "detectors" },
-  { value: "172", label: "rules" },
+  { value: "235", label: "rules" },
   { value: "SARIF 2.1", label: "code scanning export" },
   { value: "<60s", label: "scan time" },
   { value: "EU", label: "data region" },
