@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import PublicScanInput from "./_components/PublicScanInput";
+import { RULE_COUNT, AST_RULE_COUNT } from "@/lib/product-stats";
 
 const DETECTORS: Array<{
   id: string;
@@ -36,7 +37,7 @@ const DETECTORS: Array<{
   {
     id: "05",
     name: "code-sast",
-    desc: "AST-based via the TypeScript Compiler API plus targeted regex. 28 AST rules covering most of the OWASP Top 10 — SSRF, SQLi, command injection, reflected XSS, prototype pollution, ReDoS, NoSQL / SSTI injection, XXE, weak crypto, JWT misuse, hardcoded creds — plus AI-typical mistakes (TLS verify off, NEXT_PUBLIC_ secrets, bcrypt rounds < 10). Every rule CWE-tagged.",
+    desc: `AST-based via the TypeScript Compiler API plus targeted regex. ${AST_RULE_COUNT} AST rules covering most of the OWASP Top 10 — SSRF, SQLi, command injection, reflected XSS, prototype pollution, ReDoS, NoSQL / SSTI injection, XXE, weak crypto, JWT misuse, hardcoded creds — plus AI-typical mistakes (TLS verify off, NEXT_PUBLIC_ secrets, bcrypt rounds < 10). Every rule CWE-tagged.`,
     refs: "AST + regex · CWE-tagged",
   },
   {
@@ -106,7 +107,7 @@ const FAQ: Array<{ q: string; a: string }> = [
 
 const STAT_BAR: Array<{ value: string; label: string }> = [
   { value: "9", label: "detectors" },
-  { value: "235", label: "rules" },
+  { value: String(RULE_COUNT), label: "rules" },
   { value: "SARIF 2.1", label: "code scanning export" },
   { value: "<60s", label: "scan time" },
   { value: "EU", label: "data region" },
@@ -260,7 +261,7 @@ export default async function Home() {
                   href="/signin"
                   className="text-xs font-mono text-slate-500 hover:text-amber-400 transition inline-flex items-center gap-1.5"
                 >
-                  → or sign in with github to scan your own repos
+                  → or sign in with github to scan your own public repos
                 </Link>
               </div>
             </div>
