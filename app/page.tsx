@@ -106,7 +106,7 @@ const FAQ: Array<{ q: string; a: string }> = [
 
 const STAT_BAR: Array<{ value: string; label: string }> = [
   { value: "9", label: "detectors" },
-  { value: "172", label: "rules" },
+  { value: "235", label: "rules" },
   { value: "SARIF 2.1", label: "code scanning export" },
   { value: "<60s", label: "scan time" },
   { value: "EU", label: "data region" },
@@ -159,6 +159,12 @@ export default async function Home() {
               >
                 rules
               </Link>
+              <Link
+                href="/compare"
+                className="hidden sm:inline hover:text-slate-100 transition"
+              >
+                compare
+              </Link>
               <a
                 href="#faq"
                 className="hidden sm:inline hover:text-slate-100 transition"
@@ -209,25 +215,33 @@ export default async function Home() {
                 <span className="inline-block w-1.5 h-1.5 bg-amber-400 animate-pulse" />
                 v0.9 · free during beta · no card required
               </div>
-              <h1 className="font-display text-5xl md:text-7xl font-bold tracking-tight leading-[0.95] mb-8 text-balance">
-                see what
+              <h1 className="font-display text-5xl md:text-7xl font-bold tracking-tight leading-[0.95] mb-5 text-balance">
+                one-click github
                 <br />
-                you <span className="text-amber-400">committed.</span>
+                security <span className="text-amber-400">scan.</span>
               </h1>
+              <p className="font-mono text-sm text-slate-400 mb-8">
+                no install. no agent. no CI config.
+              </p>
               <p className="text-slate-400 text-lg max-w-2xl mb-10 leading-relaxed">
                 <span className="text-slate-100">
-                  Security triage for solo devs.
+                  Scan any public GitHub repo in one click
                 </span>{" "}
-                Scan your GitHub repo in one click — TriageRook runs nine
+                - no login, no agent, no pipeline. TriageRook runs nine
                 detectors against{" "}
                 <span className="text-slate-100">exposed secrets</span>,{" "}
-                <span className="text-slate-100">vulnerable dependencies</span>,{" "}
-                <span className="text-slate-100">IaC misconfigs</span>, and the{" "}
+                <span className="text-slate-100">vulnerable dependencies</span>,
+                and <span className="text-slate-100">IaC misconfigs</span> -
+                plus{" "}
                 <span className="text-slate-100">
-                  insecure patterns your AI assistant just generated
+                  IAM risks no other zero-setup tool catches
                 </span>
-                . Results in under sixty seconds.
+                : OIDC trust misconfigurations, privilege-escalation paths, and
+                admin-equivalent access.
               </p>
+              <div className="font-mono text-xs text-amber-400 mb-3">
+                scan a public repo now - no login
+              </div>
               <PublicScanInput />
               <div className="mt-4 flex items-center gap-x-3 gap-y-2 text-xs font-mono text-slate-500 flex-wrap">
                 <span className="text-slate-600">try:</span>
@@ -246,7 +260,7 @@ export default async function Home() {
                   href="/signin"
                   className="text-xs font-mono text-slate-500 hover:text-amber-400 transition inline-flex items-center gap-1.5"
                 >
-                  → or sign in with github for unlimited scans
+                  → or sign in with github to scan your own repos
                 </Link>
               </div>
             </div>
@@ -469,6 +483,12 @@ export default async function Home() {
                   className="hover:text-amber-400 transition"
                 >
                   pricing
+                </Link>
+                <Link
+                  href="/compare"
+                  className="hover:text-amber-400 transition"
+                >
+                  compare
                 </Link>
                 <Link
                   href="/security"
