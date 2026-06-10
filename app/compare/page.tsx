@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicNav } from "@/app/components/public-nav";
+import PublicScanInput from "@/app/_components/PublicScanInput";
+import {
+  AST_RULE_COUNT,
+  HISTORY_COMMIT_COUNT,
+  IAM_CHECK_COUNT,
+  POSTURE_SIGNAL_COUNT,
+  SECRET_PATTERN_FLOOR,
+} from "@/lib/product-stats";
 
 export const metadata: Metadata = {
   title: "Compare",
@@ -51,7 +59,7 @@ const ROWS: Row[] = [
   },
   {
     capability: "Secrets detection",
-    triagerook: { mark: "yes", text: "60+ patterns, entropy fallback for custom formats, always masked, plus a 30-commit history replay." },
+    triagerook: { mark: "yes", text: `${SECRET_PATTERN_FLOOR}+ patterns, entropy fallback for custom formats, always masked, plus a ${HISTORY_COMMIT_COUNT}-commit history replay.` },
     github: { mark: "yes", text: "Secret scanning and push protection, free on public repos." },
     snyk: { mark: "partial", text: "Not a dedicated secrets product; SCA / SAST / IaC are the focus." },
     trufflehog: { mark: "yes", text: "Core purpose - regex plus entropy across full git history." },
@@ -59,7 +67,7 @@ const ROWS: Row[] = [
   {
     capability: "Deep code analysis (SAST)",
     note: "If you already run CodeQL or Snyk Code, keep them - they go deeper on code analysis.",
-    triagerook: { mark: "partial", text: "TypeScript / JavaScript AST (28 rules) plus regex for other languages. A fast first pass, shallower than a full dataflow engine." },
+    triagerook: { mark: "partial", text: `TypeScript / JavaScript AST (${AST_RULE_COUNT} rules) plus regex for other languages. A fast first pass, shallower than a full dataflow engine.` },
     github: { mark: "yes", text: "CodeQL - semantic dataflow analysis across many languages." },
     snyk: { mark: "yes", text: "Snyk Code - a dedicated SAST engine." },
     trufflehog: { mark: "no", text: "Secrets only, not a code analyzer." },
@@ -81,14 +89,14 @@ const ROWS: Row[] = [
   {
     capability: "GitHub OIDC trust and repo IAM posture",
     note: "Scoped to GitHub Actions OIDC trust and repo-level IAM posture. Cloud-IaC IAM (Terraform policy linting) is a different surface.",
-    triagerook: { mark: "yes", text: "12 checks: OIDC trust misconfiguration, privilege-escalation paths, and admin-equivalent access." },
+    triagerook: { mark: "yes", text: `${IAM_CHECK_COUNT} checks: OIDC trust misconfiguration, privilege-escalation paths, and admin-equivalent access.` },
     github: { mark: "no", text: "Not offered as a static check." },
     snyk: { mark: "no", text: "No GitHub Actions OIDC trust analysis." },
     trufflehog: { mark: "no", text: "Not in scope." },
   },
   {
     capability: "Repo posture grade",
-    triagerook: { mark: "yes", text: "An A-F grade across 17 signals: branch protection, CODEOWNERS, signed commits, Dependabot, secret scanning, least-privilege GITHUB_TOKEN, release provenance, and more." },
+    triagerook: { mark: "yes", text: `An A-F grade across ${POSTURE_SIGNAL_COUNT} signals: branch protection, CODEOWNERS, signed commits, Dependabot, secret scanning, least-privilege GITHUB_TOKEN, release provenance, and more.` },
     github: { mark: "partial", text: "Individual signals appear in repo settings and the security overview; not rolled into a single score." },
     snyk: { mark: "no", text: "Not offered." },
     trufflehog: { mark: "no", text: "Not offered." },
@@ -102,35 +110,22 @@ const ROWS: Row[] = [
   },
 ];
 
-const MARK_LABEL: Record<Mark, string> = {
-  yes: "yes",
-  partial: "partial",
-  no: "no",
-  info: "",
+// Label + color for each mark in one place. "info" has an empty label so it
+// renders text only (used by rows like price where every tool has an answer).
+const MARK_STYLE: Record<Mark, { label: string; cls: string }> = {
+  yes: { label: "yes", cls: "text-amber-400" },
+  partial: { label: "partial", cls: "text-slate-300" },
+  no: { label: "no", cls: "text-slate-600" },
+  info: { label: "", cls: "text-slate-500" },
 };
 
-function markClass(mark: Mark): string {
-  switch (mark) {
-    case "yes":
-      return "text-amber-400";
-    case "partial":
-      return "text-slate-300";
-    case "no":
-      return "text-slate-600";
-    case "info":
-      return "text-slate-500";
-  }
-}
-
 function CellBody({ cell }: { cell: Cell }) {
-  const label = MARK_LABEL[cell.mark];
+  const { label, cls } = MARK_STYLE[cell.mark];
   return (
     <div className="space-y-1.5">
       {label && (
         <div
-          className={`font-mono text-[11px] uppercase tracking-wider ${markClass(
-            cell.mark,
-          )}`}
+          className={`font-mono text-[11px] uppercase tracking-wider ${cls}`}
         >
           {label}
         </div>
@@ -186,12 +181,16 @@ export default function ComparePage() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-slate-900/40 text-left align-bottom">
-                <th className="w-[22%] px-5 py-4 font-mono text-xs text-slate-500 uppercase tracking-wider font-medium">
+                <th
+                  scope="col"
+                  className="w-[22%] px-5 py-4 font-mono text-xs text-slate-500 uppercase tracking-wider font-medium"
+                >
                   capability
                 </th>
                 {TOOLS.map((tool) => (
                   <th
                     key={tool.key}
+                    scope="col"
                     className={`w-[19.5%] px-5 py-4 align-bottom ${
                       tool.key === "triagerook"
                         ? "border-l-[3px] border-l-amber-400 bg-slate-900/40"
@@ -225,18 +224,18 @@ export default function ComparePage() {
                       </span>
                     )}
                   </th>
-                  <td className="px-5 py-5 border-l-[3px] border-l-amber-400 bg-slate-900/20">
-                    <CellBody cell={row.triagerook} />
-                  </td>
-                  <td className="px-5 py-5">
-                    <CellBody cell={row.github} />
-                  </td>
-                  <td className="px-5 py-5">
-                    <CellBody cell={row.snyk} />
-                  </td>
-                  <td className="px-5 py-5">
-                    <CellBody cell={row.trufflehog} />
-                  </td>
+                  {TOOLS.map((tool) => (
+                    <td
+                      key={tool.key}
+                      className={`px-5 py-5 ${
+                        tool.key === "triagerook"
+                          ? "border-l-[3px] border-l-amber-400 bg-slate-900/20"
+                          : ""
+                      }`}
+                    >
+                      <CellBody cell={row[tool.key]} />
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -329,21 +328,16 @@ export default function ComparePage() {
             Try it on a repo you know.
           </h2>
           <p className="text-slate-400 text-sm mb-6 max-w-xl leading-relaxed">
-            The fastest way to judge any of these claims is to run it. Scan a
+            The fastest way to judge any of these claims is to run it. Paste a
             public repo - no login, no install.
           </p>
-          <div className="flex flex-wrap items-center gap-4">
-            <Link
-              href="/"
-              className="px-5 py-3 font-mono text-sm bg-amber-400 text-slate-950 hover:bg-amber-300 transition font-semibold"
-            >
-              scan a public repo
-            </Link>
+          <PublicScanInput />
+          <div className="mt-6">
             <Link
               href="/signin"
               className="font-mono text-xs text-slate-500 hover:text-amber-400 transition"
             >
-              → or sign in with github to scan your own repos
+              → or sign in with github to scan your own public repos
             </Link>
           </div>
         </div>
