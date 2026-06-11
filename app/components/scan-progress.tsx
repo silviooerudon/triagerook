@@ -1,6 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import {
+  SECRET_PATTERN_FLOOR,
+  HISTORY_COMMIT_LIMIT,
+} from "@/lib/product-constants"
 
 // Display-only progress ticker. The real scan API does not stream
 // per-detector events, so we drive a timed progression that teaches the
@@ -9,11 +13,11 @@ import { useEffect, useState } from "react"
 // the scope of what is being checked.
 const DETECTOR_STEPS: readonly string[] = [
   "Fetching repository tree from GitHub",
-  "Scanning files for secrets (60+ patterns)",
+  `Scanning files for secrets (${SECRET_PATTERN_FLOOR}+ patterns)`,
   "Computing entropy on env / config files",
   "Querying npm advisory database",
   "Querying OSV.dev for Python advisories",
-  "Replaying 30 most-recent commits",
+  `Replaying ${HISTORY_COMMIT_LIMIT} most-recent commits`,
   "Checking IaC config (Dockerfile, GitHub Actions)",
   "Computing posture grade",
   "Assessing IAM risk",

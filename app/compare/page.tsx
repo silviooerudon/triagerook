@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicNav } from "@/app/components/public-nav";
-import PublicScanInput from "@/app/_components/PublicScanInput";
 import {
   AST_RULE_COUNT,
   HISTORY_COMMIT_COUNT,
@@ -328,11 +327,16 @@ export default function ComparePage() {
             Try it on a repo you know.
           </h2>
           <p className="text-slate-400 text-sm mb-6 max-w-xl leading-relaxed">
-            The fastest way to judge any of these claims is to run it. Paste a
+            The fastest way to judge any of these claims is to run it. Scan a
             public repo - no login, no install.
           </p>
-          <PublicScanInput />
-          <div className="mt-6">
+          <div className="flex flex-wrap items-center gap-4">
+            <Link
+              href="/"
+              className="px-5 py-3 font-mono text-sm bg-amber-400 text-slate-950 hover:bg-amber-300 transition font-semibold"
+            >
+              scan a public repo
+            </Link>
             <Link
               href="/signin"
               className="font-mono text-xs text-slate-500 hover:text-amber-400 transition"

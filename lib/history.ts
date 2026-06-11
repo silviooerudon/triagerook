@@ -1,4 +1,5 @@
 import { SECRET_PATTERNS } from "./secret-patterns"
+import { HISTORY_COMMIT_LIMIT } from "./product-constants"
 import { GitHubRateLimitError, parseGitHubRateLimit } from "./scan"
 import type { SecretFinding } from "./types"
 import { buildGitHubHeaders } from "./github-fetch"
@@ -27,7 +28,6 @@ type CommitDetail = {
   }>
 }
 
-const HISTORY_COMMIT_LIMIT = 30
 const HISTORY_PARALLEL = 5
 const MAX_PATCH_SIZE = 200_000 // 200KB per patch — bail on huge diffs
 const HISTORY_BUDGET_MS = 20_000
