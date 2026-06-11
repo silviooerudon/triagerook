@@ -1,6 +1,5 @@
 import Link from "next/link"
 import type { Metadata } from "next"
-import { PublicNav } from "@/app/components/public-nav"
 
 export const metadata: Metadata = {
   title: "SARIF export — TriageRook",
@@ -10,16 +9,13 @@ export const metadata: Metadata = {
 
 export default function SarifDocsPage() {
   return (
-    <>
-      <PublicNav />
-      <main className="px-6 py-16">
-        <div className="max-w-3xl mx-auto">
-          <Link
-            href="/docs/rules"
-            className="inline-flex items-center gap-1 text-xs font-mono text-slate-500 hover:text-amber-400 transition mb-8"
-          >
-            ← rules catalog
-          </Link>
+    <div className="max-w-3xl">
+      <Link
+        href="/docs/rules"
+        className="inline-flex items-center gap-1 text-xs font-mono text-slate-500 hover:text-amber-400 transition mb-8"
+      >
+        ← rules catalog
+      </Link>
 
           <p className="font-mono text-xs text-amber-400 mb-3">SARIF export</p>
           <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-4 leading-tight">
@@ -238,8 +234,6 @@ jobs:
               .
             </p>
           </div>
-        </div>
-      </main>
-    </>
+    </div>
   )
 }

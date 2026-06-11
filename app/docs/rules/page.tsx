@@ -1,6 +1,5 @@
 import Link from "next/link"
 import type { Metadata } from "next"
-import { PublicNav } from "@/app/components/public-nav"
 import {
   getRuleCatalog,
   LAYER_LABELS,
@@ -85,11 +84,8 @@ export default function RulesIndexPage() {
   const highCount = catalog.filter((e) => e.severity === "high").length
 
   return (
-    <>
-      <PublicNav />
-      <main className="px-6 py-16">
-        <div className="max-w-5xl mx-auto">
-          <div className="font-mono text-xs text-amber-400 mb-6 flex items-center gap-2.5">
+    <div className="max-w-5xl">
+      <div className="font-mono text-xs text-amber-400 mb-6 flex items-center gap-2.5">
             <span className="inline-block w-1.5 h-1.5 bg-amber-400 animate-pulse" />
             detection rules
           </div>
@@ -195,8 +191,6 @@ export default function RulesIndexPage() {
               .
             </p>
           </div>
-        </div>
-      </main>
-    </>
+    </div>
   )
 }
