@@ -1,6 +1,6 @@
 # TriageRook
 
-![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg) ![Status: Beta](https://img.shields.io/badge/status-beta-orange.svg) ![Next.js 16](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs) ![TypeScript 5](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript) ![Live](https://img.shields.io/website?url=https%3A%2F%2Fwww.triagerook.com&label=live%20demo)
+![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg) ![Status: Live](https://img.shields.io/badge/status-live-brightgreen.svg) ![Next.js 16](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs) ![TypeScript 5](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript) ![Live](https://img.shields.io/website?url=https%3A%2F%2Fwww.triagerook.com&label=live%20demo)
 
 > Lightweight GitHub security scanner for solo devs and small teams. Live at **[www.triagerook.com](https://www.triagerook.com)**.
 
