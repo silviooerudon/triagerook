@@ -11,10 +11,10 @@ export function PublicNav() {
         <Brand href="/" />
         <div className="flex items-center gap-5 text-xs font-mono text-slate-400">
           <Link
-            href="/docs/rules"
+            href="/docs"
             className="hidden md:inline hover:text-slate-100 transition"
           >
-            rules
+            docs
           </Link>
           <Link
             href="/compare"

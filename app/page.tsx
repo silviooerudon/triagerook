@@ -166,10 +166,10 @@ export default async function Home() {
                 detectors
               </a>
               <Link
-                href="/docs/rules"
+                href="/docs"
                 className="hidden sm:inline hover:text-slate-100 transition"
               >
-                rules
+                docs
               </Link>
               <Link
                 href="/compare"
@@ -478,6 +478,12 @@ export default async function Home() {
                 </p>
               </div>
               <div className="md:col-span-5 flex md:justify-end items-start gap-x-6 gap-y-2 flex-wrap text-slate-500">
+                <Link
+                  href="/docs"
+                  className="hover:text-amber-400 transition"
+                >
+                  docs
+                </Link>
                 <Link
                   href="/about"
                   className="hover:text-amber-400 transition"
