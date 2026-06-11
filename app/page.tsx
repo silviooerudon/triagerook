@@ -65,9 +65,15 @@ const DETECTORS: Array<{
   },
   {
     id: "09",
-    name: "posture + iam",
-    desc: "Repo posture (A–F grade — branch protection, CODEOWNERS, signed commits, Dependabot, secret scanning + push protection, least-privilege GITHUB_TOKEN, release provenance) plus an IAM-risk lens built by a 10-year IAM/IGA specialist: org MFA enforcement, outside-collaborator permission levels, admin-equivalent privilege paths, stale-owner authorship signals. The slice of enterprise IAM tooling solo devs have never had.",
-    refs: "IAM-grade",
+    name: "posture",
+    desc: "Repo posture graded A–F across 17 signals: branch protection, CODEOWNERS, signed commits, Dependabot/Renovate, secret scanning + push protection, least-privilege GITHUB_TOKEN, release provenance. Scored as a percentage of the signals we can actually assess.",
+    refs: "A–F grade",
+  },
+  {
+    id: "10",
+    name: "iam-risk",
+    desc: "IAM risk in policy-as-code (Terraform, CloudFormation, JSON, serverless): GitHub Actions OIDC trust weaknesses, privilege-escalation paths (PassRole, self-managing policies), and admin-equivalent grants. The slice of enterprise IAM tooling solo devs have never had.",
+    refs: "OIDC · privesc · admin",
   },
 ];
 
@@ -102,7 +108,7 @@ const FAQ: Array<{ q: string; a: string }> = [
   },
   {
     q: "What if a finding is a false positive?",
-    a: "Suppress it. From the findings view you can silence a single finding (by fingerprint), a rule on a path glob, or an entire rule for the repo. Suppressions are user-scoped, persisted in Supabase, and survive across scans — no need to commit a config file. If you prefer to version-control them, a .triagerookignore at the repo root is also honored.",
+    a: "Suppress it. From the findings view you can silence a single finding (by fingerprint), a rule on a path glob, or an entire rule for the repo. Suppressions are user-scoped, persisted in Supabase, and survive across scans — no need to commit a config file. If you prefer to version-control them, a .repoguardignore at the repo root is also honored.",
   },
   {
     q: "Can I push TriageRook findings into GitHub Code Scanning?",
@@ -111,7 +117,7 @@ const FAQ: Array<{ q: string; a: string }> = [
 ];
 
 const STAT_BAR: Array<{ value: string; label: string }> = [
-  { value: "9", label: "detectors" },
+  { value: "10", label: "detectors" },
   { value: String(RULE_COUNT), label: "rules" },
   { value: "SARIF 2.1", label: "code scanning export" },
   { value: "<60s", label: "scan time" },
@@ -328,7 +334,7 @@ export default async function Home() {
                   {"// detectors"}
                 </div>
                 <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight leading-tight">
-                  nine detectors,
+                  ten detectors,
                   <br />
                   run in parallel.
                 </h2>
@@ -388,7 +394,7 @@ export default async function Home() {
               />
               <BeyondCard
                 title="suppressions"
-                desc="False positives happen. Suppress a single finding (by fingerprint), a rule on a path (by glob), or a whole rule for the repo — all from the findings view. User-scoped, synced via Supabase, survives across scans. .triagerookignore in your repo also honored."
+                desc="False positives happen. Suppress a single finding (by fingerprint), a rule on a path (by glob), or a whole rule for the repo — all from the findings view. User-scoped, synced via Supabase, survives across scans. .repoguardignore in your repo also honored."
               />
             </div>
           </div>

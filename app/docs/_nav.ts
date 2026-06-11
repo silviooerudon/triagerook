@@ -25,6 +25,17 @@ export const DOC_SECTIONS: DocSection[] = [
         label: "Overview",
         summary: "What TriageRook is, what these docs cover, and how to read them.",
       },
+      {
+        href: "/docs/quickstart",
+        label: "Quickstart",
+        summary: "Scan a repo in about 60 seconds — anonymous, signed in, or in CI.",
+      },
+      {
+        href: "/docs/faq",
+        label: "FAQ",
+        summary:
+          "Timeouts, rate limits, private repos, false positives, and why a scan might miss something.",
+      },
     ],
   },
   {
@@ -76,9 +87,20 @@ export const DOC_SECTIONS: DocSection[] = [
           "The 17 repo-posture signals, their weights, the A–F scale, and how unknown signals are handled.",
       },
       {
+        href: "/docs/iam-risk-scanner",
+        label: "IAM risk scanner",
+        summary:
+          "OIDC trust, privilege escalation, and admin-equivalent checks over IAM policy-as-code, with vulnerable vs fixed examples.",
+      },
+      {
         href: "/docs/sarif",
         label: "SARIF export",
         summary: "Send findings to GitHub Code Scanning.",
+      },
+      {
+        href: "/docs/changelog",
+        label: "Changelog",
+        summary: "What shipped, by date, derived from merged pull requests.",
       },
     ],
   },

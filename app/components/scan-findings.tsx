@@ -639,7 +639,7 @@ export function AllClear() {
             no findings.
           </h2>
           <p className="text-slate-300 text-sm leading-relaxed">
-            Nine detectors ran across secrets, sensitive files, vulnerable
+            Ten detectors ran across secrets, sensitive files, vulnerable
             dependencies, SAST, IaC and supply chain — none of them tripped.
             Clean repo.
           </p>

@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     template: "%s · TriageRook",
   },
   description:
-    "Security triage for solo devs. Scan your GitHub repo in one click. Nine detectors covering secrets, dependencies, supply chain, repo posture, and IAM risk.",
+    "Security triage for solo devs. Scan your GitHub repo in one click. Ten detectors covering secrets, dependencies, supply chain, repo posture, and IAM risk.",
   applicationName: "TriageRook",
   authors: [{ name: "Silvio Gazzoli" }],
   keywords: [
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     siteName: "TriageRook",
     title: "TriageRook — Security triage for solo devs",
     description:
-      "Security triage for solo devs. Scan your GitHub repo in one click. Nine detectors covering secrets, dependencies, supply chain, repo posture, and IAM risk.",
+      "Security triage for solo devs. Scan your GitHub repo in one click. Ten detectors covering secrets, dependencies, supply chain, repo posture, and IAM risk.",
     url: "/",
     locale: "en",
   },

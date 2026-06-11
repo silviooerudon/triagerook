@@ -15,6 +15,10 @@ You can expect:
 
 Please do not open public issues for security vulnerabilities or disclose them publicly before we have had a chance to address them.
 
+## How TriageRook handles your data
+
+TriageRook scans only public repositories, never executes your code, masks secrets before anything is persisted, and keeps your GitHub access token off the client. The complete, code-backed data-handling model — GitHub App permissions, what each scan endpoint stores, and secret masking — is documented at [triagerook.com/docs/security-and-data-handling](https://www.triagerook.com/docs/security-and-data-handling).
+
 ## Scope
 
 In scope: the TriageRook web app (https://www.triagerook.com), source code in this repository, authentication and session handling, scan execution and result persistence.
