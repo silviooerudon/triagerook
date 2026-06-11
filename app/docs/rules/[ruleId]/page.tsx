@@ -1,7 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
-import { PublicNav } from "@/app/components/public-nav"
 import {
   getRuleCatalog,
   LAYER_LABELS,
@@ -48,16 +47,13 @@ export default async function RulePage({ params }: PageProps) {
     : null
 
   return (
-    <>
-      <PublicNav />
-      <main className="px-6 py-16">
-        <div className="max-w-3xl mx-auto">
-          <Link
-            href="/docs/rules"
-            className="inline-flex items-center gap-1 text-xs font-mono text-slate-500 hover:text-amber-400 transition mb-8"
-          >
-            ← all rules
-          </Link>
+    <div className="max-w-3xl">
+      <Link
+        href="/docs/rules"
+        className="inline-flex items-center gap-1 text-xs font-mono text-slate-500 hover:text-amber-400 transition mb-8"
+      >
+        ← all rules
+      </Link>
 
           <p className="font-mono text-xs text-amber-400 mb-3">{entry.id}</p>
 
@@ -137,9 +133,7 @@ export default async function RulePage({ params }: PageProps) {
               line.
             </p>
           </div>
-        </div>
-      </main>
-    </>
+    </div>
   )
 }
 
