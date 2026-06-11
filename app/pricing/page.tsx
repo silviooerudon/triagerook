@@ -4,14 +4,14 @@ import { PublicNav } from "@/app/components/public-nav";
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Simple, transparent pricing for TriageRook. Free during beta.",
+    "Simple, transparent pricing for TriageRook. Free for everyone right now.",
   alternates: { canonical: "/pricing" },
 };
 
 const FREE_FEATURES = [
   "One repository",
   "Full security scan (all 10 detectors)",
-  "Public and private repos",
+  "Public repositories",
   "No credit card",
 ];
 
@@ -26,7 +26,7 @@ const NEVER_DO = [
   "No ads",
   "No selling or sharing your data",
   "No training AI models on your code",
-  "No surprise charges - beta users get advance notice",
+  "No surprise charges - advance notice before anything changes",
 ];
 
 export default function PricingPage() {
@@ -48,11 +48,10 @@ export default function PricingPage() {
           role="note"
           className="mb-12 rounded-md border-l-4 border-sky-500 bg-slate-50 text-slate-900 p-5"
         >
-          <p className="font-semibold mb-1">Beta - free for everyone.</p>
+          <p className="font-semibold mb-1">Free for everyone.</p>
           <p className="text-sm leading-relaxed text-slate-700">
-            TriageRook is free during the beta period while I validate real
-            usage. Anyone using it now will get advance notice before pricing
-            applies.
+            TriageRook is free while I validate real usage. Anyone using it now
+            will get advance notice before pricing applies.
           </p>
         </aside>
 
@@ -83,7 +82,7 @@ export default function PricingPage() {
 
           <div className="relative border border-slate-800 rounded-lg p-7 bg-slate-900/40 flex flex-col">
             <span className="absolute top-3 right-3 font-mono text-[10px] uppercase tracking-wider text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded">
-              Coming after beta
+              Coming soon
             </span>
             <div className="flex items-baseline justify-between mb-4">
               <h2 className="font-display text-2xl font-bold tracking-tight">

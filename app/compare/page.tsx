@@ -102,7 +102,7 @@ const ROWS: Row[] = [
   },
   {
     capability: "Price",
-    triagerook: { mark: "info", text: "Free during the open beta." },
+    triagerook: { mark: "info", text: "Free to use." },
     github: { mark: "info", text: "Free: secret scanning, Dependabot, and CodeQL on public repos. GitHub Advanced Security is paid for private repos." },
     snyk: { mark: "info", text: "Free tier plus paid plans." },
     trufflehog: { mark: "info", text: "Free and open source." },
