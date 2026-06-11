@@ -43,6 +43,9 @@ export function AppNav({ userName, userImage }: AppNavProps) {
           <Link href="/security" className="hover:text-slate-100 transition">
             security
           </Link>
+          <Link href="/docs" className="hover:text-slate-100 transition">
+            docs
+          </Link>
 
           <div className="flex items-center gap-2.5 pl-4 ml-1 border-l border-slate-800/60">
             {userImage && (
