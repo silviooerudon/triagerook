@@ -11,6 +11,7 @@ const LINKS: NavLink[] = [
   { href: "/dashboard/history", label: "history" },
   { href: "/dashboard/suppressions", label: "suppressions" },
   { href: "/security", label: "security" },
+  { href: "/docs", label: "docs" },
 ]
 
 // Mobile-only hamburger menu for the authenticated nav. Sits inside
