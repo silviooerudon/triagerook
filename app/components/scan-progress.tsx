@@ -8,7 +8,7 @@ import {
 
 // Display-only progress ticker. The real scan API does not stream
 // per-detector events, so we drive a timed progression that teaches the
-// user what the nine detectors are actually doing. Reads more credibly
+// user what the ten detectors are actually doing. Reads more credibly
 // than a single spinner — buyers evaluating a security tool want to see
 // the scope of what is being checked.
 const DETECTOR_STEPS: readonly string[] = [

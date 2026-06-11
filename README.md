@@ -104,7 +104,7 @@ Beyond looking for specific findings, TriageRook grades how the repo is set up: 
 
 ### 9. IAM risk scanner
 
-The angle a 10+ year IAM/IGA specialist actually cares about: identity and access risk at org and repo level. TriageRook surfaces org-level MFA enforcement (when `read:org` scope is granted), outside-collaborator permission levels, repo-level secret scoping, and authorship patterns that signal stale ownership. When a signal requires permissions the token does not have, TriageRook skips it and labels it as such rather than guessing. This is the slice of enterprise IAM tooling that solo devs and small teams have historically had no access to.
+The angle a 10+ year IAM/IGA specialist actually cares about: identity and access risk in the IAM policy-as-code you commit. TriageRook parses IAM policy documents out of Terraform, CloudFormation/SAM, raw JSON, and serverless configs, then runs three families of checks over them — **GitHub Actions OIDC trust** weaknesses (no `Condition`, wildcard repo/ref, `pull_request` trust), **privilege-escalation** paths (`iam:PassRole` on `*`, PassRole combined with compute creation, self-managing policies, unconditioned `sts:AssumeRole`, `Allow` + `NotAction`), and **admin-equivalent** grants (`Action: *` on `Resource: *`, sensitive-service wildcards, wildcard `Principal` with no `Condition`). Findings deduct from a 100-point score that maps to a low/medium/high/critical level. It reads policy-as-code, not your live cloud control plane, and needs no elevated GitHub scope. (Org-level MFA enforcement is graded separately, as a repo-posture signal.) Full write-up with vulnerable-vs-fixed examples at [`/docs/iam-risk-scanner`](https://www.triagerook.com/docs/iam-risk-scanner). This is the slice of enterprise IAM tooling that solo devs and small teams have historically had no access to.
 
 ### 10. Open-source license / compliance risk
 
@@ -142,6 +142,17 @@ Requires installing the **TriageRook Security** GitHub App on the target repo so
 ### Per-repo suppressions
 
 False positives happen. From the findings view you can suppress a single finding (by fingerprint), a rule on a path (by glob), or a whole rule for the repo. Suppressions are user-scoped and synced via Supabase — they survive across scans without committing a `.repoguardignore` to the repo (though that file is also honored at scan time).
+
+## Documentation
+
+Full product documentation lives at **[triagerook.com/docs](https://www.triagerook.com/docs)** — written to be read by skeptical developers, with every factual claim derived from this codebase:
+
+- [Security & data handling](https://www.triagerook.com/docs/security-and-data-handling) — GitHub App permissions, what each scan endpoint stores, secret masking.
+- [Scan limits](https://www.triagerook.com/docs/scan-limits) · [Suppressions](https://www.triagerook.com/docs/suppressions) · [Quickstart](https://www.triagerook.com/docs/quickstart) · [FAQ](https://www.triagerook.com/docs/faq)
+- [Detectors](https://www.triagerook.com/docs/detectors) · [Detection rules](https://www.triagerook.com/docs/rules) · [Posture score](https://www.triagerook.com/docs/posture-score) · [IAM risk scanner](https://www.triagerook.com/docs/iam-risk-scanner)
+- [SARIF export](https://www.triagerook.com/docs/sarif) · [Changelog](https://www.triagerook.com/docs/changelog)
+
+Security policy and vulnerability reporting: [SECURITY.md](SECURITY.md).
 
 ## Privacy
 
