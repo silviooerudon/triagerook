@@ -17,12 +17,6 @@ export function PublicNav() {
             rules
           </Link>
           <Link
-            href="/pricing"
-            className="hidden md:inline hover:text-slate-100 transition"
-          >
-            pricing
-          </Link>
-          <Link
             href="/compare"
             className="hidden md:inline hover:text-slate-100 transition"
           >

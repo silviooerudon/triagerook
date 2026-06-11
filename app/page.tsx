@@ -178,12 +178,6 @@ export default async function Home() {
                 faq
               </a>
               <Link
-                href="/pricing"
-                className="hidden md:inline hover:text-slate-100 transition"
-              >
-                pricing
-              </Link>
-              <Link
                 href="/about"
                 className="hidden md:inline hover:text-slate-100 transition"
               >
@@ -483,12 +477,6 @@ export default async function Home() {
                   className="hover:text-amber-400 transition"
                 >
                   about
-                </Link>
-                <Link
-                  href="/pricing"
-                  className="hover:text-amber-400 transition"
-                >
-                  pricing
                 </Link>
                 <Link
                   href="/compare"

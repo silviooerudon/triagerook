@@ -9,7 +9,6 @@ const BASE_URL = "https://www.triagerook.com"
 const STATIC_PATHS = [
   "/",
   "/compare",
-  "/pricing",
   "/about",
   "/security",
 ]
