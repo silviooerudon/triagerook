@@ -59,9 +59,21 @@ export const DOC_SECTIONS: DocSection[] = [
     title: "Reference",
     links: [
       {
+        href: "/docs/detectors",
+        label: "Detectors",
+        summary:
+          "The ten independent detectors: what each one finds, how it works, and what it deliberately does not catch.",
+      },
+      {
         href: "/docs/rules",
         label: "Detection rules",
         summary: "Every rule TriageRook checks, grouped by detection layer.",
+      },
+      {
+        href: "/docs/posture-score",
+        label: "Posture score",
+        summary:
+          "The 17 repo-posture signals, their weights, the A–F scale, and how unknown signals are handled.",
       },
       {
         href: "/docs/sarif",
