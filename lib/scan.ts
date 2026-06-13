@@ -1,5 +1,5 @@
 import { SECRET_PATTERNS } from "./secret-patterns"
-import { buildGitHubHeaders } from "./github-fetch"
+import { buildGitHubHeaders, encodePathSegments } from "./github-fetch"
 import { findSensitiveFiles } from "./sensitive-files"
 import { findEntropySecrets } from "./entropy"
 import { findCodeVulns } from "./code-vulns"
@@ -80,9 +80,13 @@ export class PrivateRepoRefusedError extends Error {
 
 /**
  * Returns retry-after seconds if the response indicates GitHub rate limiting,
- * otherwise null. Handles primary rate limit (403 + x-ratelimit-remaining: 0)
- * and secondary/abuse rate limit (429 with Retry-After header).
+ * otherwise null. Handles the primary rate limit (403/429 + x-ratelimit-
+ * remaining: 0) and the secondary/abuse rate limit (Retry-After header).
+ * GitHub's docs note a secondary limit may arrive as a bare 429 with neither
+ * header set, in which case the client should back off at least 60s.
  */
+const SECONDARY_RATE_LIMIT_FALLBACK_SECONDS = 60
+
 export function parseGitHubRateLimit(response: Response): number | null {
   if (response.status !== 403 && response.status !== 429) return null
 
@@ -101,6 +105,12 @@ export function parseGitHubRateLimit(response: Response): number | null {
     const seconds = Number.parseInt(retryAfter, 10)
     if (Number.isFinite(seconds)) return Math.max(1, seconds)
   }
+
+  // A 429 with no rate-limit signature is still a rate limit: GitHub's
+  // secondary (abuse) limits may omit both x-ratelimit-remaining and
+  // Retry-After. Default to the documented 60s backoff rather than
+  // misclassifying it as a generic failure.
+  if (response.status === 429) return SECONDARY_RATE_LIMIT_FALLBACK_SECONDS
 
   // 403 without the rate-limit signature is a permission error, not a rate limit
   return null
@@ -429,10 +439,12 @@ async function fetchRepoTree(
   repo: string,
   branch: string
 ): Promise<GitHubTreeResponse> {
-  // encodeURIComponent on the ref is defense-in-depth — the API
-  // boundary already runs isSafeGitRef(), but a future caller that
-  // skips validation would otherwise rebuild a malformed URL here.
-  const url = `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`
+  // encodePathSegments is defense-in-depth — the API boundary already runs
+  // isSafeGitRef(), but a future caller that skips validation would
+  // otherwise rebuild a malformed URL here. It preserves '/' so a slashed
+  // default branch (e.g. `release/v2`) still resolves; a plain
+  // encodeURIComponent() would turn '/' into %2F and 404 the tree.
+  const url = `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodePathSegments(branch)}?recursive=1`
 
   const response = await fetch(url, {
     headers: buildGitHubHeaders(accessToken),

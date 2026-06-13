@@ -250,6 +250,16 @@ export async function createPullRequestFromPatches(
 ): Promise<{ url: string; number: number }> {
   const { owner, repo, baseBranch, newBranch, commitMessage, prTitle, prBody, patches } = params
 
+  // Guard the empty case: with no patches we'd create a branch and then POST
+  // /pulls with no diff, which GitHub rejects with 422 ("No commits between
+  // base and head") — after having already created an orphan branch. Fail
+  // fast and loud instead.
+  if (patches.length === 0) {
+    throw new Error(
+      "createPullRequestFromPatches: refusing to open a PR with no file patches",
+    )
+  }
+
   const baseRef = await ghFetch<RefObject>(
     token,
     `/repos/${owner}/${repo}/git/refs/heads/${baseBranch}`
@@ -322,20 +332,4 @@ export async function getFileContent(
     throw new Error(`File ${path} has no content (likely a symlink or directory)`)
   }
   return Buffer.from(blob.content, "base64").toString("utf8")
-}
-
-// Deprecated alias kept for backwards compatibility with the previous
-// single-tenant API. New callers should use getInstallationTokenForRepo.
-// Will be removed once we ship Sentry + know nothing still hits this.
-export async function getInstallationToken(
-  credentials: GitHubAppCredentials = readEnvCredentials()
-): Promise<string> {
-  if (!credentials.installationId) {
-    throw new Error(
-      "getInstallationToken() requires installationId in credentials. " +
-        "Use getInstallationTokenForRepo(owner, repo) instead for per-repo discovery."
-    )
-  }
-  const helpers = defaultAppAuthFactory(credentials)
-  return helpers.installationToken(credentials.installationId)
 }

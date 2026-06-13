@@ -1,6 +1,7 @@
 import Link from "next/link"
 import type { Metadata } from "next"
 import { DocHeader, Section, Callout } from "../_components/doc-ui"
+import { DETECTOR_SLUGS, type DetectorSlug } from "@/lib/detectors"
 
 export const metadata: Metadata = {
   title: "Detectors",
@@ -21,9 +22,12 @@ type Detector = {
 // lib/entropy, lib/history, lib/ast, lib/code-vulns, lib/deps + OSV scanners,
 // lib/iac*, lib/supply-chain*, lib/posture, lib/iam*, lib/licenses*) and kept
 // consistent with the README's "eleven independent detectors" framing.
-const DETECTORS: Detector[] = [
-  {
-    n: 1,
+// Keyed by canonical slug (lib/detectors.ts): the Record<DetectorSlug, …>
+// forces this page to cover exactly the eleven detectors the landing page
+// does, and the rendered numbering is derived from DETECTOR_SLUGS so the two
+// can never disagree on order.
+const DOC_DETECTORS: Record<DetectorSlug, Omit<Detector, "n">> = {
+  "secret-scanner": {
     title: "Secrets in source code",
     detects:
       "Live-shaped credentials in text files: cloud keys (AWS/Azure/GCP and friends), SCM tokens (GitHub classic/fine-grained/OAuth/App, GitLab, Bitbucket), AI provider keys, payment keys, messaging and monitoring tokens, private-key blocks, and auth-bearing URIs.",
@@ -32,8 +36,7 @@ const DETECTORS: Detector[] = [
       "A credential in a format with no published pattern. Custom/corporate tokens with no fixed shape are the entropy detector's job (below); a value with a truly novel format may be missed by both.",
     link: { href: "/docs/rules", label: "Secret pattern rules" },
   },
-  {
-    n: 2,
+  "sensitive-files": {
     title: "Sensitive files committed to the repo",
     detects:
       "Files that should never be in version control regardless of contents: *.pem / *.key, *.pfx / .p12 / .jks / .keystore, SSH private keys, KeePass vaults, .env.production, cloud credential files, kubeconfig, .npmrc with auth, terraform.tfstate, database dumps, .git-credentials, .htpasswd.",
@@ -42,8 +45,7 @@ const DETECTORS: Detector[] = [
       "A sensitive file hidden under a non-standard name, or a secret embedded inside an otherwise-ordinary file (that is detectors 1 and 3).",
     link: { href: "/docs/rules", label: "Sensitive file rules" },
   },
-  {
-    n: 3,
+  entropy: {
     title: "High-entropy secrets in config files",
     detects:
       "Custom secrets in .env, .envrc, .ini, .toml, .yaml, .properties, and .conf files that no regex knows about.",
@@ -52,8 +54,7 @@ const DETECTORS: Detector[] = [
       "High-entropy values whose key name does not look like a secret, or secrets outside the recognized config file types. Tuned to favor few false positives over total coverage.",
     link: { href: "/docs/rules", label: "Secret pattern rules" },
   },
-  {
-    n: 4,
+  "git-history": {
     title: "Secrets in recent git history",
     detects:
       "Credentials that were committed and later removed — still leaked, still in the history.",
@@ -62,8 +63,7 @@ const DETECTORS: Detector[] = [
       "Anything older than the 30-commit window, individual commit patches larger than 200 KB (skipped), or history that was rewritten away. Best-effort: if GitHub rate-limits the history pass it is skipped and reported, not assumed clean.",
     link: { href: "/docs/scan-limits", label: "Scan limits" },
   },
-  {
-    n: 5,
+  "code-sast": {
     title: "Code-level vulnerabilities (SAST)",
     detects:
       "Injection (SQL, command, NoSQL, SSTI, prototype pollution, XXE), XSS, SSRF / open redirect, auth/JWT mistakes, weak crypto, path traversal, dynamic eval, ReDoS, insecure transport, cookie/session hygiene, insecure deserialization, info disclosure — each mapped to a CWE.",
@@ -72,8 +72,7 @@ const DETECTORS: Detector[] = [
       "Deep cross-file/interprocedural dataflow. Coverage is primarily JavaScript/TypeScript; Python is covered by the regex layer; other languages are not analyzed for code vulns.",
     link: { href: "/docs/rules", label: "SAST rules" },
   },
-  {
-    n: 6,
+  deps: {
     title: "Vulnerable dependencies (SCA)",
     detects:
       "Known-vulnerable packages across npm, PyPI, Go, RubyGems, Maven/Gradle, and Composer, plus container-image OS-package CVEs. End-of-life Docker base images are flagged statically too.",
@@ -82,8 +81,7 @@ const DETECTORS: Detector[] = [
       "Vulnerabilities with no advisory published yet, versions that cannot be resolved statically (property-interpolated or dynamic ranges), and live image scanning — that is delegated to the Trivy report you provide.",
     link: { href: "/docs/scan-limits", label: "Scan limits" },
   },
-  {
-    n: 7,
+  "supply-chain": {
     title: "Supply-chain attacks (typosquatting, install hooks, dependency confusion)",
     detects:
       "Malicious or hijacked dependencies before they run: typosquatted package names, install-time lifecycle-hook abuse in package.json scripts and Python setup.py / pyproject build hooks, and registry signals — dependency confusion (a declared name that 404s on the public registry), freshly-published packages, and suspicious-maintainer flags.",
@@ -92,8 +90,7 @@ const DETECTORS: Detector[] = [
       "Deep behavioral analysis of package source, or ecosystems beyond npm/PyPI for the registry-metadata signals.",
     link: { href: "/docs/rules", label: "Supply-chain rules" },
   },
-  {
-    n: 8,
+  "ci-iac": {
     title: "Infrastructure & CI misconfiguration (IaC)",
     detects:
       "Dockerfile hygiene, risky GitHub Actions workflows (pull_request_target with PR checkout, unpinned third-party actions, script injection), Terraform / CloudFormation / Kubernetes / Helm misconfig, and over-privileged cloud IAM declared in code (AWS/GCP/Azure/GitHub scopes).",
@@ -102,8 +99,7 @@ const DETECTORS: Detector[] = [
       "Misconfig in IaC formats not listed here, or runtime cloud state — these read your committed files, not your live cloud accounts.",
     link: { href: "/docs/rules", label: "IaC & Cloud IAM rules" },
   },
-  {
-    n: 9,
+  posture: {
     title: "Repository posture score",
     detects:
       "How the repo is set up rather than a specific bug: branch protection, governance docs, dependency-update hygiene, signed commits, org MFA, secret scanning, least-privilege workflow tokens, release provenance — 17 signals in four groups, graded A–F.",
@@ -112,8 +108,7 @@ const DETECTORS: Detector[] = [
       "Penalize you for signals it cannot see (admin-only settings on a public scan show as unknown, not failed).",
     link: { href: "/docs/posture-score", label: "Posture score" },
   },
-  {
-    n: 10,
+  "iam-risk": {
     title: "IAM risk scanner",
     detects:
       "Identity-and-access risk in the IAM policy documents you commit: GitHub Actions OIDC trust weaknesses (no Condition, wildcard repo/ref, pull_request trust), privilege-escalation patterns, and admin-equivalent grants.",
@@ -121,8 +116,7 @@ const DETECTORS: Detector[] = [
     doesnt:
       "Inspect your live cloud accounts or org settings — it reads policy-as-code, not the AWS/GCP/Azure control plane. (Org MFA enforcement is a posture signal, detector 9, not part of this scanner.)",
   },
-  {
-    n: 11,
+  license: {
     title: "Open-source license / compliance risk",
     detects:
       "Legal rather than security risk: strong copyleft (GPL/AGPL/SSPL), weak copyleft (LGPL/MPL/EPL/CDDL), and proprietary/UNLICENSED dependencies in a project that redistributes them.",
@@ -130,7 +124,12 @@ const DETECTORS: Detector[] = [
     doesnt:
       "Give legal advice, or resolve license text that a registry does not record. It surfaces the risk; the call is yours.",
   },
-]
+}
+
+const DETECTORS: Detector[] = DETECTOR_SLUGS.map((slug, i) => ({
+  n: i + 1,
+  ...DOC_DETECTORS[slug],
+}))
 
 export default function DetectorsPage() {
   return (

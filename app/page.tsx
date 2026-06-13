@@ -8,80 +8,64 @@ import {
   SECRET_PATTERN_FLOOR,
   HISTORY_COMMIT_COUNT,
 } from "@/lib/product-stats";
+import { DETECTOR_SLUGS, type DetectorSlug } from "@/lib/detectors";
 
-const DETECTORS: Array<{
-  id: string;
-  name: string;
-  desc: string;
-  refs: string;
-}> = [
-  {
-    id: "01",
-    name: "secret-scanner",
+// Presentation copy for the landing-page detector grid, keyed by canonical
+// slug. The Record<DetectorSlug, …> makes the compiler require exactly the
+// eleven detectors in lib/detectors.ts; the rendered order/number is derived
+// from DETECTOR_SLUGS below so it can never drift from /docs/detectors.
+const LANDING_DETECTORS: Record<DetectorSlug, { desc: string; refs: string }> = {
+  "secret-scanner": {
     desc: `${SECRET_PATTERN_FLOOR}+ high-confidence patterns: AWS, GCP, Anthropic, OpenAI, Stripe, Slack, GitHub PATs, SSH keys, Supabase service-role JWTs.`,
     refs: "regex",
   },
-  {
-    id: "02",
-    name: "sensitive-files",
+  "sensitive-files": {
     desc: "Flags filenames that imply secrets regardless of content: .env.production, id_rsa, terraform.tfstate, kubeconfig, .npmrc.",
     refs: "filename only",
   },
-  {
-    id: "03",
-    name: "entropy",
+  entropy: {
     desc: "Catches custom-format secrets in .env / config files via Shannon entropy on KEY=VALUE pairs. Skips placeholders automatically.",
     refs: "≥ 4.0 bits/char",
   },
-  {
-    id: "04",
-    name: "git-history",
+  "git-history": {
     desc: `Replays the last ${HISTORY_COMMIT_COUNT} commits looking for secrets that were deleted but never rotated. Dedups against the current tree.`,
     refs: `${HISTORY_COMMIT_COUNT} commits`,
   },
-  {
-    id: "05",
-    name: "code-sast",
+  "code-sast": {
     desc: `AST-based via the TypeScript Compiler API plus targeted regex. ${AST_RULE_COUNT} AST rules covering most of the OWASP Top 10 — SSRF, SQLi, command injection, reflected XSS, prototype pollution, ReDoS, NoSQL / SSTI injection, XXE, weak crypto, JWT misuse, hardcoded creds — plus AI-typical mistakes (TLS verify off, NEXT_PUBLIC_ secrets, bcrypt rounds < 10). Every rule CWE-tagged.`,
     refs: "AST + regex · CWE-tagged",
   },
-  {
-    id: "06",
-    name: "deps",
+  deps: {
     desc: "npm package-lock.json against the npm advisories bulk API; PyPI/Go/RubyGems/Maven (pom.xml + Gradle)/Composer against OSV.dev; container OS-package CVEs ingested from a committed Trivy SARIF report.",
     refs: "npm + OSV.dev + Trivy",
   },
-  {
-    id: "07",
-    name: "supply-chain",
+  "supply-chain": {
     desc: "Typosquatting (Damerau-Levenshtein vs popular registries), install-hook abuse in package.json scripts and Python setup.py / pyproject.",
     refs: "npm + PyPI",
   },
-  {
-    id: "08",
-    name: "ci-iac",
+  "ci-iac": {
     desc: "Dockerfile (root user, :latest tags, ADD-from-URL, secrets in ENV) and GitHub Actions (pull_request_target checkouts, unpinned actions, write-all permissions).",
     refs: "CWE-tagged",
   },
-  {
-    id: "09",
-    name: "posture",
+  posture: {
     desc: "Repo posture graded A–F across 17 signals: branch protection, CODEOWNERS, signed commits, Dependabot/Renovate, secret scanning + push protection, least-privilege GITHUB_TOKEN, release provenance. Scored as a percentage of the signals we can actually assess.",
     refs: "A–F grade",
   },
-  {
-    id: "10",
-    name: "iam-risk",
+  "iam-risk": {
     desc: "IAM risk in policy-as-code (Terraform, CloudFormation, JSON, serverless): GitHub Actions OIDC trust weaknesses, privilege-escalation paths (PassRole, self-managing policies), and admin-equivalent grants. The slice of enterprise IAM tooling solo devs have never had.",
     refs: "OIDC · privesc · admin",
   },
-  {
-    id: "11",
-    name: "license",
+  license: {
     desc: "Open-source license / compliance risk: strong copyleft (GPL/AGPL/SSPL), weak copyleft (LGPL/MPL/EPL/CDDL), and proprietary/UNLICENSED dependencies. npm reads the license field in package-lock.json (no network); PyPI/Go/RubyGems enrich via deps.dev, capped at 200 packages with graceful degradation.",
     refs: "deps.dev · SPDX",
   },
-];
+};
+
+const DETECTORS = DETECTOR_SLUGS.map((slug, i) => ({
+  id: String(i + 1).padStart(2, "0"),
+  name: slug,
+  ...LANDING_DETECTORS[slug],
+}));
 
 const FAQ: Array<{ q: string; a: string }> = [
   {

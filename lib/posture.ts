@@ -3,7 +3,7 @@ import {
   assessRulesetSignals,
   type RulesetSignals,
 } from "./posture-rulesets"
-import { buildGitHubHeaders } from "./github-fetch"
+import { buildGitHubHeaders, encodePathSegments } from "./github-fetch"
 import type { RulesetBypassFinding } from "./types"
 
 export type PostureGrade = "A" | "B" | "C" | "D" | "F"
@@ -108,8 +108,8 @@ type RawSignals = {
 }
 
 const QUICK_WIN_COPY: Record<string, string> = {
-  "branch-protection": "Enable branch protection on main",
-  "branch-pr-required": "Require pull request reviews on main",
+  "branch-protection": "Enable branch protection on the default branch",
+  "branch-pr-required": "Require pull request reviews on the default branch",
   "branch-status-checks": "Require status checks before merge",
   "branch-enforce-admins": "Apply branch protection to admins too",
   "security-md": "Add SECURITY.md",
@@ -134,7 +134,7 @@ async function fetchRepoFile(
   token: string | null,
 ): Promise<string | null> {
   const res = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+    `https://api.github.com/repos/${owner}/${repo}/contents/${encodePathSegments(path)}`,
     {
       headers: buildGitHubHeaders(token, "application/vnd.github.v3.raw"),
       cache: "no-store",
@@ -156,7 +156,7 @@ async function repoPathExists(
   token: string | null,
 ): Promise<boolean> {
   const res = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+    `https://api.github.com/repos/${owner}/${repo}/contents/${encodePathSegments(path)}`,
     {
       headers: buildGitHubHeaders(token, "application/vnd.github.v3.json"),
       cache: "no-store",
@@ -176,7 +176,7 @@ async function fetchBranch(
   token: string | null,
 ): Promise<{ protected: boolean } | null> {
   const res = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/branches/${branch}`,
+    `https://api.github.com/repos/${owner}/${repo}/branches/${encodePathSegments(branch)}`,
     {
       headers: buildGitHubHeaders(token, "application/vnd.github+json"),
       cache: "no-store",
@@ -203,7 +203,7 @@ async function fetchBranchProtection(
   token: string | null,
 ): Promise<BranchProtectionDetails | null> {
   const res = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/branches/${branch}/protection`,
+    `https://api.github.com/repos/${owner}/${repo}/branches/${encodePathSegments(branch)}/protection`,
     {
       headers: buildGitHubHeaders(token, "application/vnd.github+json"),
       cache: "no-store",
@@ -257,32 +257,51 @@ async function fetchSignedCommitsRatio(
   return verified / json.length
 }
 
+// The fields of GET /repos/{owner}/{repo} that the posture signals read. The
+// MFA and secret-scanning signals both derive from this single object, so we
+// fetch it once (see assessPosture) and share the promise rather than issuing
+// two identical /repos calls against the rate limit.
+type RepoObject = {
+  default_branch?: string
+  owner?: { type?: string; login?: string }
+  security_and_analysis?: {
+    secret_scanning?: { status?: string }
+    secret_scanning_push_protection?: { status?: string }
+  }
+}
+
+// Single fetch of the repo object. Throws GitHubRateLimitError on a rate limit
+// (so the caller's softFail can surface it) and returns null on any other
+// non-OK response, which the derivers below treat as "unknown".
+async function fetchRepoObject(
+  owner: string,
+  repo: string,
+  token: string | null,
+): Promise<RepoObject | null> {
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+    headers: buildGitHubHeaders(token, "application/vnd.github+json"),
+    cache: "no-store",
+  })
+  if (!res.ok) {
+    const retry = parseGitHubRateLimit(res)
+    if (retry !== null) throw new GitHubRateLimitError(retry)
+    return null
+  }
+  return (await res.json()) as RepoObject
+}
+
 // MFA state assessment. User-owned repos => not applicable (signal omitted
 // from quickWins). Org repos => requires `read:org` scope to read
 // two_factor_requirement_enabled. Non-members of the org or missing scope =>
 // "unknown" (signal flagged but not penalized as a quick win).
-async function fetchMfaState(
-  owner: string,
-  repo: string,
+async function deriveMfaState(
+  repoObjP: Promise<RepoObject | null>,
   token: string | null,
 ): Promise<MfaState> {
-  const repoRes = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}`,
-    {
-      headers: buildGitHubHeaders(token, "application/vnd.github+json"),
-      cache: "no-store",
-    },
-  )
-  if (!repoRes.ok) {
-    const retry = parseGitHubRateLimit(repoRes)
-    if (retry !== null) throw new GitHubRateLimitError(retry)
-    return "unknown"
-  }
-  const repoJson = (await repoRes.json()) as {
-    owner?: { type?: string; login?: string }
-  }
-  const ownerType = repoJson.owner?.type
-  const ownerLogin = repoJson.owner?.login
+  const repoObj = await repoObjP
+  if (!repoObj) return "unknown"
+  const ownerType = repoObj.owner?.type
+  const ownerLogin = repoObj.owner?.login
   if (ownerType === "User") return "na-user-repo"
   if (ownerType !== "Organization" || !ownerLogin) return "unknown"
 
@@ -306,27 +325,12 @@ async function fetchMfaState(
 // security_and_analysis block, which is only returned to principals with admin
 // (or for some public repos). Absent block → "unknown" (we genuinely can't see
 // it), not "disabled".
-async function fetchSecretScanning(
-  owner: string,
-  repo: string,
-  token: string | null,
+async function deriveSecretScanning(
+  repoObjP: Promise<RepoObject | null>,
 ): Promise<SecretScanningState> {
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-    headers: buildGitHubHeaders(token, "application/vnd.github+json"),
-    cache: "no-store",
-  })
-  if (!res.ok) {
-    const retry = parseGitHubRateLimit(res)
-    if (retry !== null) throw new GitHubRateLimitError(retry)
-    return "unknown"
-  }
-  const j = (await res.json()) as {
-    security_and_analysis?: {
-      secret_scanning?: { status?: string }
-      secret_scanning_push_protection?: { status?: string }
-    }
-  }
-  const sa = j.security_and_analysis
+  const repoObj = await repoObjP
+  if (!repoObj) return "unknown"
+  const sa = repoObj.security_and_analysis
   if (!sa) return "unknown"
   const on =
     sa.secret_scanning?.status === "enabled" ||
@@ -487,7 +491,7 @@ export function computeScore(raw: RawSignals): PostureResult {
     {
       id: "branch-protection",
       category: "branch",
-      label: "Branch protection enabled on main",
+      label: "Branch protection enabled on the default branch",
       pointsEarned: branchProtected ? W.branchProtection : 0,
       pointsMax: W.branchProtection,
       satisfied: branchProtected,
@@ -777,8 +781,27 @@ export async function assessPosture(
   owner: string,
   repo: string,
   accessToken: string | null,
+  explicitBranch?: string,
 ): Promise<PostureResult> {
   const degradedFlag = { value: false }
+
+  // Both the MFA and secret-scanning signals read off the same repo object.
+  // Fetch it once and share the promise so the two signals don't fire two
+  // identical GET /repos/{owner}/{repo} calls — meaningful on the
+  // unauthenticated 60-req/hr path. Both awaits are handled by softFail, so a
+  // rejection here surfaces as a rate-limit error or degrades, never unhandled.
+  const repoObjP = fetchRepoObject(owner, repo, accessToken)
+
+  // The branch-protection / ruleset signals must target the repo's real
+  // default branch (master, develop, …) — not a hardcoded "main", which 404s
+  // on every repo that defaults to something else and silently reports the
+  // branch as unprotected. Prefer the caller's branch; otherwise read
+  // default_branch off the repo object we're fetching anyway. A rate limit
+  // there still surfaces via the MFA/secret derivers below.
+  const targetBranch =
+    explicitBranch ??
+    (await repoObjP.catch(() => null))?.default_branch ??
+    "main"
 
   const [
     branch,
@@ -805,9 +828,9 @@ export async function assessPosture(
     releaseProvenance,
     rulesetSignals,
   ] = await Promise.all([
-    softFail(fetchBranch(owner, repo, "main", accessToken), null, degradedFlag),
+    softFail(fetchBranch(owner, repo, targetBranch, accessToken), null, degradedFlag),
     softFail(
-      fetchBranchProtection(owner, repo, "main", accessToken),
+      fetchBranchProtection(owner, repo, targetBranch, accessToken),
       null,
       degradedFlag,
     ),
@@ -827,9 +850,9 @@ export async function assessPosture(
     softFail(repoPathExists(owner, repo, "poetry.lock", accessToken), false, degradedFlag),
     softFail(fetchRepoFile(owner, repo, ".gitignore", accessToken), null, degradedFlag),
     softFail(fetchSignedCommitsRatio(owner, repo, accessToken), null, degradedFlag),
-    softFail(fetchMfaState(owner, repo, accessToken), "unknown" as MfaState, degradedFlag),
+    softFail(deriveMfaState(repoObjP, accessToken), "unknown" as MfaState, degradedFlag),
     softFail(
-      fetchSecretScanning(owner, repo, accessToken),
+      deriveSecretScanning(repoObjP),
       "unknown" as SecretScanningState,
       degradedFlag,
     ),
@@ -843,7 +866,7 @@ export async function assessPosture(
       "unknown" as ReleaseProvenanceState,
       degradedFlag,
     ),
-    softFail(assessRulesetSignals(owner, repo, "main", accessToken), null, degradedFlag),
+    softFail(assessRulesetSignals(owner, repo, targetBranch, accessToken), null, degradedFlag),
   ])
 
   const raw: RawSignals = {

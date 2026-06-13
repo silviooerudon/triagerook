@@ -29,7 +29,7 @@ const GROUPS: Group[] = [
     label: "Branch protection",
     total: 30,
     signals: [
-      { label: "Branch protection enabled on main", weight: 15 },
+      { label: "Branch protection enabled on the default branch", weight: 15 },
       {
         label: "Pull request review required",
         weight: 5,

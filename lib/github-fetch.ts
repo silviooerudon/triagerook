@@ -31,6 +31,18 @@ export function buildGitHubHeaders(
   return headers
 }
 
+// Encode a ref or repo file path for safe interpolation into a GitHub API
+// URL *path segment*, while preserving '/' so slashed branch names
+// (e.g. `release/v2`) and nested file paths (e.g. `.github/CODEOWNERS`)
+// still resolve. A plain encodeURIComponent() turns '/' into %2F, which
+// GitHub does NOT resolve on ref/contents path endpoints — encoding the
+// whole value would 404 a perfectly valid slashed branch. This is
+// defense-in-depth: callers also structurally validate via isSafeGitRef /
+// isSafeRepoFilePath at the API boundary.
+export function encodePathSegments(value: string): string {
+  return value.split("/").map(encodeURIComponent).join("/")
+}
+
 // Optional convenience wrapper for the simple `fetch GitHub API URL with
 // no-store cache` shape. Caller still owns error handling because some
 // detectors translate 404/403/429 differently (rate limit specifically
