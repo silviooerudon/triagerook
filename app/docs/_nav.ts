@@ -73,7 +73,7 @@ export const DOC_SECTIONS: DocSection[] = [
         href: "/docs/detectors",
         label: "Detectors",
         summary:
-          "The ten independent detectors: what each one finds, how it works, and what it deliberately does not catch.",
+          "The eleven independent detectors: what each one finds, how it works, and what it deliberately does not catch.",
       },
       {
         href: "/docs/rules",

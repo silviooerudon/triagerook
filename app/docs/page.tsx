@@ -13,7 +13,7 @@ export default function DocsHubPage() {
   return (
     <div className="max-w-3xl">
       <DocHeader eyebrow="documentation" title="TriageRook documentation">
-        TriageRook scans a public GitHub repo across ten independent detectors and
+        TriageRook scans a public GitHub repo across eleven independent detectors and
         returns a prioritized report in under a minute &mdash; no CLI, no config,
         no code execution. These docs exist to show their work: what we ask for,
         what we keep, and exactly how each check runs. Every number on these pages

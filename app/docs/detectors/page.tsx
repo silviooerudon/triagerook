@@ -5,7 +5,7 @@ import { DocHeader, Section, Callout } from "../_components/doc-ui"
 export const metadata: Metadata = {
   title: "Detectors",
   description:
-    "The ten independent detectors TriageRook runs over a repo: what each one finds, the real method it uses (regex, Shannon entropy, AST, OSV, Damerau-Levenshtein, posture signals), and what it deliberately does not catch.",
+    "The eleven independent detectors TriageRook runs over a repo: what each one finds, the real method it uses (regex, Shannon entropy, AST, OSV, Damerau-Levenshtein, posture signals), and what it deliberately does not catch.",
 }
 
 type Detector = {
@@ -20,7 +20,7 @@ type Detector = {
 // Each blurb is derived from the code (lib/scan.ts pipeline, lib/secret-patterns,
 // lib/entropy, lib/history, lib/ast, lib/code-vulns, lib/deps + OSV scanners,
 // lib/iac*, lib/supply-chain*, lib/posture, lib/iam*, lib/licenses*) and kept
-// consistent with the README's "ten independent detectors" framing.
+// consistent with the README's "eleven independent detectors" framing.
 const DETECTORS: Detector[] = [
   {
     n: 1,
@@ -84,16 +84,26 @@ const DETECTORS: Detector[] = [
   },
   {
     n: 7,
-    title: "Infrastructure, CI & supply-chain misconfigurations",
+    title: "Supply-chain attacks (typosquatting, install hooks, dependency confusion)",
     detects:
-      "Dockerfile hygiene, risky GitHub Actions workflows (pull_request_target with PR checkout, unpinned third-party actions, script injection), Terraform / CloudFormation / Kubernetes / Helm misconfig, over-privileged cloud IAM declared in code (AWS/GCP/Azure/GitHub scopes), install-time lifecycle-hook abuse (npm/PyPI), typosquatted dependency names, and registry supply-chain signals (dependency confusion, freshly-published, suspicious maintainer).",
-    how: "Line- and structure-based checks per file type, each self-guarding on file shape so non-matching YAML/JSON is skipped. Typosquatting uses Damerau-Levenshtein edit distance against popular npm/PyPI names; registry signals come from public npm registry metadata.",
+      "Malicious or hijacked dependencies before they run: typosquatted package names, install-time lifecycle-hook abuse in package.json scripts and Python setup.py / pyproject build hooks, and registry signals — dependency confusion (a declared name that 404s on the public registry), freshly-published packages, and suspicious-maintainer flags.",
+    how: "Typosquatting uses Damerau-Levenshtein edit distance against popular npm/PyPI names. Lifecycle hooks are pattern-matched for curl|sh, base64 decode-and-execute, env-var exfiltration, and destructive rm -rf chains. Registry signals come from public npm registry metadata.",
+    doesnt:
+      "Deep behavioral analysis of package source, or ecosystems beyond npm/PyPI for the registry-metadata signals.",
+    link: { href: "/docs/rules", label: "Supply-chain rules" },
+  },
+  {
+    n: 8,
+    title: "Infrastructure & CI misconfiguration (IaC)",
+    detects:
+      "Dockerfile hygiene, risky GitHub Actions workflows (pull_request_target with PR checkout, unpinned third-party actions, script injection), Terraform / CloudFormation / Kubernetes / Helm misconfig, and over-privileged cloud IAM declared in code (AWS/GCP/Azure/GitHub scopes).",
+    how: "Line- and structure-based checks per file type, each self-guarding on file shape so non-matching YAML/JSON is skipped.",
     doesnt:
       "Misconfig in IaC formats not listed here, or runtime cloud state — these read your committed files, not your live cloud accounts.",
     link: { href: "/docs/rules", label: "IaC & Cloud IAM rules" },
   },
   {
-    n: 8,
+    n: 9,
     title: "Repository posture score",
     detects:
       "How the repo is set up rather than a specific bug: branch protection, governance docs, dependency-update hygiene, signed commits, org MFA, secret scanning, least-privilege workflow tokens, release provenance — 17 signals in four groups, graded A–F.",
@@ -103,16 +113,16 @@ const DETECTORS: Detector[] = [
     link: { href: "/docs/posture-score", label: "Posture score" },
   },
   {
-    n: 9,
+    n: 10,
     title: "IAM risk scanner",
     detects:
       "Identity-and-access risk in the IAM policy documents you commit: GitHub Actions OIDC trust weaknesses (no Condition, wildcard repo/ref, pull_request trust), privilege-escalation patterns, and admin-equivalent grants.",
     how: "Selects IAM-shaped files from the tree (Terraform, CloudFormation/SAM, JSON policy docs, serverless.yml), extracts policy statements, and runs the three check families over them. Findings deduct from a 100-point score that maps to a low/medium/high/critical level.",
     doesnt:
-      "Inspect your live cloud accounts or org settings — it reads policy-as-code, not the AWS/GCP/Azure control plane. (Org MFA enforcement is a posture signal, detector 8, not part of this scanner.)",
+      "Inspect your live cloud accounts or org settings — it reads policy-as-code, not the AWS/GCP/Azure control plane. (Org MFA enforcement is a posture signal, detector 9, not part of this scanner.)",
   },
   {
-    n: 10,
+    n: 11,
     title: "Open-source license / compliance risk",
     detects:
       "Legal rather than security risk: strong copyleft (GPL/AGPL/SSPL), weak copyleft (LGPL/MPL/EPL/CDDL), and proprietary/UNLICENSED dependencies in a project that redistributes them.",
@@ -126,7 +136,7 @@ export default function DetectorsPage() {
   return (
     <div className="max-w-3xl">
       <DocHeader eyebrow="reference" title="Detectors">
-        TriageRook runs ten independent detectors over a repo and aggregates the
+        TriageRook runs eleven independent detectors over a repo and aggregates the
         results into one prioritized report. This page is the map: what each
         detector finds, the real method behind it, and &mdash; just as important
         &mdash; what it does not catch. For the individual pattern-based rules,
@@ -139,10 +149,10 @@ export default function DetectorsPage() {
 
       <Callout variant="info" title="Where the granular rules live">
         <p>
-          Detectors 1&ndash;3, 5, and 7 are backed by an enumerable rule catalog
+          Detectors 1&ndash;3, 5, 7, and 8 are backed by an enumerable rule catalog
           at <Link href="/docs/rules" className="text-amber-400 hover:underline">/docs/rules</Link>
-          . Dependencies (6), posture (8), the IAM risk scanner (9), and licenses
-          (10) are computed dynamically &mdash; from OSV / npm advisories, GitHub
+          . Dependencies (6), posture (9), the IAM risk scanner (10), and licenses
+          (11) are computed dynamically &mdash; from OSV / npm advisories, GitHub
           API signals, policy parsing, and registry metadata &mdash; so they have
           no fixed rule list.
         </p>

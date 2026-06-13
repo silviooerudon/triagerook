@@ -16,7 +16,7 @@ TriageRook is my attempt at the smallest useful security tool: scan a repo in on
 
 ## What TriageRook actually detects
 
-TriageRook runs ten independent detectors over your repo and aggregates the results into a single prioritized report.
+TriageRook runs eleven independent detectors over your repo and aggregates the results into a single prioritized report.
 
 ### 1. Secrets in source code (60+ patterns)
 
@@ -38,7 +38,7 @@ Even a rotated secret is still a compromised secret if it lives in a past commit
 
 Two layers run side-by-side:
 
-- **AST analysis** via the TypeScript Compiler API (`ts-morph`) — 28 rules over JS/TS that track user input flowing into dangerous sinks across property hops the regex layer can't follow.
+- **AST analysis** via the TypeScript Compiler API (`ts-morph`) —  28 rules over JS/TS that track user input flowing into dangerous sinks across property hops the regex layer can't follow.
 - **Conservative regex rules** over JS/TS and Python where AST parsing would be overkill — TLS verify disabled, weak bcrypt cost, NEXT_PUBLIC_ secret reads, Python `yaml.load` without `SafeLoader`, etc.
 
 Every rule is tied to a CWE identifier so findings are actionable. Headline coverage (full list at [`/docs/rules`](https://www.triagerook.com/docs/rules)):
@@ -75,18 +75,13 @@ All ecosystems share one OSV query core, the same 500-package cap, and graceful 
 
 > **Base-image freshness** is checked statically too: a `FROM` pinned to an **end-of-life** runtime/distro (`node:16`, `python:3.7`, `debian:9`, `ubuntu:18.04`, EOL `alpine`, any `centos`) is flagged, since an unsupported base stops receiving security patches and accumulates CVEs by definition.
 
-### 6b. Cloud IAM in code
+### 7. Supply-chain attacks (typosquatting, install hooks, dependency confusion)
 
-Over-privileged cloud IAM declared in code/config — the `chmod 777` of cloud permissions. TriageRook flags:
+- **Lifecycle hook abuse (npm + PyPI)** -- `package.json` scripts (`preinstall`/`install`/`postinstall`/`prepare`) and Python `setup.py`/`pyproject.toml` build hooks running `curl | sh`, `base64` decode-and-execute, environment-variable exfiltration combined with network calls, or destructive `rm -rf` chains. Catches install-time supply-chain vectors used in recent npm and PyPI compromises.
+- **Typosquatting in dependency manifests** -- flags packages whose names are edit-distance-1 (`lodahs`, `expres`, `reqests`), edit-distance-2 prefix (`lodashes`), or case-fold variants (`Chalk`) of popular npm and PyPI registry names.
+- **Registry-backed supply-chain signals (npm)** -- via public npm registry metadata: **dependency confusion** (a declared name that 404s on the public registry — an attacker can claim it and hijack resolution), **recently-published** packages (created within 30 days — a common typosquat/hijack vehicle), and **suspicious-maintainer** signals (deprecated package, or zero maintainers listed).
 
-- **AWS** IAM policy documents (in `*.json` or inline in source) with a wildcard action (`"Action": "*"`), service-wide wildcard (`"s3:*"`), wildcard resource (`"Resource": "*"`), or a public principal (`"Principal": "*"` / `{"AWS": "*"}`). Rules require a real policy-document context (`Statement` + `Effect`) to avoid false positives on arbitrary JSON.
-- **GCP** primitive roles (`roles/owner`, `roles/editor`) wherever they're assigned.
-- **Azure RBAC** built-in `Owner` / `Contributor` assignments (by well-known role GUID anywhere, or by name inside an Azure context — `az role assignment`, Bicep/ARM `roleDefinitionName`), and custom roles with wildcard `"Actions": ["*"]`.
-- **GitHub** over-broad OAuth/PAT scope requests (`delete_repo`, `admin:org`, `admin:enterprise`, `admin:repo_hook`, `site_admin`), in both `scope:`/`scope=` and `--scope` CLI forms — gated so prose mentioning a scope name isn't flagged.
-
-HCL (`.tf`) is left to the Terraform layer. This is distinct from the org/repo IAM-posture scanner below — this is identity risk *in your code*.
-
-### 7. CI / IaC / supply-chain misconfigurations
+### 8. IaC & CI misconfigurations
 
 - **Dockerfile** — container running as root, missing `USER` directive, `:latest` base tags, `ADD http(s)://`, secrets baked into `ENV`, `RUN curl | sh`, `chmod 777`, unpinned `apt install`, and **end-of-life base images**
 - **GitHub Actions** — `pull_request_target` checking out PR head with secrets exposed (the s1ngularity / GhostAction vector), third-party actions not pinned to a full SHA, `run:` steps interpolating `${{ github.event.* }}` fields (script injection), workflow-level `permissions: write-all`, and **secret-named `env:` values set to a committed literal** instead of `${{ secrets.* }}`
@@ -94,19 +89,17 @@ HCL (`.tf`) is left to the Terraform layer. This is distinct from the org/repo I
 - **CloudFormation** — the same AWS misconfig set for CFN templates (YAML **and** JSON): public S3 ACL / disabled public-access-block, wildcard IAM action/resource, `SecurityGroupIngress` open to `0.0.0.0/0` (egress correctly ignored), unencrypted storage, publicly accessible RDS. Self-guards on `AWSTemplateFormatVersion` / `Resources` + an `AWS::` type so non-template YAML/JSON is skipped.
 - **Kubernetes** — manifests (detected by `apiVersion:` + `kind:`) with privileged containers, host namespaces (`hostNetwork`/`hostPID`/`hostIPC`), `allowPrivilegeEscalation`, running as root (`runAsUser: 0` / `runAsNonRoot: false`), mutable image tags (`:latest`/untagged), and dangerous added Linux capabilities (`SYS_ADMIN`, `NET_ADMIN`, `ALL`, …). Helm-templated lines are skipped to avoid noise.
 - **Helm** — chart `values*.yaml` insecure defaults that flow into every rendered workload (`privileged`, `runAsNonRoot: false` / `runAsUser: 0`, host namespaces, `allowPrivilegeEscalation`, mutable image tag). Values files aren't rendered manifests, so the Kubernetes layer skips them — this catches the gap.
-- **Lifecycle hook abuse (npm + PyPI)** -- `package.json` scripts (`preinstall`/`install`/`postinstall`/`prepare`) and Python `setup.py`/`pyproject.toml` build hooks running `curl | sh`, `base64` decode-and-execute, environment-variable exfiltration combined with network calls, or destructive `rm -rf` chains. Catches install-time supply-chain vectors used in recent npm and PyPI compromises.
-- **Typosquatting in dependency manifests** -- flags packages whose names are edit-distance-1 (`lodahs`, `expres`, `reqests`), edit-distance-2 prefix (`lodashes`), or case-fold variants (`Chalk`) of popular npm and PyPI registry names.
-- **Registry-backed supply-chain signals (npm)** -- via public npm registry metadata: **dependency confusion** (a declared name that 404s on the public registry — an attacker can claim it and hijack resolution), **recently-published** packages (created within 30 days — a common typosquat/hijack vehicle), and **suspicious-maintainer** signals (deprecated package, or zero maintainers listed).
+- **Cloud IAM in code** — over-privileged cloud IAM declared in code/config (the `chmod 777` of cloud permissions): **AWS** IAM policy documents with a wildcard action (`"Action": "*"`), service-wide wildcard (`"s3:*"`), wildcard resource (`"Resource": "*"`), or public principal — gated on a real `Statement` + `Effect` context to avoid false positives on arbitrary JSON; **GCP** primitive roles (`roles/owner`, `roles/editor`); **Azure RBAC** built-in `Owner` / `Contributor` assignments and wildcard custom roles; and **GitHub** over-broad OAuth/PAT scope requests (`delete_repo`, `admin:org`, `admin:enterprise`, `admin:repo_hook`, `site_admin`). HCL (`.tf`) is left to the Terraform layer. This is identity risk *in your code*, distinct from the IAM-posture signals (#9) and the IAM risk scanner (#10).
 
-### 8. Repository posture score
+### 9. Repository posture score
 
 Beyond looking for specific findings, TriageRook grades how the repo is set up: governance docs (`SECURITY.md`, `LICENSE`, `CODEOWNERS`), branch protection + rulesets on the default branch (PR review required, status checks, enforce-admins), signed-commit ratio, org MFA enforcement, dependency-update automation, lockfile/`.gitignore` hygiene, plus **GitHub secret scanning + push protection**, **least-privilege default `GITHUB_TOKEN` permissions**, and **release signing / build provenance** (cosign / sigstore / SLSA / npm `--provenance`). The result is a single A–F grade scored as a **percentage of assessable signals** — signals the token cannot inspect (e.g. admin-only secret-scanning status on a public scan) are reported as `unknown` and excluded from the math rather than counted as failures, so the grade stays honest and a missing admin scope doesn't tank the score. The per-signal breakdown shows exactly what to fix to raise it.
 
-### 9. IAM risk scanner
+### 10. IAM risk scanner
 
 The angle a 10+ year IAM/IGA specialist actually cares about: identity and access risk in the IAM policy-as-code you commit. TriageRook parses IAM policy documents out of Terraform, CloudFormation/SAM, raw JSON, and serverless configs, then runs three families of checks over them — **GitHub Actions OIDC trust** weaknesses (no `Condition`, wildcard repo/ref, `pull_request` trust), **privilege-escalation** paths (`iam:PassRole` on `*`, PassRole combined with compute creation, self-managing policies, unconditioned `sts:AssumeRole`, `Allow` + `NotAction`), and **admin-equivalent** grants (`Action: *` on `Resource: *`, sensitive-service wildcards, wildcard `Principal` with no `Condition`). Findings deduct from a 100-point score that maps to a low/medium/high/critical level. It reads policy-as-code, not your live cloud control plane, and needs no elevated GitHub scope. (Org-level MFA enforcement is graded separately, as a repo-posture signal.) Full write-up with vulnerable-vs-fixed examples at [`/docs/iam-risk-scanner`](https://www.triagerook.com/docs/iam-risk-scanner). This is the slice of enterprise IAM tooling that solo devs and small teams have historically had no access to.
 
-### 10. Open-source license / compliance risk
+### 11. Open-source license / compliance risk
 
 Legal risk, not security: a transitive GPL/AGPL dependency in a proprietary product, or a package with no license at all (which grants you no legal right to use it), is a real problem CVE scans never surface. For **npm**, TriageRook reads the `license` field recorded on every entry of `package-lock.json` (v2/v3) — **no extra network calls**. For **PyPI / Go / RubyGems** (whose lockfiles don't carry license data), it enriches via [deps.dev](https://deps.dev) (Google's Open Source Insights — same benign public-metadata nature as OSV.dev), bounded to 200 packages with graceful degradation. It flags **strong copyleft** (GPL/AGPL/SSPL), **weak copyleft** (LGPL/MPL/EPL/CDDL), and **proprietary/UNLICENSED** licenses. Dual-licensed `(MIT OR GPL-3.0)` expressions with a permissive escape are treated as acceptable, and dev-only npm dependencies are skipped since they aren't redistributed.
 

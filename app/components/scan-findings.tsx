@@ -639,8 +639,8 @@ export function AllClear() {
             no findings.
           </h2>
           <p className="text-slate-300 text-sm leading-relaxed">
-            Ten detectors ran across secrets, sensitive files, vulnerable
-            dependencies, SAST, IaC and supply chain — none of them tripped.
+            Eleven detectors ran across secrets, sensitive files, vulnerable
+            dependencies, SAST, supply chain, IaC, posture, IAM and license — none of them tripped.
             Clean repo.
           </p>
         </div>
