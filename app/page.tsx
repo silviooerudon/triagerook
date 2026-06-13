@@ -75,6 +75,12 @@ const DETECTORS: Array<{
     desc: "IAM risk in policy-as-code (Terraform, CloudFormation, JSON, serverless): GitHub Actions OIDC trust weaknesses, privilege-escalation paths (PassRole, self-managing policies), and admin-equivalent grants. The slice of enterprise IAM tooling solo devs have never had.",
     refs: "OIDC · privesc · admin",
   },
+  {
+    id: "11",
+    name: "license",
+    desc: "Open-source license / compliance risk: strong copyleft (GPL/AGPL/SSPL), weak copyleft (LGPL/MPL/EPL/CDDL), and proprietary/UNLICENSED dependencies. npm reads the license field in package-lock.json (no network); PyPI/Go/RubyGems enrich via deps.dev, capped at 200 packages with graceful degradation.",
+    refs: "deps.dev · SPDX",
+  },
 ];
 
 const FAQ: Array<{ q: string; a: string }> = [
@@ -117,7 +123,7 @@ const FAQ: Array<{ q: string; a: string }> = [
 ];
 
 const STAT_BAR: Array<{ value: string; label: string }> = [
-  { value: "10", label: "detectors" },
+  { value: "11", label: "detectors" },
   { value: String(RULE_COUNT), label: "rules" },
   { value: "SARIF 2.1", label: "code scanning export" },
   { value: "<60s", label: "scan time" },
@@ -233,7 +239,7 @@ export default async function Home() {
                 <span className="text-slate-100">
                   Scan any public GitHub repo in one click
                 </span>{" "}
-                - no login, no agent, no pipeline. TriageRook runs nine
+                - no login, no agent, no pipeline. TriageRook runs eleven
                 detectors against{" "}
                 <span className="text-slate-100">exposed secrets</span>,{" "}
                 <span className="text-slate-100">vulnerable dependencies</span>,
@@ -334,7 +340,7 @@ export default async function Home() {
                   {"// detectors"}
                 </div>
                 <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight leading-tight">
-                  ten detectors,
+                  eleven detectors,
                   <br />
                   run in parallel.
                 </h2>
@@ -619,7 +625,7 @@ function Terminal() {
           </span>
         </div>
         <div className="mt-4 space-y-1 text-slate-400">
-          <div>┌─ summary ────────────────────────────</div>
+          <div>┌─ summary ──────────────────────</div>
           <div>
             │ risk score{"     "}
             <span className="text-emerald-400">92 / 100</span>
@@ -633,7 +639,7 @@ function Terminal() {
             │ duration{"       "}
             <span className="text-slate-200">47s</span>
           </div>
-          <div>└──────────────────────────────────────</div>
+          <div>└─────────────────────────────────────</div>
         </div>
         <div className="mt-4 space-y-1.5">
           <FindingLine
