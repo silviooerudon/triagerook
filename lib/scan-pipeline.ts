@@ -153,7 +153,7 @@ export async function runFullScan(
     scanJvmDependencies(owner, repo, accessToken),
     scanPhpDependencies(owner, repo, accessToken),
     scanContainerVulns(owner, repo, accessToken),
-    assessPosture(owner, repo, accessToken),
+    assessPosture(owner, repo, accessToken, explicitBranch),
     assessIAM(owner, repo, accessToken),
     assessSupplyChain(owner, repo, accessToken, explicitBranch),
     registryLicenseP,

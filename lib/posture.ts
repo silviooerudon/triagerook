@@ -108,8 +108,8 @@ type RawSignals = {
 }
 
 const QUICK_WIN_COPY: Record<string, string> = {
-  "branch-protection": "Enable branch protection on main",
-  "branch-pr-required": "Require pull request reviews on main",
+  "branch-protection": "Enable branch protection on the default branch",
+  "branch-pr-required": "Require pull request reviews on the default branch",
   "branch-status-checks": "Require status checks before merge",
   "branch-enforce-admins": "Apply branch protection to admins too",
   "security-md": "Add SECURITY.md",
@@ -262,6 +262,7 @@ async function fetchSignedCommitsRatio(
 // fetch it once (see assessPosture) and share the promise rather than issuing
 // two identical /repos calls against the rate limit.
 type RepoObject = {
+  default_branch?: string
   owner?: { type?: string; login?: string }
   security_and_analysis?: {
     secret_scanning?: { status?: string }
@@ -490,7 +491,7 @@ export function computeScore(raw: RawSignals): PostureResult {
     {
       id: "branch-protection",
       category: "branch",
-      label: "Branch protection enabled on main",
+      label: "Branch protection enabled on the default branch",
       pointsEarned: branchProtected ? W.branchProtection : 0,
       pointsMax: W.branchProtection,
       satisfied: branchProtected,
@@ -780,6 +781,7 @@ export async function assessPosture(
   owner: string,
   repo: string,
   accessToken: string | null,
+  explicitBranch?: string,
 ): Promise<PostureResult> {
   const degradedFlag = { value: false }
 
@@ -789,6 +791,17 @@ export async function assessPosture(
   // unauthenticated 60-req/hr path. Both awaits are handled by softFail, so a
   // rejection here surfaces as a rate-limit error or degrades, never unhandled.
   const repoObjP = fetchRepoObject(owner, repo, accessToken)
+
+  // The branch-protection / ruleset signals must target the repo's real
+  // default branch (master, develop, …) — not a hardcoded "main", which 404s
+  // on every repo that defaults to something else and silently reports the
+  // branch as unprotected. Prefer the caller's branch; otherwise read
+  // default_branch off the repo object we're fetching anyway. A rate limit
+  // there still surfaces via the MFA/secret derivers below.
+  const targetBranch =
+    explicitBranch ??
+    (await repoObjP.catch(() => null))?.default_branch ??
+    "main"
 
   const [
     branch,
@@ -815,9 +828,9 @@ export async function assessPosture(
     releaseProvenance,
     rulesetSignals,
   ] = await Promise.all([
-    softFail(fetchBranch(owner, repo, "main", accessToken), null, degradedFlag),
+    softFail(fetchBranch(owner, repo, targetBranch, accessToken), null, degradedFlag),
     softFail(
-      fetchBranchProtection(owner, repo, "main", accessToken),
+      fetchBranchProtection(owner, repo, targetBranch, accessToken),
       null,
       degradedFlag,
     ),
@@ -853,7 +866,7 @@ export async function assessPosture(
       "unknown" as ReleaseProvenanceState,
       degradedFlag,
     ),
-    softFail(assessRulesetSignals(owner, repo, "main", accessToken), null, degradedFlag),
+    softFail(assessRulesetSignals(owner, repo, targetBranch, accessToken), null, degradedFlag),
   ])
 
   const raw: RawSignals = {
