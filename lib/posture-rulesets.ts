@@ -1,6 +1,6 @@
 import { GitHubRateLimitError, parseGitHubRateLimit } from "./scan"
 import type { RulesetBypassFinding } from "./types"
-import { buildGitHubHeaders } from "./github-fetch"
+import { buildGitHubHeaders, encodePathSegments } from "./github-fetch"
 
 // Reads GitHub repository rulesets to surface branch protection signals the
 // classic /repos/.../branches/.../protection endpoint misses. Repos that
@@ -55,7 +55,7 @@ async function fetchRulesForBranch(
   token: string | null,
 ): Promise<RuleEntry[] | null> {
   const res = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/rules/branches/${branch}`,
+    `https://api.github.com/repos/${owner}/${repo}/rules/branches/${encodePathSegments(branch)}`,
     { headers: buildGitHubHeaders(token), cache: "no-store" },
   )
   if (res.status === 404) return null

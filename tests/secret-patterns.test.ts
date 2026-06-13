@@ -42,6 +42,15 @@ describe("SECRET_PATTERNS regex matrix", () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
+  // Load-bearing invariant: scanFile() and scanHistory() iterate matches with
+  // `while ((m = pattern.regex.exec(text)))`. A non-global regex never advances
+  // lastIndex, so that loop would spin forever on the first match. Every pattern
+  // must therefore carry the /g flag.
+  it("every pattern regex is global (guards the exec() scan loop from hanging)", () => {
+    const nonGlobal = SECRET_PATTERNS.filter((p) => !p.regex.global).map((p) => p.id)
+    expect(nonGlobal).toEqual([])
+  })
+
   describe("positive matches (canonical fixtures)", () => {
     const cases: Array<[string, string]> = [
       ["aws-access-key", j("AKIA", "IOSFODNN7EXAMPLE")],
