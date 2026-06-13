@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 const FREE_FEATURES = [
   "One repository",
-  "Full security scan (all 10 detectors)",
+  "Full security scan (all 11 detectors)",
   "Public repositories",
   "No credit card",
 ];
