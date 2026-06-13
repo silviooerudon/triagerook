@@ -333,19 +333,3 @@ export async function getFileContent(
   }
   return Buffer.from(blob.content, "base64").toString("utf8")
 }
-
-// Deprecated alias kept for backwards compatibility with the previous
-// single-tenant API. New callers should use getInstallationTokenForRepo.
-// Will be removed once we ship Sentry + know nothing still hits this.
-export async function getInstallationToken(
-  credentials: GitHubAppCredentials = readEnvCredentials()
-): Promise<string> {
-  if (!credentials.installationId) {
-    throw new Error(
-      "getInstallationToken() requires installationId in credentials. " +
-        "Use getInstallationTokenForRepo(owner, repo) instead for per-repo discovery."
-    )
-  }
-  const helpers = defaultAppAuthFactory(credentials)
-  return helpers.installationToken(credentials.installationId)
-}
