@@ -579,7 +579,7 @@ function detectOidcWeaknesses(
 
   const subLower = subValue.toLowerCase()
 
-  if (/^repo:[^/:]*\/\*:/.test(subValue) || /^repo:\*:/.test(subValue)) {
+  if (/^repo:[^/:]*\/\*(?::|$)/.test(subValue) || /^repo:\*(?::|$)/.test(subValue)) {
     findings.push(
       makeFinding(
         "iam-oidc-wildcard-repo",
@@ -636,6 +636,9 @@ function detectOidcWeaknesses(
 
 // Test-only export. Do not use outside of scripts/smoke-iam.ts.
 export const __testExtractStatements = extractStatements
+
+// Test-only export. Do not use outside of tests/iam-oidc-trust.test.ts.
+export const __testDetectOidcWeaknesses = detectOidcWeaknesses
 
 // ---------- Orchestration ----------
 
