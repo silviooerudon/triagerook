@@ -1,10 +1,20 @@
 import { ImageResponse } from "next/og"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 import { supabase } from "@/lib/supabase"
 
 export const runtime = "nodejs"
 export const alt = "TriageRook scan summary"
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
+
+// Read the logo PNG from public/ at module init and embed as a data URL.
+// next/og's <img> requires an absolute URL or data URI — at OG generation
+// time the request origin is unknown, so a data URI is the simplest path
+// that works in preview and production identically.
+const LOGO_DATA_URL = `data:image/png;base64,${readFileSync(
+  join(process.cwd(), "public/logo.png"),
+).toString("base64")}`
 
 type ScanRow = {
   scanned_at: string
@@ -77,22 +87,8 @@ export default async function PublicScanOG({ params }: PageProps) {
             color: "#fbbf24",
           }}
         >
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 44,
-              height: 44,
-              borderRadius: 10,
-              background: "#fbbf24",
-              color: "#0f172a",
-              fontWeight: 800,
-              fontSize: 24,
-            }}
-          >
-            T
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element -- next/og requires <img>, not next/image */}
+          <img src={LOGO_DATA_URL} width={56} height={56} alt="" />
           TRIAGEROOK
         </div>
 
