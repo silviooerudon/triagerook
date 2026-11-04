@@ -138,6 +138,7 @@ export default function ComparePage() {
   return (
     <>
       <PublicNav />
+      <main id="main">
       <article className="max-w-6xl mx-auto px-6 py-16">
         <div className="font-mono text-xs text-amber-400 mb-3">
           {"// compare"}
@@ -346,6 +347,7 @@ export default function ComparePage() {
           </div>
         </div>
       </article>
+      </main>
     </>
   );
 }

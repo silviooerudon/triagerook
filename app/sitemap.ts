@@ -11,6 +11,9 @@ const STATIC_PATHS = [
   "/compare",
   "/about",
   "/security",
+  "/pricing",
+  "/privacy",
+  "/terms",
 ]
 
 export default function sitemap(): MetadataRoute.Sitemap {

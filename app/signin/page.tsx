@@ -32,7 +32,7 @@ export default async function SignInPage({
   return (
     <>
       <PublicNav />
-      <main className="px-6 py-20">
+      <main id="main" className="px-6 py-20">
         <div className="max-w-md mx-auto">
           <div className="font-mono text-xs text-amber-400 mb-6 flex items-center gap-2.5">
             <span className="inline-block w-1.5 h-1.5 bg-amber-400 animate-pulse" />
@@ -98,8 +98,12 @@ export default async function SignInPage({
 
           <p className="text-xs text-slate-500 mt-6 text-center font-mono">
             By continuing you agree to the{" "}
-            <Link href="/security" className="text-slate-400 hover:text-amber-400 underline-offset-2 hover:underline">
-              security policy
+            <Link href="/terms" className="text-slate-300 underline underline-offset-2 hover:text-amber-400">
+              terms of use
+            </Link>{" "}
+            and confirm you have read the{" "}
+            <Link href="/privacy" className="text-slate-300 underline underline-offset-2 hover:text-amber-400">
+              privacy policy
             </Link>
             .
           </p>

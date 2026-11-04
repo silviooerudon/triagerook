@@ -3,6 +3,7 @@ import { GitHubRateLimitError, GitHubRepoNotFoundError } from "@/lib/scan"
 import { runFullScan } from "@/lib/scan-pipeline"
 import {
   checkAndIncrement,
+  ipRateLimitKey,
   PUBLIC_SCAN_POLICY,
   PUBLIC_SCAN_PER_REPO_POLICY,
 } from "@/lib/rate-limit"
@@ -45,8 +46,9 @@ export async function POST(
   // Supabase is unreachable, the scan would fail downstream anyway, so
   // refusing here is the honest behaviour rather than silently
   // dropping the limit.
-  const ip = getCallerIp(request)
-  const ipRl = await checkAndIncrement(ip, PUBLIC_SCAN_POLICY, {
+  // The raw IP never leaves this function: only its keyed hash is stored.
+  const ipKey = ipRateLimitKey(getCallerIp(request))
+  const ipRl = await checkAndIncrement(ipKey, PUBLIC_SCAN_POLICY, {
     failClosed: true,
   })
   if (!ipRl.allowed) {

@@ -11,7 +11,7 @@ export default function DocsLayout({ children }: { children: ReactNode }) {
       <PublicNav />
       <div className="mx-auto max-w-6xl px-6 py-10 md:flex md:gap-12">
         <DocSidebar />
-        <main className="min-w-0 flex-1">{children}</main>
+        <main id="main" className="min-w-0 flex-1">{children}</main>
       </div>
     </>
   )

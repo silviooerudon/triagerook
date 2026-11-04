@@ -25,6 +25,39 @@
 //     limit; if abuse warrants it, the get+upsert becomes a single
 //     atomic SQL function call.
 
+import { createHmac } from "node:crypto"
+
+// Turns a caller IP into the opaque key stored in public_scan_rate_limits.
+//
+// Data minimisation (GDPR Art. 5(1)(c) / LGPD Art. 6, III): the raw IP is
+// never persisted. A plain SHA-256 would not be enough — the whole IPv4
+// space can be hashed in minutes, so an unkeyed hash is trivially
+// reversible. A keyed HMAC is not reversible without the server secret.
+// The fixed prefix domain-separates this use of the secret from any other.
+//
+// The secret is RATE_LIMIT_HASH_SECRET when set, otherwise AUTH_SECRET
+// (always present — the app cannot boot without it). Rotating the secret
+// simply resets every per-IP counter, which is harmless.
+export function ipRateLimitKey(
+  ip: string,
+  secret: string | undefined = process.env.RATE_LIMIT_HASH_SECRET || process.env.AUTH_SECRET,
+): string {
+  if (!secret) {
+    throw new Error("[rate-limit] no secret configured for IP pseudonymisation")
+  }
+  const digest = createHmac("sha256", secret)
+    .update(`triagerook:rate-limit:ip:v1:${ip}`)
+    .digest("hex")
+  // 128 bits is far beyond collision risk for this table.
+  return `ip:${digest.slice(0, 32)}`
+}
+
+// Counters older than this are useless (every window is 1h) and are
+// purged opportunistically so pseudonymised IPs are not kept longer than
+// needed (storage limitation, GDPR Art. 5(1)(e) / LGPD Art. 15-16).
+const STALE_AFTER_MS = 2 * 60 * 60 * 1000
+const PURGE_PROBABILITY = 0.02
+
 export type RateLimitPolicy = {
   limit: number
   windowMs: number
@@ -128,7 +161,9 @@ export async function checkAndIncrement(
 }
 
 // Supabase-backed storage used in production. Reads and writes the
-// `public_scan_rate_limits` table (migration 008). Returns null when
+// `public_scan_rate_limits` table (migration 008). Despite the column
+// name `ip`, it holds an opaque key: `ip:<hmac>` (see ipRateLimitKey) or
+// `repo:<owner>/<repo>` — never a raw IP address (migration 011). Returns null when
 // no row exists for this key.
 //
 // The Supabase client is imported lazily inside each method so that
@@ -162,6 +197,20 @@ const supabaseStorage: RateLimitStorage = {
         { onConflict: "ip" },
       )
     if (error) throw new Error(error.message)
+
+    // Opportunistic retention sweep on ~2% of writes. Works on any
+    // Supabase plan (no pg_cron needed). Best-effort: a failed purge must
+    // never fail the request that triggered it.
+    if (Math.random() < PURGE_PROBABILITY) {
+      const cutoff = new Date(Date.now() - STALE_AFTER_MS).toISOString()
+      const { error: purgeError } = await supabase
+        .from("public_scan_rate_limits")
+        .delete()
+        .lt("window_started_at", cutoff)
+      if (purgeError) {
+        console.warn("[rate-limit] stale-row purge failed:", purgeError.message)
+      }
+    }
   },
 }
 

@@ -12,6 +12,7 @@ const LINKS: NavLink[] = [
   { href: "/dashboard/suppressions", label: "suppressions" },
   { href: "/security", label: "security" },
   { href: "/docs", label: "docs" },
+  { href: "/dashboard/account", label: "your data" },
 ]
 
 // Mobile-only hamburger menu for the authenticated nav. Sits inside
@@ -94,7 +95,6 @@ export function MobileMenu({
           />
           <div
             id="mobile-nav-panel"
-            role="menu"
             className="fixed left-0 right-0 top-14 z-50 border-b border-slate-800/60 bg-slate-950/95 backdrop-blur"
           >
             <ul className="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-1 font-mono text-sm">
@@ -106,14 +106,13 @@ export function MobileMenu({
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      role="menuitem"
                       className={`block px-3 py-2.5 rounded ${
                         isActive
                           ? "text-amber-300 bg-amber-400/5"
                           : "text-slate-300 hover:text-amber-400 hover:bg-slate-900/60"
                       }`}
                     >
-                      <span className="text-slate-600">→ </span>
+                      <span aria-hidden="true" className="text-slate-600">→ </span>
                       {link.label}
                     </Link>
                   </li>

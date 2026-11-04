@@ -151,3 +151,37 @@ describe("checkAndIncrement", () => {
     expect(r.allowed).toBe(true)
   })
 })
+
+describe("ipRateLimitKey", () => {
+  it("never contains the raw IP", async () => {
+    const { ipRateLimitKey } = await import("@/lib/rate-limit")
+    const key = ipRateLimitKey("203.0.113.42", "test-secret")
+    expect(key).not.toContain("203.0.113.42")
+    expect(key).toMatch(/^ip:[0-9a-f]{32}$/)
+  })
+
+  it("is stable for the same IP and secret", async () => {
+    const { ipRateLimitKey } = await import("@/lib/rate-limit")
+    expect(ipRateLimitKey("198.51.100.7", "s")).toBe(ipRateLimitKey("198.51.100.7", "s"))
+  })
+
+  it("separates different IPs", async () => {
+    const { ipRateLimitKey } = await import("@/lib/rate-limit")
+    expect(ipRateLimitKey("198.51.100.7", "s")).not.toBe(ipRateLimitKey("198.51.100.8", "s"))
+  })
+
+  it("is keyed: a different secret gives a different key (not a bare hash)", async () => {
+    const { ipRateLimitKey } = await import("@/lib/rate-limit")
+    expect(ipRateLimitKey("198.51.100.7", "a")).not.toBe(ipRateLimitKey("198.51.100.7", "b"))
+  })
+
+  it("refuses to run without a secret rather than storing something reversible", async () => {
+    const { ipRateLimitKey } = await import("@/lib/rate-limit")
+    expect(() => ipRateLimitKey("198.51.100.7", "")).toThrow()
+  })
+
+  it("cannot collide with per-repo keys", async () => {
+    const { ipRateLimitKey } = await import("@/lib/rate-limit")
+    expect(ipRateLimitKey("x", "s").startsWith("repo:")).toBe(false)
+  })
+})

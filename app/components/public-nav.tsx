@@ -6,7 +6,7 @@ import { Brand } from "@/app/components/brand"
 // from HN to /scan-public/owner/repo never breaks out of the brand.
 export function PublicNav() {
   return (
-    <nav className="border-b border-slate-800/60 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
+    <nav aria-label="Main" className="border-b border-slate-800/60 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
         <Brand href="/" />
         <div className="flex items-center gap-5 text-xs font-mono text-slate-400">
@@ -40,7 +40,7 @@ export function PublicNav() {
             rel="noopener noreferrer"
             className="hidden md:inline hover:text-slate-100 transition"
           >
-            github ↗
+            github ↗<span className="sr-only"> (opens in a new tab)</span>
           </a>
           <Link
             href="/signin"

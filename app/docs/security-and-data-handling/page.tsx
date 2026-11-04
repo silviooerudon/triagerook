@@ -139,7 +139,8 @@ export default function SecurityDataPage() {
           </p>
           <p>
             Two things are recorded, neither of them your data: per-hour rate-limit
-            counters (keyed by source IP and by repo, to stop abuse), and a single
+            counters (keyed by repo and by a keyed HMAC of your IP &mdash; the raw IP
+            is never stored &mdash; purged within about two hours), and a single
             structured log line per attempt containing the owner, repo, duration,
             and outcome. That log line deliberately contains{" "}
             <strong>no IP address and no other personal data</strong>.

@@ -1,9 +1,12 @@
+import Link from "next/link";
 import { PublicNav } from "@/app/components/public-nav";
+import { LEGAL } from "@/lib/legal";
 
 export default function SecurityPage() {
   return (
     <>
       <PublicNav />
+      <main id="main">
       <article className="max-w-3xl mx-auto px-6 py-16">
         <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-2">Security & Privacy</h1>
         <p className="text-slate-400 mb-12">
@@ -104,38 +107,44 @@ export default function SecurityPage() {
             </li>
           </ul>
           <p className="mt-3">
-            Revocation is immediate. Any tokens already minted expire within an hour.
+            Revoking sign-in immediately stops TriageRook from obtaining new access.
+            Installation tokens used for fix PRs are short-lived (GitHub expires them
+            after one hour).
+          </p>
+          <p className="mt-3">
+            To also erase everything we stored about you, use{" "}
+            <Link href="/dashboard/account" className="text-amber-400 hover:underline">
+              Dashboard → Your data
+            </Link>
+            . It deletes your saved scans and suppressions and revokes the GitHub
+            authorization in one step. Details are in the{" "}
+            <Link href="/privacy" className="text-amber-400 hover:underline">
+              Privacy Policy
+            </Link>
+            .
           </p>
         </Section>
 
         <Section title="Reporting security issues">
           <p>
-            Found a vulnerability or have a concern? Contact{" "}
-            <a
-              href="https://www.linkedin.com/in/silvio-junior-de-almeida-gazzoli-78453a8a/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-amber-400 hover:underline"
-            >
-              Silvio directly on LinkedIn
+            Found a vulnerability? Please report it <strong>privately</strong> by
+            email to{" "}
+            <a href={`mailto:${LEGAL.privacyEmail}`} className="text-amber-400 hover:underline">
+              {LEGAL.privacyEmail}
             </a>{" "}
-            or open an issue on{" "}
-            <a
-              href="https://github.com/silviooerudon/triagerook/issues"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-amber-400 hover:underline"
-            >
-              GitHub
-            </a>.
+            — do not open a public issue. Expect an acknowledgement within 72 hours
+            and an initial assessment within 7 days. Good-faith research that avoids
+            privacy violations, data destruction and service disruption is welcome,
+            and we will not pursue it.
           </p>
         </Section>
 
         <p className="text-xs text-slate-500 mt-16 pt-8 border-t border-slate-800/60">
-          Last updated: May 2026. This page is maintained honestly. If anything here
+          Last updated: November 2026. This page is maintained honestly. If anything here
           becomes outdated or inaccurate, please report it.
         </p>
       </article>
+      </main>
     </>
   );
 }

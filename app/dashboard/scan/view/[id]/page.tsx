@@ -91,7 +91,7 @@ export default function ScanViewPage({ params }: PageProps) {
   }, [id])
 
   return (
-    <main className="px-6 py-12">
+    <main id="main" className="px-6 py-12">
       <div className="max-w-5xl mx-auto">
         <Link
           href="/dashboard/history"

@@ -59,7 +59,7 @@ export default function SuppressionsPage() {
   }
 
   return (
-    <main className="px-6 py-12">
+    <main id="main" className="px-6 py-12">
       <div className="max-w-4xl mx-auto space-y-6">
         <header>
           <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight">Suppressions</h1>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
+import { PrivacyAnalytics } from "@/app/components/privacy-analytics";
+import { SiteFooter } from "@/app/components/site-footer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -66,8 +67,14 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100 font-sans selection:bg-amber-400 selection:text-slate-950">
+        {/* First focusable element: lets keyboard and screen-reader users
+            jump past the nav. Every page marks its content with id="main". */}
+        <a href="#main" className="skip-link">
+          Skip to main content
+        </a>
         {children}
-        <Analytics />
+        <SiteFooter />
+        <PrivacyAnalytics />
       </body>
     </html>
   );
