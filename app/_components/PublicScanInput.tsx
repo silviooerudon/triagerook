@@ -39,8 +39,15 @@ export default function PublicScanInput() {
           >
             ▶
           </span>
+          <label htmlFor="public-scan-url" className="sr-only">
+            Public GitHub repository URL
+          </label>
           <input
+            id="public-scan-url"
             type="text"
+            inputMode="url"
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? "public-scan-error public-scan-hint" : "public-scan-hint"}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -69,9 +76,9 @@ export default function PublicScanInput() {
         </button>
       </div>
       {error && (
-        <p className="text-red-400 text-xs font-mono mt-2">{"// "}{error}</p>
+        <p id="public-scan-error" role="alert" className="text-red-400 text-xs font-mono mt-2">{"// "}{error}</p>
       )}
-      <p className="text-xs font-mono text-slate-500 mt-3">
+      <p id="public-scan-hint" className="text-xs font-mono text-slate-500 mt-3">
         {"// no login required · 10 scans/h per IP · 5 scans/h per repo · public repos only"}
       </p>
     </div>

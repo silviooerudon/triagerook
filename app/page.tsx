@@ -126,7 +126,7 @@ export default async function Home() {
   if (session) redirect("/dashboard");
 
   return (
-    <main className="relative min-h-screen bg-slate-950 text-slate-100 overflow-hidden">
+    <main id="main" className="relative min-h-screen bg-slate-950 text-slate-100 overflow-hidden">
       {/* background grid */}
       <div
         aria-hidden
@@ -492,6 +492,24 @@ export default async function Home() {
                 >
                   security
                 </Link>
+                <Link
+                  href="/pricing"
+                  className="hover:text-amber-400 transition"
+                >
+                  pricing
+                </Link>
+                <Link
+                  href="/privacy"
+                  className="hover:text-amber-400 transition"
+                >
+                  privacy
+                </Link>
+                <Link
+                  href="/terms"
+                  className="hover:text-amber-400 transition"
+                >
+                  terms
+                </Link>
                 <a
                   href="#detectors"
                   className="hover:text-amber-400 transition"
@@ -510,13 +528,6 @@ export default async function Home() {
                   github ↗
                 </a>
               </div>
-            </div>
-            <div className="mt-12 pt-6 border-t border-slate-800/40 flex justify-between items-center text-slate-600 flex-wrap gap-2">
-              <span>triagerook © {new Date().getFullYear()}</span>
-              <span className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                mit license · open source
-              </span>
             </div>
           </div>
         </footer>

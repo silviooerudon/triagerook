@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PublicNav } from "@/app/components/public-nav";
 
 export const metadata: Metadata = {
@@ -33,6 +34,7 @@ export default function PricingPage() {
   return (
     <>
       <PublicNav />
+      <main id="main">
       <article className="max-w-4xl mx-auto px-6 py-16">
         <div className="font-mono text-xs text-amber-400 mb-3">
           {"// pricing"}
@@ -123,7 +125,15 @@ export default function PricingPage() {
             ))}
           </ul>
         </section>
+        <p className="text-sm text-slate-400">
+          No payment details are collected today. When paid plans launch, the{" "}
+          <Link href="/terms#refunds" className="text-amber-400 hover:underline">
+            refund policy
+          </Link>{" "}
+          applies, including a 14-day (EU) / 7-day (Brazil) right of withdrawal.
+        </p>
       </article>
+      </main>
     </>
   );
 }

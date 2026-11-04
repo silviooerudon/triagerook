@@ -19,7 +19,7 @@ type AppNavProps = {
 // of vertically-stacked links permanently visible.
 export function AppNav({ userName, userImage }: AppNavProps) {
   return (
-    <nav className="border-b border-slate-800/60 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
+    <nav aria-label="Main" className="border-b border-slate-800/60 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
         <Brand href="/dashboard" />
 
@@ -45,6 +45,12 @@ export function AppNav({ userName, userImage }: AppNavProps) {
           </Link>
           <Link href="/docs" className="hover:text-slate-100 transition">
             docs
+          </Link>
+          <Link
+            href="/dashboard/account"
+            className="hover:text-slate-100 transition"
+          >
+            your data
           </Link>
 
           <div className="flex items-center gap-2.5 pl-4 ml-1 border-l border-slate-800/60">

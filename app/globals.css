@@ -6,8 +6,64 @@
   --font-display: var(--font-display);
 }
 
+/* Accessibility — contrast (WCAG 2.2 SC 1.4.3, AA).
+   Tailwind's stock slate-500 (#64748b) is 4.24:1 on our slate-950 page
+   background and slate-600 (#475569) only 2.66:1 — both below the 4.5:1
+   minimum for body text, and they are used for ~180 secondary-text spots.
+   These lighter values keep the 400 > 500 > 600 hierarchy while passing AA:
+     slate-500 #8492a6 → 6.38:1 on slate-950, 5.65:1 on slate-900, 4.63:1 on slate-800
+     slate-600 #7a889c → 5.60:1 on slate-950, 4.96:1 on slate-900 */
+@theme {
+  --color-slate-500: #8492a6;
+  --color-slate-600: #7a889c;
+}
+
 html,
 body {
   background: #020617;
   color: #f1f5f9;
+}
+
+/* Accessibility — keyboard focus (WCAG 2.2 SC 2.4.7 / 2.4.11).
+   A clearly visible ring on every focusable element for keyboard users
+   only (:focus-visible), so mouse clicks don't flash an outline. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Skip link: hidden until focused, then shown above everything. */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100px;
+  z-index: 100;
+  padding: 0.5rem 1rem;
+  background: #fbbf24;
+  color: #020617;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.skip-link:focus {
+  top: 0.75rem;
+}
+
+/* Jumping to an in-page anchor shouldn't hide the heading under the
+   sticky 56px nav. */
+:target {
+  scroll-margin-top: 5rem;
+}
+
+/* Accessibility — motion (WCAG 2.2 SC 2.3.3). Honour the OS setting. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

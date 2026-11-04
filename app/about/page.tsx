@@ -12,6 +12,7 @@ export default function AboutPage() {
   return (
     <>
       <PublicNav />
+      <main id="main">
       <article className="max-w-3xl mx-auto px-6 py-16">
         <div className="font-mono text-xs text-amber-400 mb-3">
           {"// about"}
@@ -69,11 +70,11 @@ export default function AboutPage() {
             Status
           </h2>
           <p className="text-slate-300 leading-relaxed">
-            Free during validation. No SLA. Source code closed for now,
-            planning to open the detectors.
+            Free during validation. No SLA. Open source under the MIT license.
           </p>
         </section>
       </article>
+      </main>
     </>
   );
 }
